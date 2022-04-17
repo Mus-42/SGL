@@ -59,11 +59,11 @@ int main() {
         }
         );*/
         //*
-        register_struct<val>(&s, "val", {
+        s.register_struct<val>("val", {
             {"arr", t_int32, offsetof(val, arr), 5},
             {"g", t_float64, offsetof(val, g)},
         });
-        register_struct<example_struct>(&s, "example_struct", {
+        s.register_struct<example_struct>("example_struct", {
             {"g", t_int32, offsetof(example_struct, g)},
             {"q", t_uint8, offsetof(example_struct, q)},
             {"f", t_float32, offsetof(example_struct, f)},

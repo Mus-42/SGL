@@ -3,3 +3,6 @@ add array [] (at) operator
 add C API
 move example to examples path
 custom assert macro (SGL_ASSERT)
+add normal type constructors (TypeDef struct?)
+add contains function
+add parse_... functions for string

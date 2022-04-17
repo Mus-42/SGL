@@ -181,7 +181,7 @@ namespace SGL {
 		}
 		~m_token() { if (type == string_value_v) str_v.~basic_string(); }
 		m_tok_t type = none_v;
-		SGL_type tk_type;
+		privitive_type tk_type;
 		int prior = -1;
 		union {
 			//values
@@ -260,7 +260,7 @@ namespace SGL {
 		else SGL_ERROR("SGL: type must be integer for unary ~ operator");
 	}
 
-	static constexpr std::pair<m_tok_t, SGL_type> result_of_value(std::pair<m_tok_t, SGL_type> a, std::pair<m_tok_t, SGL_type> b) {
+	static constexpr std::pair<m_tok_t, privitive_type> result_of_value(std::pair<m_tok_t, privitive_type> a, std::pair<m_tok_t, privitive_type> b) {
 		if(a == b) return a;
 		switch (a.first) {
 		case int_value_v: {
@@ -270,7 +270,7 @@ namespace SGL {
 				if(au && bu) return {int_value_v, std::max(a.second, b.second)};
 				uint8_t da = au ? a.second - t_uint8 : a.second - t_int8;
 				uint8_t db = au ? b.second - t_uint8 : b.second - t_int8;
-				return {int_value_v, SGL_type(t_int8 + std::max(da, db))};
+				return {int_value_v, privitive_type(t_int8 + std::max(da, db))};
 			} else if(b.first == float_value_v) return {float_value_v, t_void};
 		} break;
 		case float_value_v: if(b.first == int_value_v) return {float_value_v, t_void}; break;
@@ -280,7 +280,7 @@ namespace SGL {
 		SGL_ERROR("SGL: invalid type for binary operator");
 		return {none_v, t_void};
 	}
-	static void cast_to_type(m_token& val, std::pair<m_tok_t, SGL_type> t) {
+	static void cast_to_type(m_token& val, std::pair<m_tok_t, privitive_type> t) {
 		if(val.type == t.first && t.first != int_value_v) return;
 		switch (t.first) {
 		case int_value_v: {
@@ -408,11 +408,11 @@ namespace SGL {
 		SGL_ERROR("SGL: invalid type cast");
 	}
 
-	using binary_operator_template_func_t = void(*)(m_token& a, m_token& b, std::pair<m_tok_t, SGL_type> t);
+	using binary_operator_template_func_t = void(*)(m_token& a, m_token& b, std::pair<m_tok_t, privitive_type> t);
 	template<binary_operator_template_func_t func> 
 	static void binary_operator_template(m_token& a, m_token& b) {
-		std::pair<m_tok_t, SGL_type> a_type = {a.type, t_void};
-		std::pair<m_tok_t, SGL_type> b_type = {b.type, t_void};
+		std::pair<m_tok_t, privitive_type> a_type = {a.type, t_void};
+		std::pair<m_tok_t, privitive_type> b_type = {b.type, t_void};
 		if(a.type == int_value_v) a_type.second = a.tk_type;
 		if(b.type == int_value_v) b_type.second = b.tk_type;
 		auto result_type = result_of_value(a_type, b_type);
@@ -448,7 +448,7 @@ namespace SGL {
 
 	#define binary_operator_def(name, func, en_int, en_float, en_string, en_char, en_bool)\
 	static void binary_operator_##name(m_token& val, m_token& other) {\
-		auto v = [](m_token& a, m_token& b, std::pair<m_tok_t, SGL_type> t){\
+		auto v = [](m_token& a, m_token& b, std::pair<m_tok_t, privitive_type> t){\
 			switch (t.first) {\
 				binary_operator_def_i##en_int(func)\
 				binary_operator_def_f##en_float(func)\
@@ -475,7 +475,7 @@ namespace SGL {
 	binary_operator_def(rsh, >>=, 1, 0, 0, 0, 0);
 	//logic && || == != > < >= <=
 	static void binary_operator_and(m_token& val, m_token& other) {
-		auto v = [](m_token& a, m_token& b, std::pair<m_tok_t, SGL_type> t){
+		auto v = [](m_token& a, m_token& b, std::pair<m_tok_t, privitive_type> t){
 			bool v = false;
 			switch (t.first) {
 			case int_value_v:
@@ -499,7 +499,7 @@ namespace SGL {
 		binary_operator_template<v>(val, other);
 	}
 	static void binary_operator_or(m_token& val, m_token& other) {
-		auto v = [](m_token& a, m_token& b, std::pair<m_tok_t, SGL_type> t){
+		auto v = [](m_token& a, m_token& b, std::pair<m_tok_t, privitive_type> t){
 			bool v = false;
 			switch (t.first) {
 			case int_value_v:
@@ -523,7 +523,7 @@ namespace SGL {
 		binary_operator_template<v>(val, other);
 	}
 	static void binary_operator_eqal(m_token& val, m_token& other) {	
-		auto v = [](m_token& a, m_token& b, std::pair<m_tok_t, SGL_type> t){
+		auto v = [](m_token& a, m_token& b, std::pair<m_tok_t, privitive_type> t){
 			bool v = false;
 			switch (t.first) {
 			case int_value_v:
@@ -549,7 +549,7 @@ namespace SGL {
 		binary_operator_template<v>(val, other);
 	}
 	static void binary_operator_not_eqal(m_token& val, m_token& other) {
-		auto v = [](m_token& a, m_token& b, std::pair<m_tok_t, SGL_type> t){
+		auto v = [](m_token& a, m_token& b, std::pair<m_tok_t, privitive_type> t){
 			bool v = false;
 			switch (t.first) {
 			case int_value_v:
@@ -575,7 +575,7 @@ namespace SGL {
 		binary_operator_template<v>(val, other);
 	}
 	static void binary_operator_greater(m_token& val, m_token& other) {	
-		auto v = [](m_token& a, m_token& b, std::pair<m_tok_t, SGL_type> t){
+		auto v = [](m_token& a, m_token& b, std::pair<m_tok_t, privitive_type> t){
 			bool v = false;
 			switch (t.first) {
 			case int_value_v:
@@ -601,7 +601,7 @@ namespace SGL {
 		binary_operator_template<v>(val, other);
 	}
 	static void binary_operator_less(m_token& val, m_token& other) {
-		auto v = [](m_token& a, m_token& b, std::pair<m_tok_t, SGL_type> t){
+		auto v = [](m_token& a, m_token& b, std::pair<m_tok_t, privitive_type> t){
 			bool v = false;
 			switch (t.first) {
 			case int_value_v:
@@ -708,7 +708,7 @@ namespace SGL {
 					case '!': unary_operator_not(*next); break;
 					case '+': unary_operator_plus(*next); break;
 					case 't': cast_to_type(*next, t_int8 <= v.first->tk_type && v.first->tk_type <= t_uint64 ? 
-					std::pair<m_tok_t, SGL_type>{int_value_v, v.first->tk_type} : std::pair<m_tok_t, SGL_type>{
+					std::pair<m_tok_t, privitive_type>{int_value_v, v.first->tk_type} : std::pair<m_tok_t, privitive_type>{
 						v.first->tk_type == t_float32 || v.first->tk_type == t_float64 ? float_value_v : 
 						v.first->tk_type == t_string ? string_value_v :
 						v.first->tk_type == t_char ? char_value_v :

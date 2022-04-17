@@ -19,7 +19,7 @@
 #include <cassert>
 
 namespace SGL {
-    enum SGL_type : uint8_t {
+    enum privitive_type : uint8_t {
         t_void = 0,
         t_int8, t_int16, t_int32, t_int64,
         t_uint8, t_uint16, t_uint32, t_uint64,
@@ -39,23 +39,23 @@ namespace SGL {
     };
 
     struct type {
-        type(SGL_type t = t_void) : base_type(t), size(type_size[t]) {}
-        type(SGL_type t, void* v1, void* v2, void* v3) : base_type(t), size(type_size[t]), m_construct(v1), m_destruct(v2), m_copy(v3) {}
+        type(privitive_type t = t_void) : base_type(t), size(type_size[t]) {}
+        type(privitive_type t, void* v1, void* v2, void* v3) : base_type(t), size(type_size[t]), m_construct(v1), m_destruct(v2), m_copy(v3) {}
         ~type() = default;
 
         struct member {
             member() : type(t_void), name(), offset(0), m_type(nullptr) {}
-            member(const std::string& name, SGL_type type, size_t offset, size_t array_size = 0) : type(type), name(name), offset(offset),
+            member(const std::string& name, privitive_type type, size_t offset, size_t array_size = 0) : type(type), name(name), offset(offset),
                 m_type(nullptr), array_size(array_size) {}
             member(const std::string& name, const std::string& custom_type_name, size_t offset, size_t array_size = 0) : type(t_custom), name(name),
                 custom_type_name(custom_type_name), offset(offset), m_type(nullptr), array_size(array_size) {}
 
-            SGL_type type;
+            privitive_type type;
             size_t offset, array_size;
             const SGL::type* m_type;
             std::string name, custom_type_name;
         };
-        SGL_type base_type;//t_custom for custom
+        privitive_type base_type;//t_custom for custom
         //for custom:
         std::vector<member> members;
         size_t size;
@@ -73,21 +73,7 @@ namespace SGL {
     };
 
     struct parse_result;
-
-    struct state {
-        state() = default;
-        ~state();
-        std::unordered_map<std::string, value> global_constants;
-        std::unordered_map<std::string, type> global_types;
-        std::set<parse_result*> m_results;
-    };
-
-    struct parse_result {
-        parse_result() = default;
-        ~parse_result();
-        state* m_state = nullptr;
-        std::unordered_map<std::string, value> local_variables;
-    };
+    struct state;
     
     namespace details {
         template<typename T> using t_construct_noptr = void(T*);//this
@@ -114,9 +100,7 @@ namespace SGL {
         details::register_struct(s, name, sizeof(T), std::move(members), (void*)v1, (void*)v2, (void*)v3);
     }
 
-
     parse_result* parse_stream(state* s, std::istream& in);
-
 
     template<typename T>
     inline T get_local_value(parse_result* p, const std::string& name) {
@@ -126,6 +110,39 @@ namespace SGL {
         details::copy_val(v->m_type, 0, &val, v->data);
         return val;
     }
+
+    struct state {
+        state() = default;
+        ~state();
+
+        std::unordered_map<std::string, value> global_constants;
+        std::unordered_map<std::string, type> global_types;
+        std::set<parse_result*> m_results;
+
+        template<typename T>
+        void register_struct(const std::string& name, std::vector<type::member>&& members,
+            details::t_construct<T> v1 = nullptr, details::t_destruct<T> v2 = nullptr, details::t_copy<T> v3 = nullptr
+        ) {
+            details::register_struct(this, name, sizeof(T), std::move(members), (void*)v1, (void*)v2, (void*)v3);
+        }
+
+        parse_result* parse_stream(std::istream& in) {
+            SGL::parse_stream(this, in);
+        }
+    };
+
+    struct parse_result {
+        parse_result() = default;
+        ~parse_result();
+
+        state* m_state = nullptr;
+        std::unordered_map<std::string, value> local_variables;
+
+        template<typename T>
+        T get_local_value(const std::string& name) {
+            return SGL::get_local_value<T>(this, name);
+        }
+    };
 };
 
 #endif//SGL_INCLUDE_HPP_
