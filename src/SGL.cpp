@@ -1,4 +1,4 @@
-#include "SGL.hpp"
+#include <SGL/SGL.hpp>
 
 #include <algorithm>
 #include <iostream>

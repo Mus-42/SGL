@@ -32,7 +32,7 @@ namespace SGL {
     };
     static_assert(sizeof(float) == 4 && sizeof(double) == 8);//for t_float32 & t_float64
 
-    constexpr uint8_t type_size[]{
+    constexpr uint8_t type_size[] {
         0,//void
         1, 2, 4, 8, 1, 2, 4, 8,//int types
         4, 8, 1, (uint8_t)sizeof(std::string), 1

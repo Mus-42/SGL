@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
-#include "SGL.hpp"
+
+#include <SGL/SGL.hpp>
 
 using namespace SGL;
 

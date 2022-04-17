@@ -1,0 +1,5 @@
+add top-level array & dynamic array support
+add array [] (at) operator
+add C API
+move example to examples path
+custom assert macro (SGL_ASSERT)
