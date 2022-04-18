@@ -33,7 +33,7 @@ typedef void(*sgl_value_copy)(void* dst, void* srs);
 typedef struct {//same as C++ SGL::type::member but use const char* instead of std::string
     sgl_privitive_type type;
     size_t offset, array_size;
-    const sgl_type m_type;
+    sgl_type m_type;
     const char* name;
     const char* custom_type_name;
 } sgl_type_member;
@@ -42,12 +42,20 @@ sgl_state sgl_new_state();
 void sgl_delete_state(sgl_state s);
 
 sgl_parse_result sgl_new_parse_result();
-void sgl_delete_parse_result(sgl_parse_result s);
+void sgl_delete_parse_result(sgl_parse_result p);
+
+sgl_type_member sgl_create_type_member_buildin_t(const char* name, sgl_privitive_type type, size_t offset);
+sgl_type_member sgl_create_type_member_custom_t(const char* name, const char* type_name, size_t offset);
+
+sgl_type_member sgl_create_type_member_buildin_t_array(const char* name, sgl_privitive_type type, size_t offset, size_t array_size);
+sgl_type_member sgl_create_type_member_custom_t_array(const char* name, const char* type_name, size_t offset, size_t array_size);
 
 //if your type don't have constructor|destructor|copy function - pass NULL. it will be generated automaticly
 void sgl_register_struct(sgl_state s, const char* name, size_t struct_size, const sgl_type_member* members, size_t members_count, 
-    sgl_value_constructor constructor,sgl_value_destructor destuructor,sgl_value_copy copy);
+    sgl_value_constructor constructor, sgl_value_destructor destuructor, sgl_value_copy copy);
 
+//copy variable to dest
+void get_local_value(sgl_parse_result p, const char* var_name, void* dest);
 
 #ifdef  __cplusplus
 }//extern "C"
