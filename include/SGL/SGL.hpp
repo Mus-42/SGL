@@ -127,7 +127,7 @@ namespace SGL {
         }
 
         parse_result* parse_stream(std::istream& in) {
-            SGL::parse_stream(this, in);
+            return SGL::parse_stream(this, in);
         }
     };
 

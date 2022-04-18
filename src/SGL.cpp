@@ -59,7 +59,7 @@ namespace SGL {
 	namespace details {
 		void construct_val(const type* t, size_t arr_size, void* v) {
 			if (t->m_construct) for (size_t i = 0, s = arr_size ? arr_size : 1; i < s; i++)
-				static_cast<t_construct<void>>(t->m_construct)(static_cast<char*>(v) + i * t->size);
+				reinterpret_cast<t_construct<void>>(t->m_construct)(static_cast<char*>(v) + i * t->size);
 			else {
 				if (t->base_type == t_custom) for (size_t i = 0, s = arr_size ? arr_size : 1; i < s; i++) for (auto m : t->members)
 					construct_val(m.m_type, m.array_size, (static_cast<char*>(v) + i * t->size + m.offset));
@@ -68,7 +68,7 @@ namespace SGL {
 		}
 		void destruct_val(const type* t, size_t arr_size, void* v) {
 			if (t->m_destruct) for (size_t i = 0, s = arr_size ? arr_size : 1; i < s; i++)
-				static_cast<t_destruct<void>>(t->m_destruct)(static_cast<char*>(v));
+				reinterpret_cast<t_destruct<void>>(t->m_destruct)(static_cast<char*>(v));
 			else {
 				if (t->base_type == t_custom) for (size_t i = 0, s = arr_size ? arr_size : 1; i < s; i++) for (auto m : t->members)
 					destruct_val(m.m_type, m.array_size, (static_cast<char*>(v) + i * t->size + m.offset));
@@ -76,7 +76,7 @@ namespace SGL {
 		}
 		void copy_val(const type* t, size_t arr_size, void* v, void* from) {
 			if (t->m_copy) for (size_t i = 0, s = arr_size ? arr_size : 1; i < s; i++)
-				static_cast<t_copy<void>>(t->m_copy)(static_cast<char*>(v) + i * t->size, static_cast<char*>(from) + i * t->size);
+				reinterpret_cast<t_copy<void>>(t->m_copy)(static_cast<char*>(v) + i * t->size, static_cast<char*>(from) + i * t->size);
 			else {
 				if (t->base_type == t_custom) for (size_t i = 0, s = arr_size ? arr_size : 1; i < s; i++) for (auto m : t->members)
 					copy_val(m.m_type, m.array_size, (static_cast<char*>(v) + i * t->size + m.offset), (static_cast<char*>(from) + i * t->size + m.offset));
@@ -223,6 +223,7 @@ namespace SGL {
 			case t_uint16: value.tk_type = t_int64; value.int_v.i64 = -int64_t(value.int_v.ui16); break;
 			case t_uint32: value.tk_type = t_int64; value.int_v.i64 = -int64_t(value.int_v.ui32); break;
 			case t_uint64: value.tk_type = t_int64; value.int_v.i64 = -int64_t(value.int_v.ui64); break;
+			default: break;
 			}
 		}
 		else SGL_ERROR("SGL: invalid type for unary - operator");
@@ -238,6 +239,7 @@ namespace SGL {
 			case t_uint16: value.bool_v= !value.int_v.ui16; break;
 			case t_uint32: value.bool_v= !value.int_v.ui32; break;
 			case t_uint64: value.bool_v= !value.int_v.ui64; break;
+			default: break;
 			}
 			value.type = bool_value_v;
 		}
@@ -255,7 +257,8 @@ namespace SGL {
 			case t_uint8:  value.int_v.ui8  = ~value.int_v.ui8;  break;
 			case t_uint16: value.int_v.ui16 = ~value.int_v.ui16; break;
 			case t_uint32: value.int_v.ui32 = ~value.int_v.ui32; break;
-			case t_uint64: value.int_v.ui64 = ~value.int_v.ui64; break;
+			case t_uint64: value.int_v.ui64 = ~value.int_v.ui64; break;	
+			default: break;
 			}
 		else SGL_ERROR("SGL: type must be integer for unary ~ operator");
 	}
@@ -276,6 +279,7 @@ namespace SGL {
 		case float_value_v: if(b.first == int_value_v) return {float_value_v, t_void}; break;
 		case string_value_v: if(b.first == char_value_v) return {string_value_v, t_void}; break;
 		case char_value_v: if(b.first == string_value_v) return {string_value_v, t_void}; break;
+		default: break;
 		}
 		SGL_ERROR("SGL: invalid type for binary operator");
 		return {none_v, t_void};
@@ -319,6 +323,7 @@ namespace SGL {
 					case t_uint16: i = (int_t##_t)val.int_v.ui16; break;\
 					case t_uint32: i = (int_t##_t)val.int_v.ui32; break;\
 					case t_uint64: i = (int_t##_t)val.int_v.ui64; break;\
+					default: break;\
 					}\
 					val = m_token(int_value_v, val.prior);\
 					val.tk_type = t_##int_t;\
@@ -335,6 +340,7 @@ namespace SGL {
 			CAST_TO_INT_T(uint32, ui32);
 			CAST_TO_INT_T(uint64, ui64);
 			#undef CAST_TO_INT_T
+			default: break;
 			}
 		
 		} break;
@@ -350,6 +356,7 @@ namespace SGL {
 				case t_uint16: f = (double)val.int_v.ui16; break;
 				case t_uint32: f = (double)val.int_v.ui32; break;
 				case t_uint64: f = (double)val.int_v.ui64; break;
+				default: break;
 				}
 				val = m_token(float_value_v, val.prior);
 				val.float_v = f;
@@ -388,6 +395,7 @@ namespace SGL {
 				case t_uint16: ch = (char)val.int_v.ui16; break;
 				case t_uint32: ch = (char)val.int_v.ui32; break;
 				case t_uint64: ch = (char)val.int_v.ui64; break;
+				default: break;
 				}
 				val = m_token(char_value_v, val.prior);
 				val.char_v = ch;
@@ -403,7 +411,8 @@ namespace SGL {
 				val.char_v = ch;
 				return;	
 			}
-		} break;
+		} break;	
+		default: break;
 		}
 		SGL_ERROR("SGL: invalid type cast");
 	}
@@ -432,6 +441,7 @@ namespace SGL {
 			case t_uint16: a.int_v.ui16 func b.int_v.ui16; return;\
 			case t_uint32: a.int_v.ui32 func b.int_v.ui32; return;\
 			case t_uint64: a.int_v.ui64 func b.int_v.ui64; return;\
+			default: break;\
 			}
 	#define binary_operator_def_f0(func)
 	#define binary_operator_def_f1(func)\
@@ -455,6 +465,7 @@ namespace SGL {
 				binary_operator_def_s##en_string(func)\
 				binary_operator_def_c##en_char(func)\
 				binary_operator_def_b##en_bool(func)\
+				default: break;\
 			}\
 			SGL_ERROR("SGL: invalid operation type");\
 			return;\
@@ -487,10 +498,12 @@ namespace SGL {
 				case t_uint8:  v = a.int_v.ui8  && b.int_v.ui8;  break;
 				case t_uint16: v = a.int_v.ui16 && b.int_v.ui16; break;
 				case t_uint32: v = a.int_v.ui32 && b.int_v.ui32; break;
-				case t_uint64: v = a.int_v.ui64 && b.int_v.ui64; break;
+				case t_uint64: v = a.int_v.ui64 && b.int_v.ui64; break;			
+				default: break;
 				}
 			case char_value_v:   v = a.char_v && b.char_v;   break;
-			case bool_value_v:   v = a.bool_v && b.bool_v;   break;
+			case bool_value_v:   v = a.bool_v && b.bool_v;   break;			
+			default: break;
 			}
 			cast_to_type(a, {bool_value_v, t_void});
 			a.bool_v = v;
@@ -512,9 +525,11 @@ namespace SGL {
 				case t_uint16: v = a.int_v.ui16 || b.int_v.ui16; break;
 				case t_uint32: v = a.int_v.ui32 || b.int_v.ui32; break;
 				case t_uint64: v = a.int_v.ui64 || b.int_v.ui64; break;
+				default: break;
 				}
 			case char_value_v:   v = a.char_v || b.char_v;   break;
 			case bool_value_v:   v = a.bool_v || b.bool_v;   break;
+			default: break;
 			}
 			cast_to_type(a, {bool_value_v, t_void});
 			a.bool_v = v;
@@ -535,12 +550,14 @@ namespace SGL {
 				case t_uint8:  v = a.int_v.ui8  == b.int_v.ui8;  break;
 				case t_uint16: v = a.int_v.ui16 == b.int_v.ui16; break;
 				case t_uint32: v = a.int_v.ui32 == b.int_v.ui32; break;
-				case t_uint64: v = a.int_v.ui64 == b.int_v.ui64; break;
+				case t_uint64: v = a.int_v.ui64 == b.int_v.ui64; break;			
+				default: break;
 				}
 			case float_value_v:  v = a.float_v == b.float_v; break;
 			case string_value_v: v = a.str_v == b.str_v;     break;
 			case char_value_v:   v = a.char_v == b.char_v;   break;
-			case bool_value_v:   v = a.bool_v == b.bool_v;   break;
+			case bool_value_v:   v = a.bool_v == b.bool_v;   break;		
+			default: break;
 			}
 			cast_to_type(a, {bool_value_v, t_void});
 			a.bool_v = v;
@@ -562,11 +579,13 @@ namespace SGL {
 				case t_uint16: v = a.int_v.ui16 != b.int_v.ui16; break;
 				case t_uint32: v = a.int_v.ui32 != b.int_v.ui32; break;
 				case t_uint64: v = a.int_v.ui64 != b.int_v.ui64; break;
+				default: break;
 				}
 			case float_value_v:  v = a.float_v != b.float_v; break;
 			case string_value_v: v = a.str_v != b.str_v;     break;
 			case char_value_v:   v = a.char_v != b.char_v;   break;
 			case bool_value_v:   v = a.bool_v != b.bool_v;   break;
+			default: break;
 			}
 			cast_to_type(a, {bool_value_v, t_void});
 			a.bool_v = v;
@@ -588,11 +607,13 @@ namespace SGL {
 				case t_uint16: v = a.int_v.ui16 > b.int_v.ui16; break;
 				case t_uint32: v = a.int_v.ui32 > b.int_v.ui32; break;
 				case t_uint64: v = a.int_v.ui64 > b.int_v.ui64; break;
+				default: break;
 				}
 			case float_value_v:  v = a.float_v > b.float_v; break;
 			case string_value_v: v = a.str_v > b.str_v;     break;
 			case char_value_v:   v = a.char_v > b.char_v;   break;
 			case bool_value_v:   v = a.bool_v > b.bool_v;   break;
+			default: break;
 			}
 			cast_to_type(a, {bool_value_v, t_void});
 			a.bool_v = v;
@@ -614,11 +635,13 @@ namespace SGL {
 				case t_uint16: v = a.int_v.ui16 < b.int_v.ui16; break;
 				case t_uint32: v = a.int_v.ui32 < b.int_v.ui32; break;
 				case t_uint64: v = a.int_v.ui64 < b.int_v.ui64; break;
+				default: break;
 				}
 			case float_value_v:  v = a.float_v < b.float_v; break;
 			case string_value_v: v = a.str_v < b.str_v;     break;
 			case char_value_v:   v = a.char_v < b.char_v;   break;
 			case bool_value_v:   v = a.bool_v < b.bool_v;   break;
+			default: break;
 			}
 			cast_to_type(a, {bool_value_v, t_void});
 			a.bool_v = v;
@@ -1045,9 +1068,10 @@ namespace SGL {
 		//state* cur_state, const type* t, size_t array_size, char* data
 		std::function<iter(iter, const type*, size_t, char*)> get_result;
 		get_result = [&](iter it, const type* t, size_t array_size, char* data) -> iter {	
-			if(array_size) 
+			if(array_size) {
 				if(it->type == punct_v && it->punct_v == '{') it++;
 				else SGL_ERROR("SGL: excepted '{'");
+			}
 			for(size_t s = array_size ? array_size : 1, i = s-1, l = 0; i < s; i--, l++) {
 				char* cur_data = data + l * t->size;
 				if(t->base_type == t_custom) {
@@ -1056,9 +1080,10 @@ namespace SGL {
 					size_t mi = t->members.size();
 					for(auto& m : t->members) {
 						it = get_result(it, m.m_type, m.array_size, cur_data + m.offset);
-						if(--mi) 
+						if(--mi) {
 							if(it->type == punct_v && it->punct_v == ',') it++;
 							else SGL_ERROR("SGL: excepted ','");
+						}
 					}
 					if(it->type == punct_v && it->punct_v == '}') it++;
 					else SGL_ERROR("SGL: excepted '}'");
@@ -1084,13 +1109,15 @@ namespace SGL {
 					}
 					it++;
 				}
-				if(i) 
+				if(i) {
 					if(it->type == punct_v && it->punct_v == ',') it++;
 					else SGL_ERROR("SGL: excepted ','");
+				}
 			}
-			if(array_size) 
+			if(array_size) {
 				if(it->type == punct_v && it->punct_v == '}') it++;
 				else SGL_ERROR("SGL: excepted '}'");
+			}
 			return it;
 		};
 		auto it = get_result(tokens.begin(), t, array_size, data);

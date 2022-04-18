@@ -16,3 +16,6 @@ set_target_properties(example PROPERTIES
     CXX_EXTENSIONS NO
 )
 target_link_libraries(example PUBLIC SGL)
+
+add_executable(cexample example.c)
+target_link_libraries(cexample PUBLIC SGL)

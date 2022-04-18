@@ -9,7 +9,7 @@
 extern "C" {
 #endif//__cplusplus
 
-enum sgl_privitive_type {
+typedef enum {
     t_void = 0,
     t_int8, t_int16, t_int32, t_int64,
     t_uint8, t_uint16, t_uint32, t_uint64,
@@ -18,7 +18,7 @@ enum sgl_privitive_type {
     t_string,
     t_char,
     t_custom
-};
+} sgl_privitive_type;
 
 //in C we work with poiters to C++ classes
 
@@ -54,8 +54,11 @@ sgl_type_member sgl_create_type_member_custom_t_array(const char* name, const ch
 void sgl_register_struct(sgl_state s, const char* name, size_t struct_size, const sgl_type_member* members, size_t members_count, 
     sgl_value_constructor constructor, sgl_value_destructor destuructor, sgl_value_copy copy);
 
+sgl_parse_result sgl_parce_file(sgl_state s, const char* filename);
+
 //copy variable to dest
-void get_local_value(sgl_parse_result p, const char* var_name, void* dest);
+void sgl_get_local_value(sgl_parse_result p, const char* var_name, void* dest);
+//TODO add get_local_value for array?
 
 #ifdef  __cplusplus
 }//extern "C"
