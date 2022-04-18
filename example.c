@@ -18,12 +18,16 @@ int main() {
 
     sgl_register_struct(s, "val", sizeof(val), val_members, 2, 0, 0, 0);
 
-    sgl_parse_result p = sgl_parce_file(s, "test1.sgl");
-
+    sgl_parse_result p1 = sgl_parse_file(s, "test1.sgl");
     double d = 0.;
-    sgl_get_local_value(p, "d", &d);
+    sgl_get_local_value(p1, "d", &d);
+    printf("doble d = %lf;\n", d);
 
-    printf("doble d = %lf;", d);
+    sgl_parse_result p2 = sgl_parse_string(s, "int a = 2 * 10 + 5;");
+    int a = 0;
+    sgl_get_local_value(p2, "a", &a);
+    printf("int a = %i;\n", a);
+
 
     sgl_delete_state(s);//it also delete all parse results in state
     return 0;

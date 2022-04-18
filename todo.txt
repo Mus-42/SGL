@@ -1,12 +1,11 @@
 add top-level array & dynamic array support
 add array [] (at) operator
-add C API
-add C example
 do somesing with C++ exceptions in C API?
+way to get C++ string from parse_result in C
 add normal examples
 move example to examples path
 custom assert macro (SGL_ASSERT)
 add normal type constructors (TypeDef struct?)
 add contains function
-add parse_... functions for string, ...?
+add parse_... functions for string, ...? (in C++)
 add SGL code examples...

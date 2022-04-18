@@ -2,6 +2,7 @@
 #include <SGL/CSGL.h>
 
 #include <fstream>
+#include <sstream>
 
 extern "C" {   
     sgl_state sgl_new_state() {
@@ -59,9 +60,13 @@ extern "C" {
         SGL::details::register_struct(static_cast<SGL::state*>(s), name, struct_size, std::move(m), reinterpret_cast<void*>(constructor), reinterpret_cast<void*>(destuructor), reinterpret_cast<void*>(copy));
     }
       
-    sgl_parse_result sgl_parce_file(sgl_state s, const char* filename) {
+    sgl_parse_result sgl_parse_file(sgl_state s, const char* filename) {
         std::ifstream in(filename);
         if(!in.is_open()) return nullptr;
+        return static_cast<sgl_parse_result>(SGL::parse_stream(static_cast<SGL::state*>(s), in));
+    }   
+    sgl_parse_result sgl_parse_string(sgl_state s, const char* string) {
+        std::istringstream in(string);
         return static_cast<sgl_parse_result>(SGL::parse_stream(static_cast<SGL::state*>(s), in));
     }
 

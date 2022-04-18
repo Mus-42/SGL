@@ -54,7 +54,8 @@ sgl_type_member sgl_create_type_member_custom_t_array(const char* name, const ch
 void sgl_register_struct(sgl_state s, const char* name, size_t struct_size, const sgl_type_member* members, size_t members_count, 
     sgl_value_constructor constructor, sgl_value_destructor destuructor, sgl_value_copy copy);
 
-sgl_parse_result sgl_parce_file(sgl_state s, const char* filename);
+sgl_parse_result sgl_parse_file(sgl_state s, const char* filename);
+sgl_parse_result sgl_parse_string(sgl_state s, const char* string);
 
 //copy variable to dest
 void sgl_get_local_value(sgl_parse_result p, const char* var_name, void* dest);
