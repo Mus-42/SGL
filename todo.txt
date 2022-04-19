@@ -6,10 +6,9 @@ ternary operator (a ? b : c)
 
 Lib:
 do somesing with C++ exceptions in C API?
-way to get C++ string from parse_result in C
 custom assert macro (SGL_ASSERT)
 add normal type constructors (TypeDef struct?)
-add contains function
+add contains function for parse_result
 add parse_... functions for string, ...? (in C++)
 add CMake Install for library?
 way to add|change global variables 
@@ -18,4 +17,4 @@ add redefine check
 add config.hpp?
 
 Examples:
-add more SGL (*.sgl files) for examples, copy it with CMake to examples binary dir?
+add more SGL (*.sgl files) for examples?

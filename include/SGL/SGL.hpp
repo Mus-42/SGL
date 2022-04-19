@@ -25,7 +25,8 @@ namespace SGL {
         t_uint8, t_uint16, t_uint32, t_uint64,
         t_float32, t_float64,
         t_bool,
-        t_string,
+        t_string,//std::string
+        t_cstring,//sgl_cstring struct. for compatibility with C 
         t_char,
 
         t_custom
@@ -36,6 +37,11 @@ namespace SGL {
         1, 2, 4, 8, 1, 2, 4, 8,//int types
         4, 8,//float
         1, (uint8_t)sizeof(std::string), 1//bool, string, char
+    };
+
+    struct cstring {
+        char* data = nullptr;
+        size_t size = 0;
     };
 
     struct type {

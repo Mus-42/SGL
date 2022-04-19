@@ -4,6 +4,7 @@
 #include <iostream>
 #include <functional>
 #include <list>
+#include <cassert>
 #include <map>
 
 #define SGL_ERROR(v) SGL_ERROR_impl__(v)
@@ -29,6 +30,21 @@ namespace SGL {
 			}),
 			(void*)(details::t_copy<std::string>)([](std::string* v, std::string* from) {
 				new (v) std::string(*from);
+			})
+		},
+		{
+			t_cstring,
+			(void*)(details::t_construct<SGL::cstring>)([](SGL::cstring* v) {
+				v->data = nullptr;
+				v->size = 0;
+			}),
+			(void*)(details::t_destruct<SGL::cstring>)([](SGL::cstring* v) {
+				if(v->data) delete v->data;
+			}),
+			(void*)(details::t_copy<SGL::cstring>)([](SGL::cstring* v, SGL::cstring* from) {
+				v->data = new char[from->size+1];
+				v->size = from->size;
+				memcpy(v->data, from->data, from->size+1);
 			})
 		},
 		{t_char}
@@ -1101,7 +1117,14 @@ namespace SGL {
 					case t_float32: cast_to_type(*it, {float_value_v, t_void}); *reinterpret_cast<float*>(cur_data) = (float)it->float_v; break;
 					case t_float64: cast_to_type(*it, {float_value_v, t_void}); *reinterpret_cast<double*>(cur_data) = it->float_v; break;
 
-					case t_string: cast_to_type(*it, {string_value_v, t_void}); *reinterpret_cast<std::string*>(cur_data) = it->str_v; break;		
+					case t_string: cast_to_type(*it, {string_value_v, t_void}); *reinterpret_cast<std::string*>(cur_data) = it->str_v; break;	
+					case t_cstring: {
+						cast_to_type(*it, {string_value_v, t_void});
+						auto& str = *reinterpret_cast<SGL::cstring*>(cur_data);
+						str.data = new char[it->str_v.size()+1];
+						str.size = it->str_v.size();
+						memcpy(str.data, it->str_v.data(), str.size+1);
+					} break;		
 					case t_char: cast_to_type(*it, {char_value_v, t_void}); *reinterpret_cast<char*>(cur_data) = it->char_v; break;		
 					case t_bool: cast_to_type(*it, {bool_value_v, t_void}); *reinterpret_cast<bool*>(cur_data) = it->bool_v; break;	
 

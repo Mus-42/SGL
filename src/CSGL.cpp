@@ -75,6 +75,12 @@ extern "C" {
     void sgl_get_local_value(sgl_parse_result p, const char* var_name, void* dest) {
         if(!p || !dest || !var_name) return;
         auto r = SGL::details::get_local_value(static_cast<SGL::parse_result*>(p), var_name);
-        SGL::details::copy_val(r->m_type, 0, dest, r->data);
+        if(r->m_type->base_type == t_string) {//in C API variable with string type cast to cstring type: 
+            auto& cstr = *static_cast<sgl_cstring*>(dest);
+            auto& str = *static_cast<std::string*>(r->data);
+            cstr.data = str.data();
+            cstr.size = str.size();
+        }
+        else SGL::details::copy_val(r->m_type, 0, dest, r->data);
     }
 }

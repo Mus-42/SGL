@@ -15,8 +15,10 @@ typedef enum {
     t_uint8, t_uint16, t_uint32, t_uint64,
     t_float32, t_float64,
     t_bool,
-    t_string,
+    t_string,//C++ std::string
+    t_cstring,//sgl_cstring 
     t_char,
+
     t_custom
 } sgl_privitive_type;
 
@@ -37,6 +39,11 @@ typedef struct {//same as C++ SGL::type::member but use const char* instead of s
     const char* name;
     const char* custom_type_name;
 } sgl_type_member;
+
+typedef struct {
+    char* data;
+    size_t size;
+} sgl_cstring;
 
 sgl_state sgl_new_state();
 void sgl_delete_state(sgl_state s);
