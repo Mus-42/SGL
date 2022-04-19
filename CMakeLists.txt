@@ -9,13 +9,8 @@ set_target_properties(SGL PROPERTIES
     CXX_EXTENSIONS NO
 )
 
-add_executable(example example.cpp)
-set_target_properties(example PROPERTIES
-    CXX_STANDARD 17
-    CXX_STANDARD_REQUIRED YES
-    CXX_EXTENSIONS NO
-)
-target_link_libraries(example PUBLIC SGL)
+option(sgl_build_examples "build examples" NO)
 
-add_executable(cexample example.c)
-target_link_libraries(cexample PUBLIC SGL)
+if(sgl_build_examples) 
+    add_subdirectory(examples)
+endif()
