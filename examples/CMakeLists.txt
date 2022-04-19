@@ -15,3 +15,8 @@ foreach(example_source_file IN LISTS examples_sources)
     add_executable(${example_name} ${example_source_file})
     target_link_libraries(${example_name} PUBLIC SGL)
 endforeach()
+
+message("bin: ${PROJECT_BINARY_DIR}\n run: ${EXECUTABLE_OUTPUT_PATH}")
+
+#copy data folder to binary folder
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/data DESTINATION ${PROJECT_BINARY_DIR})

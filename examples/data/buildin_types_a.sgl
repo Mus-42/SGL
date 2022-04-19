@@ -1,0 +1,4 @@
+int a = 3;
+int b = 5;
+int c = a + b;//c = 8
+double d = c * 100 + 25.5;//d = 825.5

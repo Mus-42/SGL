@@ -61,16 +61,19 @@ extern "C" {
     }
       
     sgl_parse_result sgl_parse_file(sgl_state s, const char* filename) {
+        if(!s || !filename) return nullptr;
         std::ifstream in(filename);
         if(!in.is_open()) return nullptr;
         return static_cast<sgl_parse_result>(SGL::parse_stream(static_cast<SGL::state*>(s), in));
     }   
     sgl_parse_result sgl_parse_string(sgl_state s, const char* string) {
+        if(!s || !string) return nullptr;
         std::istringstream in(string);
         return static_cast<sgl_parse_result>(SGL::parse_stream(static_cast<SGL::state*>(s), in));
     }
 
     void sgl_get_local_value(sgl_parse_result p, const char* var_name, void* dest) {
+        if(!p || !dest || !var_name) return;
         auto r = SGL::details::get_local_value(static_cast<SGL::parse_result*>(p), var_name);
         SGL::details::copy_val(r->m_type, 0, dest, r->data);
     }
