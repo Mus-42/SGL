@@ -991,7 +991,7 @@ namespace SGL {
 						}
 						//in.unget();
 						if(result_type->base_type == t_custom) {//add custom type
-
+							//TODO add impl
 						}
 						else {
 							switch (result_type->base_type) {

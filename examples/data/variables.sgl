@@ -1,0 +1,8 @@
+int a = 100;
+val c =  {
+    {25, 5, a, -20, 10},
+    float64(a)//explicit typecast int32 a to float64
+};
+
+//val b = c;//now not implemented. TODO implement
+int d = c.g;//implicit typecast float64 c.g to int32
