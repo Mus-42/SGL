@@ -57,24 +57,24 @@ extern "C" {
             m[i].name = members[i].name;
             if(members[i].custom_type_name) m[i].custom_type_name = members[i].custom_type_name;
         }
-        SGL::details::register_struct(static_cast<SGL::state*>(s), name, struct_size, std::move(m), reinterpret_cast<void*>(constructor), reinterpret_cast<void*>(destuructor), reinterpret_cast<void*>(copy));
+        SGL::details::register_struct(*static_cast<SGL::state*>(s), name, struct_size, std::move(m), reinterpret_cast<void*>(constructor), reinterpret_cast<void*>(destuructor), reinterpret_cast<void*>(copy));
     }
       
     sgl_parse_result sgl_parse_file(sgl_state s, const char* filename) {
         if(!s || !filename) return nullptr;
         std::ifstream in(filename);
         if(!in.is_open()) return nullptr;
-        return static_cast<sgl_parse_result>(SGL::parse_stream(static_cast<SGL::state*>(s), in));
+        return static_cast<sgl_parse_result>(&SGL::parse_stream(*static_cast<SGL::state*>(s), in));
     }   
     sgl_parse_result sgl_parse_string(sgl_state s, const char* string) {
         if(!s || !string) return nullptr;
         std::istringstream in(string);
-        return static_cast<sgl_parse_result>(SGL::parse_stream(static_cast<SGL::state*>(s), in));
+        return static_cast<sgl_parse_result>(&SGL::parse_stream(*static_cast<SGL::state*>(s), in));
     }
 
     void sgl_get_local_value(sgl_parse_result p, const char* var_name, void* dest) {
         if(!p || !dest || !var_name) return;
-        auto r = SGL::details::get_local_value(static_cast<SGL::parse_result*>(p), var_name);
+        auto r = SGL::details::get_local_value(*static_cast<SGL::parse_result*>(p), var_name);
         if(r->m_type->base_type == t_string) {//in C API variable with string type cast to cstring type: 
             auto& cstr = *static_cast<sgl_cstring*>(dest);
             auto& str = *static_cast<std::string*>(r->data);

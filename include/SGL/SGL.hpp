@@ -31,24 +31,11 @@ namespace SGL {
 
         t_custom
     };
-    static_assert(sizeof(float) == 4 && sizeof(double) == 8, "required float size 32 bit & 64 bit for double");
-    constexpr uint8_t type_size[] {
-        0,//void
-        1, 2, 4, 8, 1, 2, 4, 8,//int types
-        4, 8,//float
-        1, (uint8_t)sizeof(std::string), 1//bool, string, char
-    };
-
     struct cstring {
         char* data = nullptr;
         size_t size = 0;
     };
-
     struct type {
-        type(privitive_type t = t_void) : base_type(t), size(type_size[t]) {}
-        type(privitive_type t, void* v1, void* v2, void* v3) : base_type(t), size(type_size[t]), m_construct(v1), m_destruct(v2), m_copy(v3) {}
-        ~type() = default;
-
         struct member {
             member() : type(t_void), name(), offset(0), m_type(nullptr) {}
             member(const std::string& name, privitive_type type, size_t offset, size_t array_size = 0) : type(type), name(name), offset(offset),
@@ -65,7 +52,6 @@ namespace SGL {
         //for custom:
         std::vector<member> members;
         size_t size;
-
         //function pointers
         void* m_construct;
         void* m_destruct;
@@ -82,34 +68,29 @@ namespace SGL {
     struct state;
     
     namespace details {
-        template<typename T> using t_construct_noptr = void(T*);//this
-        template<typename T> using t_construct = t_construct_noptr<T>*;
-
-        template<typename T> using t_destruct_noptr = void(T*);//this
-        template<typename T> using t_destruct = t_destruct_noptr<T>*;
-
-        template<typename T> using t_copy_noptr = void(T*, T*);//this, other
-        template<typename T> using t_copy = t_copy_noptr<T>*;
+        template<typename T> using t_construct = void(*)(T*);//this
+        template<typename T> using t_destruct = void(*)(T*);//this
+        template<typename T> using t_copy = void(*)(T*, T*);//this, other
 
         void construct_val(const type* t, size_t arr_size, void* v);
         void destruct_val(const type* t, size_t arr_size, void* v);
         void copy_val(const type* t, size_t arr_size, void* v, void* from);
 
-        value* get_local_value(parse_result* p, const std::string& name);
-        void register_struct(state* s, const std::string& name, size_t size, std::vector<type::member>&& members, void*, void*, void*);
+        value* get_local_value(parse_result& p, const std::string& name);
+        type& register_struct(state& s, const std::string& name, size_t size, std::vector<type::member>&& members, void*, void*, void*);
     };
 
     template<typename T>
-    void register_struct(state* s, const std::string& name, std::vector<type::member>&& members,
+    type& register_struct(state& s, const std::string& name, std::vector<type::member>&& members,
         details::t_construct<T> v1 = nullptr, details::t_destruct<T> v2 = nullptr, details::t_copy<T> v3 = nullptr
     ) {
-        details::register_struct(s, name, sizeof(T), std::move(members), (void*)v1, (void*)v2, (void*)v3);
+        return details::register_struct(s, name, sizeof(T), std::move(members), (void*)v1, (void*)v2, (void*)v3);
     }
 
-    parse_result* parse_stream(state* s, std::istream& in);
+    parse_result& parse_stream(state& s, std::istream& in);
 
     template<typename T>
-    inline T get_local_value(parse_result* p, const std::string& name) {
+    inline T get_local_value(parse_result& p, const std::string& name) {
         value* v = details::get_local_value(p, name);
         assert(v && v->data && sizeof(T) == v->m_type->size);
         T val;
@@ -126,14 +107,14 @@ namespace SGL {
         std::set<parse_result*> m_results;
 
         template<typename T>
-        void register_struct(const std::string& name, std::vector<type::member>&& members,
+        type& register_struct(const std::string& name, std::vector<type::member>&& members,
             details::t_construct<T> v1 = nullptr, details::t_destruct<T> v2 = nullptr, details::t_copy<T> v3 = nullptr
         ) {
-            details::register_struct(this, name, sizeof(T), std::move(members), (void*)v1, (void*)v2, (void*)v3);
+            return details::register_struct(*this, name, sizeof(T), std::move(members), (void*)v1, (void*)v2, (void*)v3);
         }
 
-        parse_result* parse_stream(std::istream& in) {
-            return SGL::parse_stream(this, in);
+        parse_result& parse_stream(std::istream& in) {
+            return SGL::parse_stream(*this, in);
         }
     };
 
@@ -146,7 +127,7 @@ namespace SGL {
 
         template<typename T>
         T get_local_value(const std::string& name) {
-            return SGL::get_local_value<T>(this, name);
+            return SGL::get_local_value<T>(*this, name);
         }
     };
 };

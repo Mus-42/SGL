@@ -7,20 +7,37 @@
 #include <cassert>
 #include <map>
 
-#define SGL_ERROR(v) SGL_ERROR_impl__(v)
+#define SGL_ERROR(v) SGL::details::SGL_ERROR_impl__(v)
 
 namespace SGL {
-	inline void SGL_ERROR_impl__(const std::string& what) {
-		throw std::runtime_error(what);
+	namespace details {
+    	static_assert(sizeof(float) == 4 && sizeof(double) == 8, "required float size 32 bit & 64 bit for double");
+    	static constexpr uint8_t type_size[] {
+    	    0,//void
+    	    1, 2, 4, 8, 1, 2, 4, 8,//int types
+    	    4, 8,//float
+    	    1, (uint8_t)sizeof(std::string), 1//bool, string, char
+    	};
+		static inline void SGL_ERROR_impl__(const std::string& what) {
+			throw std::runtime_error(what);
+		}
+		static inline type construct_type(privitive_type t = t_void, void* v1 = nullptr, void* v2 = nullptr, void* v3 = nullptr) {
+			type ret;
+			ret.base_type = t;
+            ret.size = type_size[t];
+			ret.m_construct = v1;
+			ret.m_destruct = v2;
+			ret.m_copy = v3;
+			return ret;
+		}
 	}
 	static const type buildin_types_v[t_custom]{
-		{t_void},
-		{t_int8}, {t_int16},{t_int32}, {t_int64},
-		{t_uint8}, {t_uint16}, {t_uint32}, {t_uint64},
-		{t_float32}, {t_float64},
-
-		{t_bool},
-		{
+		details::construct_type(t_void),
+		details::construct_type(t_int8), 	details::construct_type(t_int16),	details::construct_type(t_int32), 	details::construct_type(t_int64),
+		details::construct_type(t_uint8), 	details::construct_type(t_uint16), 	details::construct_type(t_uint32), 	details::construct_type(t_uint64),
+		details::construct_type(t_float32), details::construct_type(t_float64),
+		details::construct_type(t_bool),
+		details::construct_type(
 			t_string,
 			(void*)(details::t_construct<std::string>)([](std::string* v) {
 				new (v) std::string;
@@ -31,8 +48,8 @@ namespace SGL {
 			(void*)(details::t_copy<std::string>)([](std::string* v, std::string* from) {
 				new (v) std::string(*from);
 			})
-		},
-		{
+		),
+		details::construct_type(
 			t_cstring,
 			(void*)(details::t_construct<SGL::cstring>)([](SGL::cstring* v) {
 				v->data = nullptr;
@@ -46,8 +63,8 @@ namespace SGL {
 				v->size = from->size;
 				memcpy(v->data, from->data, from->size+1);
 			})
-		},
-		{t_char}
+		),
+		details::construct_type(t_char)
 	};
 	static const std::unordered_map<std::string, const type*> buildin_types = {
 		{"void", &buildin_types_v[t_void]},
@@ -101,21 +118,21 @@ namespace SGL {
 		}
 
 
-		void register_struct(state* s, const std::string& name, size_t size, std::vector<type::member>&& members, void* v1, void* v2, void* v3) {
+		type& register_struct(state& s, const std::string& name, size_t size, std::vector<type::member>&& members, void* v1, void* v2, void* v3) {
 			assert(([](const std::string& name)->bool {
 				if (name.empty() || (name.front() != '_' && !std::isalpha(static_cast<unsigned char>(name.front())))) return false;
 				for (auto ch : name) if (ch != '_' && !std::isalnum(static_cast<unsigned char>(ch))) return false;
 				return true;
 					})(name) && "incorrect type name");
-			auto& t = s->global_types[name];
+			auto& t = s.global_types[name];
 			t.base_type = t_custom;
 			t.members = members;
-			std::sort(t.members.begin(), t.members.end(), [](const type::member& a, const type::member& b) {
-				return a.offset < b.offset;
-					  });
+			//std::sort(t.members.begin(), t.members.end(), [](const type::member& a, const type::member& b) {
+			//	return a.offset < b.offset;
+			//});
 			for (auto& m : t.members)
 				if (m.type == t_custom) {
-					m.m_type = &s->global_types[m.custom_type_name];
+					m.m_type = &s.global_types[m.custom_type_name];
 					assert(m.m_type);
 				}
 				else m.m_type = &buildin_types_v[m.type];
@@ -127,10 +144,11 @@ namespace SGL {
 			t.m_construct = v1;
 			t.m_destruct = v2;
 			t.m_copy = v3;
+			return t;
 		}
-		value* get_local_value(parse_result* p, const std::string& name) {
-			auto f = p->local_variables.find(name);
-			if (f == p->local_variables.end()) return nullptr;
+		value* get_local_value(parse_result& p, const std::string& name) {
+			auto f = p.local_variables.find(name);
+			if (f == p.local_variables.end()) return nullptr;
 			return &(f->second);
 		}
 	}
@@ -1147,10 +1165,10 @@ namespace SGL {
 		if(it != tokens.end()) SGL_ERROR("SGL: excepted ';'");
 	}
 
-	parse_result* parse_stream(state* cur_state, std::istream& in) {
+	parse_result& parse_stream(state& cur_state, std::istream& in) {
 		parse_result* res = new parse_result;
-		cur_state->m_results.insert(res);
-		res->m_state = cur_state;
+		cur_state.m_results.insert(res);
+		res->m_state = &cur_state;
 		int ch = in.get();
 		std::string s;
 		while (in.good()) {
@@ -1179,10 +1197,10 @@ namespace SGL {
 			if (ch != '=') SGL_ERROR("SGL: expected '=' caracter");
 			ch = in.get();
 
-			auto tf = cur_state->global_types.find(type_name);
+			auto tf = cur_state.global_types.find(type_name);
 			auto btf = buildin_types.find(type_name);
-			if (tf == cur_state->global_types.end() && btf == buildin_types.end()) SGL_ERROR("SGL: invalid type name");
-			const type* t = (tf != cur_state->global_types.end()) ? &(tf->second) : btf->second;
+			if (tf == cur_state.global_types.end() && btf == buildin_types.end()) SGL_ERROR("SGL: invalid type name");
+			const type* t = (tf != cur_state.global_types.end()) ? &(tf->second) : btf->second;
 
 			auto& cur_val = res->local_variables[name];
 			cur_val.m_type = t;
@@ -1191,9 +1209,9 @@ namespace SGL {
 
 			details::construct_val(t, 0, data);
 
-			parse_expession(cur_state, res, t, 0, data, in);
+			parse_expession(&cur_state, res, t, 0, data, in);
 			ch = in.get();
 		}
-		return res;
+		return *res;
 	}
 }

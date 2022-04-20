@@ -71,11 +71,11 @@ int main() {
             {"custom", "val", offsetof(example_struct, custom)},
         });//*/
         std::ifstream in("test1.sgl");
-        auto res = parse_stream(&s, in);
+        auto res = s.parse_stream(in);
         in.close();
 
         //auto v = get_local_value<all_ints>(res, "i_v");
-        double d = get_local_value<double>(res, "d");
+        double d = res.get_local_value<double>("d");
 /*
         double d = get_local_value<double>(res, "d");
         auto v = get_local_value<val>(res, "v");

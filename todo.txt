@@ -3,6 +3,7 @@ add top-level array & dynamic array support
 add array [] (at) operator
 custom types definition
 ternary operator (a ? b : c)
+basic math functions support
 
 Lib:
 do somesing with C++ exceptions in C API?
@@ -15,6 +16,7 @@ way to add|change global variables
 for C API add file parsing for FILE*
 add redefine check
 add config.hpp?
+add on_error_callback -> replase exceptions with on_error_callback; (different callback types??)
 
 Examples:
 add more SGL (*.sgl files) for examples?
