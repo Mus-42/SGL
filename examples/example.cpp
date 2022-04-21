@@ -69,14 +69,14 @@ int main() {
             {"f", t_float32, offsetof(example_struct, f)},
             {"s", t_string, offsetof(example_struct, s)},
             {"custom", "val", offsetof(example_struct, custom)},
-        });//*/
+        });
         std::ifstream in("test1.sgl");
         auto res = s.parse_stream(in);
         in.close();
-
-        //auto v = get_local_value<all_ints>(res, "i_v");
         double d = res.get_local_value<double>("d");
+
 /*
+        //auto v = get_local_value<all_ints>(res, "i_v");
         double d = get_local_value<double>(res, "d");
         auto v = get_local_value<val>(res, "v");
         auto b = get_local_value<bool>(res, "b");

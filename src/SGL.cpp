@@ -151,6 +151,36 @@ namespace SGL {
 			if (f == p.local_variables.end()) return nullptr;
 			return &(f->second);
 		}
+
+		
+        bool contains(parse_result& p, const std::string& name) {
+			return p.local_variables.find(name) != p.local_variables.end();
+		}
+        bool is_array(parse_result& p, const std::string& name) {
+			auto f = p.local_variables.find(name);
+			if (f == p.local_variables.end()) return false;
+			return f->second.array_size != 0;
+		}
+
+        bool is_primitive_type(parse_result& p, const std::string& name) {
+			auto f = p.local_variables.find(name);
+			if (f == p.local_variables.end()) return false;
+			return f->second.m_type->base_type != t_custom;
+		}
+        bool is_custom_type(parse_result& p, const std::string& name) {
+			return !is_primitive_type(p, name);
+		}
+
+        bool is_same_primitive_type(parse_result& p, const std::string& name, privitive_type t) {
+			auto f = p.local_variables.find(name);
+			if (f == p.local_variables.end()) return false;
+			return f->second.m_type->base_type == t;
+		}
+        bool is_same_custom_type(parse_result& p, const std::string& name, privitive_type t) {
+			auto f = p.local_variables.find(name);
+			if (f == p.local_variables.end()) return false;
+			return f->second.m_type->base_type == t;
+		}
 	}
 
 	static bool skip_comments_and_spaces(std::istream& in) {

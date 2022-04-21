@@ -66,7 +66,7 @@ namespace SGL {
 
     struct parse_result;
     struct state;
-    
+
     namespace details {
         template<typename T> using t_construct = void(*)(T*);//this
         template<typename T> using t_destruct = void(*)(T*);//this
@@ -78,6 +78,18 @@ namespace SGL {
 
         value* get_local_value(parse_result& p, const std::string& name);
         type& register_struct(state& s, const std::string& name, size_t size, std::vector<type::member>&& members, void*, void*, void*);
+
+        bool contains(parse_result& p, const std::string& name);
+        bool is_array(parse_result& p, const std::string& name);
+
+        bool is_primitive_type(parse_result& p, const std::string& name);
+        bool is_custom_type(parse_result& p, const std::string& name);
+        
+        bool is_same_primitive_type(parse_result& p, const std::string& name, privitive_type t);
+        bool is_same_custom_type(parse_result& p, const std::string& name, privitive_type t);
+
+        //TODO type& get_type_ ...
+        //TODO implement this functions in SGL namespace (or move from details to SGL)
     };
 
     template<typename T>
