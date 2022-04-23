@@ -4,6 +4,7 @@
 #define CSGL_INCLUDE_H_ 1
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #ifdef  __cplusplus
 extern "C" {
@@ -67,6 +68,16 @@ sgl_parse_result sgl_parse_string(sgl_state s, const char* string);
 //copy variable to dest
 void sgl_get_local_value(sgl_parse_result p, const char* var_name, void* dest);
 //TODO add get_local_value for array?
+
+
+bool sgl_contains(sgl_parse_result p, const char* name);
+bool sgl_is_array(sgl_parse_result p, const char* name);
+
+bool sgl_is_primitive_type(sgl_parse_result p, const char* name);
+bool sgl_is_custom_type(sgl_parse_result p, const char* name);
+
+bool sgl_is_same_primitive_type(sgl_parse_result p, const char* name, sgl_privitive_type t);
+bool sgl_is_same_custom_type(sgl_parse_result p, const char* name, const char* type_name);
 
 #ifdef  __cplusplus
 }//extern "C"

@@ -83,4 +83,25 @@ extern "C" {
         }
         else SGL::details::copy_val(r->m_type, 0, dest, r->data);
     }
+    
+    bool sgl_contains(sgl_parse_result p, const char* name) {
+        return static_cast<SGL::parse_result*>(p)->contains(name);
+    }
+    bool sgl_is_array(sgl_parse_result p, const char* name) {
+        return static_cast<SGL::parse_result*>(p)->is_array(name);
+    }
+
+    bool sgl_is_primitive_type(sgl_parse_result p, const char* name) {
+        return static_cast<SGL::parse_result*>(p)->is_primitive_type(name);
+    }
+    bool sgl_is_custom_type(sgl_parse_result p, const char* name) {
+        return static_cast<SGL::parse_result*>(p)->is_custom_type(name);
+    }
+
+    bool sgl_is_same_primitive_type(sgl_parse_result p, const char* name, sgl_privitive_type t) {
+        return static_cast<SGL::parse_result*>(p)->is_same_primitive_type(name, static_cast<SGL::privitive_type>(t));
+    }
+    bool sgl_is_same_custom_type(sgl_parse_result p, const char* name, const char* type_name) {
+        return static_cast<SGL::parse_result*>(p)->is_same_custom_type(name, type_name);
+    }
 }
