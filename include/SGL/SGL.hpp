@@ -86,7 +86,7 @@ namespace SGL {
         bool is_custom_type(parse_result& p, const std::string& name);
         
         bool is_same_primitive_type(parse_result& p, const std::string& name, privitive_type t);
-        bool is_same_custom_type(parse_result& p, const std::string& name, privitive_type t);
+        bool is_same_custom_type(parse_result& p, const std::string& name, const std::string& type_name);
 
         //TODO type& get_type_ ...
         //TODO implement this functions in SGL namespace (or move from details to SGL)
@@ -140,6 +140,27 @@ namespace SGL {
         template<typename T>
         T get_local_value(const std::string& name) {
             return SGL::get_local_value<T>(*this, name);
+        }
+
+        
+        bool contains(const std::string& name) {
+            return details::contains(*this, name);
+        }
+        bool is_array(const std::string& name) {
+            return details::is_array(*this, name);
+        }
+
+        bool is_primitive_type(const std::string& name) {
+            return details::is_primitive_type(*this, name);
+        }
+        bool is_custom_type(const std::string& name) {
+            return details::is_custom_type(*this, name);
+        }
+        bool is_same_primitive_type(const std::string& name, privitive_type t) {
+            return details::is_same_primitive_type(*this, name, t);
+        }
+        bool is_same_custom_type(const std::string& name, const std::string& type_name) {
+            return details::is_same_custom_type(*this, name, type_name);
         }
     };
 };

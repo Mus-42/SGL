@@ -176,10 +176,12 @@ namespace SGL {
 			if (f == p.local_variables.end()) return false;
 			return f->second.m_type->base_type == t;
 		}
-        bool is_same_custom_type(parse_result& p, const std::string& name, privitive_type t) {
+        bool is_same_custom_type(parse_result& p, const std::string& name, const std::string& type_name) {
 			auto f = p.local_variables.find(name);
-			if (f == p.local_variables.end()) return false;
-			return f->second.m_type->base_type == t;
+			if (f == p.local_variables.end() || f->second.m_type->base_type != t_custom || !p.m_state) return false;
+			auto f2 = p.m_state->global_types.find(type_name);
+			if (f2 == p.m_state->global_types.end()) return false;
+			return &f2->second == f->second.m_type;
 		}
 	}
 
