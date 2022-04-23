@@ -33,6 +33,8 @@ typedef void(*sgl_value_constructor)(void* value);
 typedef void(*sgl_value_destructor)(void* value);
 typedef void(*sgl_value_copy)(void* dst, void* srs);
 
+typedef void(*sgl_error_callback_t)(const char* descriprion);
+
 typedef struct {//same as C++ SGL::type::member but use const char* instead of std::string
     sgl_privitive_type type;
     size_t offset, array_size;
@@ -69,6 +71,9 @@ sgl_parse_result sgl_parse_string(sgl_state s, const char* string);
 void sgl_get_local_value(sgl_parse_result p, const char* var_name, void* dest);
 //TODO add get_local_value for array?
 
+
+void sgl_set_error_callback(sgl_error_callback_t f);
+void sgl_error(const char* description);
 
 bool sgl_contains(sgl_parse_result p, const char* name);
 bool sgl_is_array(sgl_parse_result p, const char* name);

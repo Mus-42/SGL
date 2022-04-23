@@ -17,7 +17,6 @@ way to add|change global variables
 for C API add file parsing for FILE*
 add redefine check
 add config.hpp?
-add on_error_callback -> replase exceptions with on_error_callback; (different callback types??)
 replase get_local_vaue(res, name, void* data) in c void* get_local_vaue(res, name)?
 add get type from state? custom types definition -> get type from parse_result??
 

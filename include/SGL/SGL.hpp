@@ -13,6 +13,7 @@
 #include <vector>
 #include <iostream>
 #include <type_traits>
+#include <functional>
 
 #include <cstdint>
 #include <cmath>
@@ -67,6 +68,11 @@ namespace SGL {
     struct parse_result;
     struct state;
 
+    //using error_callback_t = void(*)(const std::string&);//string -> error description
+    using error_callback_t = std::function<void(const std::string&)>;//string -> error description
+    void set_error_callback(error_callback_t f);
+    void error(const std::string& description);
+
     namespace details {
         template<typename T> using t_construct = void(*)(T*);//this
         template<typename T> using t_destruct = void(*)(T*);//this
@@ -79,18 +85,17 @@ namespace SGL {
         value* get_local_value(parse_result& p, const std::string& name);
         type& register_struct(state& s, const std::string& name, size_t size, std::vector<type::member>&& members, void*, void*, void*);
 
-        bool contains(parse_result& p, const std::string& name);
-        bool is_array(parse_result& p, const std::string& name);
-
-        bool is_primitive_type(parse_result& p, const std::string& name);
-        bool is_custom_type(parse_result& p, const std::string& name);
-        
-        bool is_same_primitive_type(parse_result& p, const std::string& name, privitive_type t);
-        bool is_same_custom_type(parse_result& p, const std::string& name, const std::string& type_name);
-
         //TODO type& get_type_ ...
-        //TODO implement this functions in SGL namespace (or move from details to SGL)
     };
+
+    bool contains(parse_result& p, const std::string& name);
+    bool is_array(parse_result& p, const std::string& name);
+
+    bool is_primitive_type(parse_result& p, const std::string& name);
+    bool is_custom_type(parse_result& p, const std::string& name);
+    
+    bool is_same_primitive_type(parse_result& p, const std::string& name, privitive_type t);
+    bool is_same_custom_type(parse_result& p, const std::string& name, const std::string& type_name);
 
     template<typename T>
     type& register_struct(state& s, const std::string& name, std::vector<type::member>&& members,
@@ -144,23 +149,23 @@ namespace SGL {
 
         
         bool contains(const std::string& name) {
-            return details::contains(*this, name);
+            return SGL::contains(*this, name);
         }
         bool is_array(const std::string& name) {
-            return details::is_array(*this, name);
+            return SGL::is_array(*this, name);
         }
 
         bool is_primitive_type(const std::string& name) {
-            return details::is_primitive_type(*this, name);
+            return SGL::is_primitive_type(*this, name);
         }
         bool is_custom_type(const std::string& name) {
-            return details::is_custom_type(*this, name);
+            return SGL::is_custom_type(*this, name);
         }
         bool is_same_primitive_type(const std::string& name, privitive_type t) {
-            return details::is_same_primitive_type(*this, name, t);
+            return SGL::is_same_primitive_type(*this, name, t);
         }
         bool is_same_custom_type(const std::string& name, const std::string& type_name) {
-            return details::is_same_custom_type(*this, name, type_name);
+            return SGL::is_same_custom_type(*this, name, type_name);
         }
     };
 };

@@ -7,7 +7,7 @@
 #include <cassert>
 #include <map>
 
-#define SGL_ERROR(v) SGL::details::SGL_ERROR_impl__(v)
+#define SGL_ERROR(v) SGL::error(v)
 
 namespace SGL {
 	namespace details {
@@ -18,9 +18,6 @@ namespace SGL {
     	    4, 8,//float
     	    1, (uint8_t)sizeof(std::string), 1//bool, string, char
     	};
-		static inline void SGL_ERROR_impl__(const std::string& what) {
-			throw std::runtime_error(what);
-		}
 		static inline type construct_type(privitive_type t = t_void, void* v1 = nullptr, void* v2 = nullptr, void* v3 = nullptr) {
 			type ret;
 			ret.base_type = t;
@@ -89,6 +86,15 @@ namespace SGL {
 		for (auto& [name, var] : local_variables) details::destruct_val(var.m_type, 0, var.data);
 	}
 
+	static error_callback_t sgl_error_callback__ = nullptr;
+
+    void set_error_callback(error_callback_t f) {
+		sgl_error_callback__ = f;
+	}
+    void error(const std::string& description) {
+		if(sgl_error_callback__) sgl_error_callback__(description);
+	}
+
 	namespace details {
 		void construct_val(const type* t, size_t arr_size, void* v) {
 			if (t->m_construct) for (size_t i = 0, s = arr_size ? arr_size : 1; i < s; i++)
@@ -151,38 +157,35 @@ namespace SGL {
 			if (f == p.local_variables.end()) return nullptr;
 			return &(f->second);
 		}
-
+	}
 		
-        bool contains(parse_result& p, const std::string& name) {
-			return p.local_variables.find(name) != p.local_variables.end();
-		}
-        bool is_array(parse_result& p, const std::string& name) {
-			auto f = p.local_variables.find(name);
-			if (f == p.local_variables.end()) return false;
-			return f->second.array_size != 0;
-		}
-
-        bool is_primitive_type(parse_result& p, const std::string& name) {
-			auto f = p.local_variables.find(name);
-			if (f == p.local_variables.end()) return false;
-			return f->second.m_type->base_type != t_custom;
-		}
-        bool is_custom_type(parse_result& p, const std::string& name) {
-			return !is_primitive_type(p, name);
-		}
-
-        bool is_same_primitive_type(parse_result& p, const std::string& name, privitive_type t) {
-			auto f = p.local_variables.find(name);
-			if (f == p.local_variables.end()) return false;
-			return f->second.m_type->base_type == t;
-		}
-        bool is_same_custom_type(parse_result& p, const std::string& name, const std::string& type_name) {
-			auto f = p.local_variables.find(name);
-			if (f == p.local_variables.end() || f->second.m_type->base_type != t_custom || !p.m_state) return false;
-			auto f2 = p.m_state->global_types.find(type_name);
-			if (f2 == p.m_state->global_types.end()) return false;
-			return &f2->second == f->second.m_type;
-		}
+    bool contains(parse_result& p, const std::string& name) {
+		return p.local_variables.find(name) != p.local_variables.end();
+	}
+    bool is_array(parse_result& p, const std::string& name) {
+		auto f = p.local_variables.find(name);
+		if (f == p.local_variables.end()) return false;
+		return f->second.array_size != 0;
+	}
+    bool is_primitive_type(parse_result& p, const std::string& name) {
+		auto f = p.local_variables.find(name);
+		if (f == p.local_variables.end()) return false;
+		return f->second.m_type->base_type != t_custom;
+	}
+    bool is_custom_type(parse_result& p, const std::string& name) {
+		return !is_primitive_type(p, name);
+	}
+    bool is_same_primitive_type(parse_result& p, const std::string& name, privitive_type t) {
+		auto f = p.local_variables.find(name);
+		if (f == p.local_variables.end()) return false;
+		return f->second.m_type->base_type == t;
+	}
+    bool is_same_custom_type(parse_result& p, const std::string& name, const std::string& type_name) {
+		auto f = p.local_variables.find(name);
+		if (f == p.local_variables.end() || f->second.m_type->base_type != t_custom || !p.m_state) return false;
+		auto f2 = p.m_state->global_types.find(type_name);
+		if (f2 == p.m_state->global_types.end()) return false;
+		return &f2->second == f->second.m_type;
 	}
 
 	static bool skip_comments_and_spaces(std::istream& in) {

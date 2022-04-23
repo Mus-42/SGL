@@ -83,6 +83,15 @@ extern "C" {
         }
         else SGL::details::copy_val(r->m_type, 0, dest, r->data);
     }
+
+    void sgl_set_error_callback(sgl_error_callback_t f) {
+        SGL::set_error_callback([f](const std::string& description) {
+            f(description.c_str());
+        });
+    }
+    void sgl_error(const char* description) {
+        SGL::error(description);
+    }
     
     bool sgl_contains(sgl_parse_result p, const char* name) {
         return static_cast<SGL::parse_result*>(p)->contains(name);
