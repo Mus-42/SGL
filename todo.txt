@@ -19,6 +19,7 @@ add redefine check
 add config.hpp?
 replase get_local_vaue(res, name, void* data) in c void* get_local_vaue(res, name)?
 add get type from state? custom types definition -> get type from parse_result??
+add error levels? (warning, fatal ... ?)
 
 Examples:
 add more SGL (*.sgl files) for examples?

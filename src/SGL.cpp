@@ -218,7 +218,7 @@ namespace SGL {
 		return true;
 	};
 
-	enum m_tok_t : uint8_t {
+	enum m_tok_t : uint8_t {//TODO replace it with SGL::primitive_type
 		none_v = 0,
 		//numbers
 		int_value_v,
@@ -227,6 +227,8 @@ namespace SGL {
 		string_value_v,
 		char_value_v,
 		bool_value_v,
+
+		object_v,
 
 		punct_v,//{} () [] . ,
 		operator_v,//binary + - * / % ^ | & << >> && || == != > < <= >=, unary + - ! ~
@@ -273,6 +275,7 @@ namespace SGL {
 				std::pair<char, char> op_v;
 				bool is_unary;
 			};
+			value object_v;
 		};
 
 	};
@@ -1044,7 +1047,11 @@ namespace SGL {
 						}
 						//in.unget();
 						if(result_type->base_type == t_custom) {//add custom type
-							//TODO add impl
+							m_token t{ object_v, cur_prior };
+							t.object_v.m_type = result_type;
+							t.object_v.array_size = max_array_size;//TODO max_array_size is correct value?
+							t.object_v.data = data;
+							tokens.push_back(t); 
 						}
 						else {
 							switch (result_type->base_type) {
@@ -1137,13 +1144,23 @@ namespace SGL {
 		//state* cur_state, const type* t, size_t array_size, char* data
 		std::function<iter(iter, const type*, size_t, char*)> get_result;
 		get_result = [&](iter it, const type* t, size_t array_size, char* data) -> iter {	
-			if(array_size) {
-				if(it->type == punct_v && it->punct_v == '{') it++;
-				else SGL_ERROR("SGL: excepted '{'");
-			}
+			if(it->type == object_v) {
+				if(it->object_v.m_type == t) {
+					if(it->object_v.array_size != array_size) {
+						SGL_ERROR("SGL: invalid array size");		
+					}
+					details::copy_val(t, array_size, data, static_cast<char*>(it->object_v.data));
+					it++;
+				} else SGL_ERROR("SGL: invalid object type");
+			} 
+			else {
+				if(array_size) {
+					if(it->type == punct_v && it->punct_v == '{') it++;
+					else SGL_ERROR("SGL: excepted '{'");
+				}
 			for(size_t s = array_size ? array_size : 1, i = s-1, l = 0; i < s; i--, l++) {
 				char* cur_data = data + l * t->size;
-				if(t->base_type == t_custom) {
+				if(t->base_type == t_custom) { 
 					if(it->type == punct_v && it->punct_v == '{') it++;
 					else SGL_ERROR("SGL: excepted '{'");
 					size_t mi = t->members.size();
@@ -1155,44 +1172,46 @@ namespace SGL {
 						}
 					}
 					if(it->type == punct_v && it->punct_v == '}') it++;
-					else SGL_ERROR("SGL: excepted '}'");
-				} else {
-					switch (t->base_type) {
-					case t_int8:  cast_to_type(*it, {int_value_v, t_int8});  *reinterpret_cast<int8_t*>(cur_data)  = it->int_v.i8;  break;
-					case t_int16: cast_to_type(*it, {int_value_v, t_int16}); *reinterpret_cast<int16_t*>(cur_data) = it->int_v.i16; break;
-					case t_int32: cast_to_type(*it, {int_value_v, t_int32}); *reinterpret_cast<int32_t*>(cur_data) = it->int_v.i32; break;
-					case t_int64: cast_to_type(*it, {int_value_v, t_int64}); *reinterpret_cast<int64_t*>(cur_data) = it->int_v.i64; break;
-					case t_uint8:  cast_to_type(*it, {int_value_v, t_uint8});  *reinterpret_cast<uint8_t*>(cur_data)  = it->int_v.ui8;  break;
-					case t_uint16: cast_to_type(*it, {int_value_v, t_uint16}); *reinterpret_cast<uint16_t*>(cur_data) = it->int_v.ui16; break;
-					case t_uint32: cast_to_type(*it, {int_value_v, t_uint32}); *reinterpret_cast<uint32_t*>(cur_data) = it->int_v.ui32; break;
-					case t_uint64: cast_to_type(*it, {int_value_v, t_uint64}); *reinterpret_cast<uint64_t*>(cur_data) = it->int_v.ui64; break;	
+					else SGL_ERROR("SGL: excepted '}'");	
+					} else {
+						switch (t->base_type) {
+						case t_int8:  cast_to_type(*it, {int_value_v, t_int8});  *reinterpret_cast<int8_t*>(cur_data)  = it->int_v.i8;  break;
+						case t_int16: cast_to_type(*it, {int_value_v, t_int16}); *reinterpret_cast<int16_t*>(cur_data) = it->int_v.i16; break;
+						case t_int32: cast_to_type(*it, {int_value_v, t_int32}); *reinterpret_cast<int32_t*>(cur_data) = it->int_v.i32; break;
+						case t_int64: cast_to_type(*it, {int_value_v, t_int64}); *reinterpret_cast<int64_t*>(cur_data) = it->int_v.i64; break;
+						case t_uint8:  cast_to_type(*it, {int_value_v, t_uint8});  *reinterpret_cast<uint8_t*>(cur_data)  = it->int_v.ui8;  break;
+						case t_uint16: cast_to_type(*it, {int_value_v, t_uint16}); *reinterpret_cast<uint16_t*>(cur_data) = it->int_v.ui16; break;
+						case t_uint32: cast_to_type(*it, {int_value_v, t_uint32}); *reinterpret_cast<uint32_t*>(cur_data) = it->int_v.ui32; break;
+						case t_uint64: cast_to_type(*it, {int_value_v, t_uint64}); *reinterpret_cast<uint64_t*>(cur_data) = it->int_v.ui64; break;	
 
-					case t_float32: cast_to_type(*it, {float_value_v, t_void}); *reinterpret_cast<float*>(cur_data) = (float)it->float_v; break;
-					case t_float64: cast_to_type(*it, {float_value_v, t_void}); *reinterpret_cast<double*>(cur_data) = it->float_v; break;
+						case t_float32: cast_to_type(*it, {float_value_v, t_void}); *reinterpret_cast<float*>(cur_data) = (float)it->float_v; break;
+						case t_float64: cast_to_type(*it, {float_value_v, t_void}); *reinterpret_cast<double*>(cur_data) = it->float_v; break;
 
-					case t_string: cast_to_type(*it, {string_value_v, t_void}); *reinterpret_cast<std::string*>(cur_data) = it->str_v; break;	
-					case t_cstring: {
-						cast_to_type(*it, {string_value_v, t_void});
-						auto& str = *reinterpret_cast<SGL::cstring*>(cur_data);
-						str.data = new char[it->str_v.size()+1];
-						str.size = it->str_v.size();
-						memcpy(str.data, it->str_v.data(), str.size+1);
-					} break;		
-					case t_char: cast_to_type(*it, {char_value_v, t_void}); *reinterpret_cast<char*>(cur_data) = it->char_v; break;		
-					case t_bool: cast_to_type(*it, {bool_value_v, t_void}); *reinterpret_cast<bool*>(cur_data) = it->bool_v; break;	
+						case t_string: cast_to_type(*it, {string_value_v, t_void}); *reinterpret_cast<std::string*>(cur_data) = it->str_v; break;	
+						case t_cstring: {
+							cast_to_type(*it, {string_value_v, t_void});
+							auto& str = *reinterpret_cast<SGL::cstring*>(cur_data);
+							str.data = new char[it->str_v.size()+1];
+							str.size = it->str_v.size();
+							memcpy(str.data, it->str_v.data(), str.size+1);
+						} break;		
+						case t_char: cast_to_type(*it, {char_value_v, t_void}); *reinterpret_cast<char*>(cur_data) = it->char_v; break;		
+						case t_bool: cast_to_type(*it, {bool_value_v, t_void}); *reinterpret_cast<bool*>(cur_data) = it->bool_v; break;	
 
-					default: SGL_ERROR("SGL: invalid type"); break;
+						default: SGL_ERROR("SGL: invalid type"); break;
+						}
+						it++;
 					}
-					it++;
+					if(i) {
+						if(it->type == punct_v && it->punct_v == ',') it++;
+						else SGL_ERROR("SGL: excepted ','");
+					}
 				}
-				if(i) {
-					if(it->type == punct_v && it->punct_v == ',') it++;
-					else SGL_ERROR("SGL: excepted ','");
+			
+				if(array_size) {
+					if(it->type == punct_v && it->punct_v == '}') it++;
+					else SGL_ERROR("SGL: excepted '}'");
 				}
-			}
-			if(array_size) {
-				if(it->type == punct_v && it->punct_v == '}') it++;
-				else SGL_ERROR("SGL: excepted '}'");
 			}
 			return it;
 		};
