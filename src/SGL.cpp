@@ -228,10 +228,10 @@ namespace SGL {
 		//TODO add primitive typename for typecasts?
 	};
 	struct m_token {
-		m_token(token_type t, int p) : type(t), prior(p) {
+		m_token(token_type t, int p, privitive_type vt = t_void) : type(t), prior(p), value_type(vt) {
 			if (type == value_v && value_type == t_string) new (&str_v) std::string;
 		}
-		m_token(const m_token& v) : type(v.type), prior(v.prior) {
+		m_token(const m_token& v) : type(v.type), prior(v.prior), value_type(v.value_type) {
 			if (type == value_v && value_type == t_string) new (&str_v) std::string(v.str_v);
 			else memcpy(this, &v, sizeof(m_token));
 		}
@@ -239,13 +239,16 @@ namespace SGL {
 			if (type == value_v && value_type == t_string) str_v.~basic_string();
 			type = v.type;
 			prior = v.prior;
+			value_type = v.value_type;
 			if (type == value_v && value_type == t_string) new (&str_v) std::string(v.str_v);
 			else memcpy(this, &v, sizeof(m_token));
 			return *this;
 		}
-		~m_token() { if (type == value_v && value_type == t_string) str_v.~basic_string(); }
+		~m_token() { 
+			if (type == value_v && value_type == t_string) str_v.~basic_string(); 
+		}
 		token_type type = none_v;
-		privitive_type value_type;
+		privitive_type value_type = t_void;
 		int prior = -1;
 		union {
 			//values
@@ -347,22 +350,19 @@ namespace SGL {
 		case t_##int_t: {\
 			if(val.value_type == t_float64) {\
 				int_t##_t i = (int_t##_t)val.float_v;\
-				val = m_token(value_v, val.prior);\
-				val.value_type = t_##int_t;\
+				val = m_token(value_v, val.prior, t_##int_t);\
 				val.int_v.intv = i;\
 				return;\
 			}\
 			else if(val.value_type == t_char) {\
 				int_t##_t i = (int_t##_t)val.char_v;\
-				val = m_token(value_v, val.prior);\
-				val.value_type = t_##int_t;\
+				val = m_token(value_v, val.prior, t_##int_t);\
 				val.int_v.intv = i;\
 				return;\
 			}\
 			else if(val.value_type == t_bool) {\
 				int_t##_t i = (int_t##_t)val.bool_v;\
-				val = m_token(value_v, val.prior);\
-				val.value_type = t_##int_t;\
+				val = m_token(value_v, val.prior, t_##int_t);\
 				val.int_v.intv = i;\
 				return;\
 			}\
@@ -379,8 +379,7 @@ namespace SGL {
 				case t_uint64: i = (int_t##_t)val.int_v.ui64; break;\
 				default: break;\
 				}\
-				val = m_token(value_v, val.prior);\
-				val.value_type = t_##int_t;\
+				val = m_token(value_v, val.prior, t_##int_t);\
 				val.int_v.intv = i;\
 				return;\
 			}\
@@ -409,22 +408,19 @@ namespace SGL {
 				case t_uint64: f = (double)val.int_v.ui64; break;
 				default: break;
 				}
-				val = m_token(value_v, val.prior);
-				val.value_type = t_float64;
+				val = m_token(value_v, val.prior, t_float64);
 				val.float_v = f;
 				return;			
 			}
 			else if(val.type == t_char) {
 				double i = (double)val.char_v;
-				val = m_token(value_v, val.prior);
-				val.value_type = t_float64;
+				val = m_token(value_v, val.prior, t_float64);
 				val.float_v = i;
 				return;	
 			}
 			else if(val.type == t_bool) {
 				double i = (double)val.bool_v;
-				val = m_token(value_v, val.prior);
-				val.value_type = t_float64;
+				val = m_token(value_v, val.prior, t_float64);
 				val.float_v = i;
 				return;	
 			}
@@ -432,8 +428,7 @@ namespace SGL {
 		case t_string: {
 			if(val.type == t_char) {
 				char ch = val.char_v;
-				val = m_token(value_v, val.prior);
-				val.value_type = t_string;
+				val = m_token(value_v, val.prior, t_string);
 				val.str_v += ch;
 				return;
 			}
@@ -452,20 +447,17 @@ namespace SGL {
 				case t_uint64: ch = (char)val.int_v.ui64; break;
 				default: break;
 				}
-				val = m_token(value_v, val.prior);
-				val.value_type = t_char;
+				val = m_token(value_v, val.prior, t_char);
 				val.char_v = ch;
 				return;
 			} if(val.value_type == t_float64) {
 				char ch = (char)val.float_v;
-				val = m_token(value_v, val.prior);
-				val.value_type = t_char;
+				val = m_token(value_v, val.prior, t_char);
 				val.char_v = ch;
 				return;	
 			} if(val.value_type == t_float64) {
 				char ch = (char)val.bool_v;
-				val = m_token(value_v, val.prior);
-				val.value_type = t_char;
+				val = m_token(value_v, val.prior, t_char);
 				val.char_v = ch;
 				return;	
 			}
@@ -492,7 +484,7 @@ namespace SGL {
 		case t_uint8:  a.int_v.ui8  func b.int_v.ui8;  return;\
 		case t_uint16: a.int_v.ui16 func b.int_v.ui16; return;\
 		case t_uint32: a.int_v.ui32 func b.int_v.ui32; return;\
-		case t_uint64: a.int_v.ui64 func b.int_v.ui64; return;\
+		case t_uint64: a.int_v.ui64 func b.int_v.ui64; return;
 			
 	#define binary_operator_def_f0(func)
 	#define binary_operator_def_f1(func)\
@@ -874,19 +866,15 @@ namespace SGL {
 					if (!correct_exp) SGL_ERROR("SGL: invalid exponent");
 				}
 				if (is_float) {
-					m_token t{ value_v, cur_prior };
-					t.value_type = t_float64;
+					m_token t{ value_v, cur_prior, t_float64 };
 					double n = double(int_part) + double(fract_part) / double(fract_part_div);
 					n *= pow(10., (exp_positive ? 1. : -1) * exp_part);
 					t.float_v = n;
 					tokens.push_back(t);
 				}
 				else {
-					m_token t{ value_v, cur_prior };
-					if (int_part <= (uint64_t)std::numeric_limits<int64_t>::max())
-						t.int_v.i64 = int_part, t.value_type = t_int64;
-					else t.int_v.ui64 = int_part, t.value_type = t_uint64;
-					t.value_type = t_uint64;
+					m_token t{ value_v, cur_prior, t_uint64 };
+					t.int_v.ui64 = int_part;
 					tokens.push_back(t);
 				}
 				in.unget();
@@ -918,13 +906,11 @@ namespace SGL {
 				}
 				if(!in.good()) SGL_ERROR("SGL: unexpected eof");
 				if(del == '"') {//string
-					m_token t{ value_v, cur_prior };
-					t.value_type = t_string;
+					m_token t{ value_v, cur_prior, t_string };
 					t.str_v = std::move(s);
 					tokens.push_back(t);
 				} else {//char
-					m_token t{ value_v, cur_prior };
-					t.value_type = t_char;
+					m_token t{ value_v, cur_prior, t_char };
 					if(s.size() != 1) SGL_ERROR("SGL: invalid character literal");
 					t.char_v = s[0];
 					tokens.push_back(t);
@@ -939,20 +925,18 @@ namespace SGL {
 				};
 				scan_string();
 				if(s == "true") {
-					m_token t{ value_v, cur_prior };
-					t.value_type = t_bool;
+					m_token t{ value_v, cur_prior, t_bool };
 					t.bool_v = true;
 					tokens.push_back(t);
 				} else if(s == "false") {
 					m_token t{ value_v, cur_prior };
 					t.bool_v = false;
 					tokens.push_back(t);
-				} else if(auto f = buildin_types.find(s); f != buildin_types.end()) {
+				} else if(auto f = buildin_types.find(s); f != buildin_types.end()) {//typecast
 					skip_comments_and_spaces(in);
 					if(in.peek() != '(') SGL_ERROR("SGL: missing open '(' in type cast");
-					m_token t{ operator_v, cur_prior };
+					m_token t{ operator_v, cur_prior, f->second->base_type };
 					t.op_v = { 't', '\0' };
-					t.value_type = f->second->base_type;
 					tokens.push_back(t);
 					ops_count++;
 				}
@@ -998,8 +982,7 @@ namespace SGL {
 						}
 						//in.unget();
 						if(result_type->base_type == t_custom) {//add custom type
-							m_token t{ value_v, cur_prior };
-							t.value_type = t_custom;
+							m_token t{ value_v, cur_prior, t_custom };
 							t.object_v.m_type = result_type;
 							t.object_v.array_size = max_array_size;//TODO max_array_size is correct value?
 							t.object_v.data = data;
@@ -1008,80 +991,67 @@ namespace SGL {
 						else {//TODO array support
 							switch (result_type->base_type) {
 							case t_int8:  	{
-								m_token t{ value_v, cur_prior };
-								t.value_type = result_type->base_type;
+								m_token t{ value_v, cur_prior, result_type->base_type };
 								t.int_v.i8 = *reinterpret_cast<int8_t*>(data);
 								tokens.push_back(t); 
 							} break;
 							case t_int16: 	{
-								m_token t{ value_v, cur_prior };
-								t.value_type = result_type->base_type;
+								m_token t{ value_v, cur_prior, result_type->base_type };
 								t.int_v.i32 = *reinterpret_cast<int16_t*>(data);
 								tokens.push_back(t);
 							} break;
 							case t_int32: 	{
-								m_token t{ value_v, cur_prior };
-								t.value_type = result_type->base_type;
+								m_token t{ value_v, cur_prior, result_type->base_type };
 								t.int_v.i32 = *reinterpret_cast<int32_t*>(data);
 								tokens.push_back(t);
 							} break;
 							case t_int64: 	{
-								m_token t{ value_v, cur_prior };
-								t.value_type = result_type->base_type;
+								m_token t{ value_v, cur_prior, result_type->base_type };
 								t.int_v.i64 = *reinterpret_cast<int64_t*>(data);
 								tokens.push_back(t);
 							} break;
 							case t_uint8:  	{
-								m_token t{ value_v, cur_prior };
-								t.value_type = result_type->base_type;
+								m_token t{ value_v, cur_prior, result_type->base_type };
 								t.int_v.ui8 = *reinterpret_cast<uint8_t*>(data);
 								tokens.push_back(t);
 							} break;
 							case t_uint16: 	{
-								m_token t{ value_v, cur_prior };
-								t.value_type = result_type->base_type;
+								m_token t{ value_v, cur_prior, result_type->base_type };
 								t.int_v.ui16 = *reinterpret_cast<uint16_t*>(data);
 								tokens.push_back(t);
 							} break;
 							case t_uint32: 	{
-								m_token t{ value_v, cur_prior };
-								t.value_type = result_type->base_type;
+								m_token t{ value_v, cur_prior, result_type->base_type };
 								t.int_v.ui32 = *reinterpret_cast<uint32_t*>(data);
 								tokens.push_back(t);
 							} break;
 							case t_uint64: 	{
-								m_token t{ value_v, cur_prior };
-								t.value_type = result_type->base_type;
+								m_token t{ value_v, cur_prior, result_type->base_type };
 								t.int_v.ui64 = *reinterpret_cast<uint64_t*>(data);
 								tokens.push_back(t);
 							} break;	
 							case t_float32: { 
-								m_token t{ value_v, cur_prior };
-								t.value_type = t_float64;
+								m_token t{ value_v, cur_prior, t_float64 };
 								t.float_v = (double)*reinterpret_cast<float*>(data);
 								tokens.push_back(t);
 							} break;
 							case t_float64: {
-								m_token t{ value_v, cur_prior };
-								t.value_type = t_float64;
+								m_token t{ value_v, cur_prior, t_float64 };
 								t.float_v = *reinterpret_cast<double*>(data);
 								tokens.push_back(t);
 							} break;
 							case t_string: 	{ 
-								m_token t{ value_v, cur_prior };
-								t.value_type = t_string;
+								m_token t{ value_v, cur_prior, result_type->base_type };
 								t.str_v = *reinterpret_cast<std::string*>(data);
 								tokens.push_back(t);
 							} break;		
 							case t_char: 	{ 
-								m_token t{ value_v, cur_prior };
-								t.value_type = t_char;
+								m_token t{ value_v, cur_prior, result_type->base_type };
 								t.char_v = *reinterpret_cast<char*>(data);
 								tokens.push_back(t);
 							} break;		
 							case t_bool: 	{ 
-								m_token t{ value_v, cur_prior };
-								t.value_type = t_bool;
+								m_token t{ value_v, cur_prior, result_type->base_type };
 								t.bool_v = *reinterpret_cast<bool*>(data);
 								tokens.push_back(t);
 							} break;	
