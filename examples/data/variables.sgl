@@ -4,5 +4,5 @@ val c =  {
     float64(a)//explicit typecast int32 a to float64
 };
 
-//val b = c;//now not implemented. TODO implement
+val b = c;
 int d = c.g;//implicit typecast float64 c.g to int32

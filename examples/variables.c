@@ -23,10 +23,13 @@ int main() {
 
     sgl_parse_result p = sgl_parse_file(s, "data/variables.sgl");
     
-    val c = {0};
-    sgl_get_local_value(p, "c", &c);
-    printf("val c = {{%i, %i, %i, %i, %i}, %lf};\n", c.arr[0], c.arr[1], c.arr[2], c.arr[3], c.arr[4], c.g); 
+    val b = {0};
+    sgl_get_local_value(p, "b", &b);
+    printf("val b = {{%i, %i, %i, %i, %i}, %lf};\n", b.arr[0], b.arr[1], b.arr[2], b.arr[3], b.arr[4], b.g); 
 
+    int d = 0;
+    sgl_get_local_value(p, "d", &d);
+    printf("int d = %i;\n", d);
     //TODO add array example
 
     sgl_delete_state(s);

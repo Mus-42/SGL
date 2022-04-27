@@ -21,7 +21,8 @@ replase get_local_vaue(res, name, void* data) in c void* get_local_vaue(res, nam
 add get type from state? custom types definition -> get type from parse_result??
 add error levels? (warning, fatal ... ?)
 add tests
-FIX STRINGS IN SGL.CPP
+set minimum type size = 1 byte (for allocations)
+add default error function (print errors in std::cerr?)
 
 Examples:
 add more SGL (*.sgl files) for examples?

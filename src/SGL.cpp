@@ -218,14 +218,13 @@ namespace SGL {
 		return true;
 	};
 
-	enum token_type : uint8_t {//TODO replace it with SGL::primitive_type
+	enum token_type : uint8_t {
 		none_v = 0,
 
 		value_v,//int, float, ... 
 
 		punct_v,//{} () [] . ,
 		operator_v,//binary + - * / % ^ | & << >> && || == != > < <= >=, unary + - ! ~
-		//TODO add primitive typename for typecasts?
 	};
 	struct m_token {
 		m_token(token_type t, int p, privitive_type vt = t_void) : type(t), prior(p), value_type(vt) {
@@ -248,7 +247,7 @@ namespace SGL {
 			if (type == value_v && value_type == t_string) str_v.~basic_string(); 
 		}
 		token_type type = none_v;
-		privitive_type value_type = t_void;
+		privitive_type value_type = t_void;//value type or cast_to type
 		int prior = -1;
 		union {
 			//values
@@ -345,8 +344,35 @@ namespace SGL {
 	static void cast_to_type(m_token& val, privitive_type t) {
 		if(val.type != value_v) SGL_ERROR("SGL: invalid type cast");
 		if(val.value_type == t) return;
+		if(val.value_type == t_custom) {
+			if(val.object_v.array_size != 0) SGL_ERROR("SGL: cannot cast array to scalar value");
+			switch (val.object_v.m_type->base_type) {
+			#define SGL_CAST_TO_T(name, value, var)\
+			case name: {\
+				m_token t{value_v, val.prior, name};\
+				t.##var = *static_cast<value*>(val.object_v.data);\
+				val = t;\
+			} break;
+			SGL_CAST_TO_T(t_int8,  int8_t,  int_v.i8)
+			SGL_CAST_TO_T(t_int16, int16_t, int_v.i16)
+			SGL_CAST_TO_T(t_int32, int32_t, int_v.i32)
+			SGL_CAST_TO_T(t_int64, int64_t, int_v.i64)
+			SGL_CAST_TO_T(t_uint8,  uint8_t,  int_v.ui8)
+			SGL_CAST_TO_T(t_uint16, uint16_t, int_v.ui16)
+			SGL_CAST_TO_T(t_uint32, uint32_t, int_v.ui32)
+			SGL_CAST_TO_T(t_uint64, uint64_t, int_v.ui64)
+			SGL_CAST_TO_T(t_float32, float, float_v)
+			SGL_CAST_TO_T(t_float64, double, float_v)
+			SGL_CAST_TO_T(t_bool, bool, bool_v)
+			SGL_CAST_TO_T(t_char, char, char_v)
+			SGL_CAST_TO_T(t_string, std::string, str_v)
+			#undef SGL_CAST_TO_T
+			default: SGL_ERROR("SGL: invalid type cast"); break;
+			}
+			if(val.value_type == t) return;
+		}
 		switch (t) {	
-		#define CAST_TO_INT_T(int_t, intv)\
+		#define SGL_CAST_TO_INT_T(int_t, intv)\
 		case t_##int_t: {\
 			if(val.value_type == t_float64) {\
 				int_t##_t i = (int_t##_t)val.float_v;\
@@ -383,16 +409,16 @@ namespace SGL {
 				val.int_v.intv = i;\
 				return;\
 			}\
-		}
-		CAST_TO_INT_T(int8,  i8);
-		CAST_TO_INT_T(int16, i16);
-		CAST_TO_INT_T(int32, i32);
-		CAST_TO_INT_T(int64, i64);
-		CAST_TO_INT_T(uint8,  ui8);
-		CAST_TO_INT_T(uint16, ui16);
-		CAST_TO_INT_T(uint32, ui32);
-		CAST_TO_INT_T(uint64, ui64);
-		#undef CAST_TO_INT_T
+		} break;
+		SGL_CAST_TO_INT_T(int8,  i8);
+		SGL_CAST_TO_INT_T(int16, i16);
+		SGL_CAST_TO_INT_T(int32, i32);
+		SGL_CAST_TO_INT_T(int64, i64);
+		SGL_CAST_TO_INT_T(uint8,  ui8);
+		SGL_CAST_TO_INT_T(uint16, ui16);
+		SGL_CAST_TO_INT_T(uint32, ui32);
+		SGL_CAST_TO_INT_T(uint64, ui64);
+		#undef SGL_CAST_TO_INT_T
 		
 		case t_float64: {
 			if(t_int8 <= val.value_type && val.value_type <= t_uint64) {
@@ -470,7 +496,9 @@ namespace SGL {
 	using binary_operator_template_func_t = void(*)(m_token& a, m_token& b, privitive_type t);
 	template<binary_operator_template_func_t func> 
 	static void binary_operator_template(m_token& a, m_token& b) {
-		auto result_type = result_of_value(a.value_type, b.value_type);
+		privitive_type at = a.value_type == t_custom ? a.object_v.m_type->base_type : a.value_type;
+		privitive_type bt = b.value_type == t_custom ? b.object_v.m_type->base_type : b.value_type;
+		auto result_type = result_of_value(at, bt);
 		cast_to_type(a, result_type);
 		cast_to_type(b, result_type);
 		func(a, b, result_type);
@@ -517,7 +545,7 @@ namespace SGL {
 	}
 	//arithmetic + - * / % 
 	binary_operator_def(sum, +=, 1, 1, 1, 0, 0);
-	binary_operator_def(sub, +=, 1, 1, 0, 0, 0);
+	binary_operator_def(sub, -=, 1, 1, 0, 0, 0);
 	binary_operator_def(mul, *=, 1, 1, 0, 0, 0);
 	binary_operator_def(div, /=, 1, 1, 0, 0, 0);
 	binary_operator_def(mod, %=, 1, 0, 0, 0, 0);
@@ -829,8 +857,9 @@ namespace SGL {
 			case ')': { cur_prior--; if(cur_prior < 0) SGL_ERROR("SGL: invalid brackets sequence"); } break;
 			case '}': case ',': { if (cur_prior != 0) SGL_ERROR("SGL: invalid brackets sequence"); eval_expr(); }
 			case '{': { m_token t{ punct_v, cur_prior }; t.punct_v = ch; tokens.push_back(t); } break;
-			case '.':
-			if (!std::isdigit(in.peek())) { m_token t{ punct_v, cur_prior };t.punct_v = ch;tokens.push_back(t);break; }
+			case '.': {
+				if (!std::isdigit(in.peek())) { m_token t{ punct_v, cur_prior };t.punct_v = ch;tokens.push_back(t);break; }
+			}
 			case '0': case '1': case '2': case '3': case '4':
 			case '5': case '6': case '7': case '8': case '9': {
 				bool is_float = ch == '.';
@@ -919,11 +948,7 @@ namespace SGL {
 
 			default: {
 				std::string s;
-				auto scan_string = [&](){
-					s.clear();
-					while(in.good() && std::isalnum(ch)) s += ch, ch = in.get();
-				};
-				scan_string();
+				while(in.good() && std::isalnum(ch)) s += ch, ch = in.get();
 				if(s == "true") {
 					m_token t{ value_v, cur_prior, t_bool };
 					t.bool_v = true;
@@ -934,132 +959,41 @@ namespace SGL {
 					tokens.push_back(t);
 				} else if(auto f = buildin_types.find(s); f != buildin_types.end()) {//typecast
 					skip_comments_and_spaces(in);
-					if(in.peek() != '(') SGL_ERROR("SGL: missing open '(' in type cast");
+					if(in.get() != '(') SGL_ERROR("SGL: missing open '(' in type cast");
 					m_token t{ operator_v, cur_prior, f->second->base_type };
 					t.op_v = { 't', '\0' };
 					tokens.push_back(t);
 					ops_count++;
 				}
 				else {//constant or error
-					const type* result_type = nullptr;
-					void* data = nullptr;
-					size_t max_array_size = 0;
-					auto scan_v = [&](){};
-					if(auto f1 = res->local_variables.find(s); f1 != res->local_variables.end()) {//local var
-						data = f1->second.data;
-						result_type = f1->second.m_type;
-						max_array_size = f1->second.array_size;
-					} 
-					else if(auto f2 = cur_state->global_constants.find(s); f2 != cur_state->global_constants.end()) {
-						data = f2->second.data;
-						result_type = f2->second.m_type;
-						max_array_size = f2->second.array_size;
-					} 
-					else SGL_ERROR("SGL: undeclared identifier");
-					if(result_type) {
-						skip_comments_and_spaces(in);
-						while(in.peek() == '.' || in.peek() == '[') {
-							if(in.peek() == '.') {//begin member
-								ch = in.get();//get '.'
-								ch = in.get();//get next
-								skip_comments_and_spaces(in);
-								ch = in.get();
-								if(result_type->base_type != t_custom) SGL_ERROR("SGL: can't acces to member in primitive type");
-								scan_string();
-								auto it = result_type->members.begin();
-								for(; it != result_type->members.end(); it++) {
-									if(it->name == s) break;
-								} 
-								if(it == result_type->members.end()) SGL_ERROR("SGL: can't acces to member in primitive type");
-								data = static_cast<char*>(data) + it->offset;
-								result_type = it->m_type;
-								max_array_size = it->array_size;
-							} else if(in.peek() == '[') {
-								ch = in.get();//get '['
-								//TODO add array
-							}
-							skip_comments_and_spaces(in);
+					if(!tokens.empty() && tokens.back().type == punct_v && tokens.back().punct_v == '.') {//object member
+						if(tokens.size() < 2) SGL_ERROR("SGL: invalid '.' operator");
+						tokens.pop_back();
+						if(tokens.back().type != value_v || tokens.back().value_type != t_custom) SGL_ERROR("SGL: invalid '.' operator");
+						auto& v = tokens.back().object_v;
+						auto it = v.m_type->members.begin();
+						for(; it != tokens.back().object_v.m_type->members.end(); it++) {
+							if(it->name == s) break;
 						}
-						//in.unget();
-						if(result_type->base_type == t_custom) {//add custom type
-							m_token t{ value_v, cur_prior, t_custom };
-							t.object_v.m_type = result_type;
-							t.object_v.array_size = max_array_size;//TODO max_array_size is correct value?
-							t.object_v.data = data;
-							tokens.push_back(t); 
-						}
-						else {//TODO array support
-							switch (result_type->base_type) {
-							case t_int8:  	{
-								m_token t{ value_v, cur_prior, result_type->base_type };
-								t.int_v.i8 = *reinterpret_cast<int8_t*>(data);
-								tokens.push_back(t); 
-							} break;
-							case t_int16: 	{
-								m_token t{ value_v, cur_prior, result_type->base_type };
-								t.int_v.i32 = *reinterpret_cast<int16_t*>(data);
-								tokens.push_back(t);
-							} break;
-							case t_int32: 	{
-								m_token t{ value_v, cur_prior, result_type->base_type };
-								t.int_v.i32 = *reinterpret_cast<int32_t*>(data);
-								tokens.push_back(t);
-							} break;
-							case t_int64: 	{
-								m_token t{ value_v, cur_prior, result_type->base_type };
-								t.int_v.i64 = *reinterpret_cast<int64_t*>(data);
-								tokens.push_back(t);
-							} break;
-							case t_uint8:  	{
-								m_token t{ value_v, cur_prior, result_type->base_type };
-								t.int_v.ui8 = *reinterpret_cast<uint8_t*>(data);
-								tokens.push_back(t);
-							} break;
-							case t_uint16: 	{
-								m_token t{ value_v, cur_prior, result_type->base_type };
-								t.int_v.ui16 = *reinterpret_cast<uint16_t*>(data);
-								tokens.push_back(t);
-							} break;
-							case t_uint32: 	{
-								m_token t{ value_v, cur_prior, result_type->base_type };
-								t.int_v.ui32 = *reinterpret_cast<uint32_t*>(data);
-								tokens.push_back(t);
-							} break;
-							case t_uint64: 	{
-								m_token t{ value_v, cur_prior, result_type->base_type };
-								t.int_v.ui64 = *reinterpret_cast<uint64_t*>(data);
-								tokens.push_back(t);
-							} break;	
-							case t_float32: { 
-								m_token t{ value_v, cur_prior, t_float64 };
-								t.float_v = (double)*reinterpret_cast<float*>(data);
-								tokens.push_back(t);
-							} break;
-							case t_float64: {
-								m_token t{ value_v, cur_prior, t_float64 };
-								t.float_v = *reinterpret_cast<double*>(data);
-								tokens.push_back(t);
-							} break;
-							case t_string: 	{ 
-								m_token t{ value_v, cur_prior, result_type->base_type };
-								t.str_v = *reinterpret_cast<std::string*>(data);
-								tokens.push_back(t);
-							} break;		
-							case t_char: 	{ 
-								m_token t{ value_v, cur_prior, result_type->base_type };
-								t.char_v = *reinterpret_cast<char*>(data);
-								tokens.push_back(t);
-							} break;		
-							case t_bool: 	{ 
-								m_token t{ value_v, cur_prior, result_type->base_type };
-								t.bool_v = *reinterpret_cast<bool*>(data);
-								tokens.push_back(t);
-							} break;	
-							default: SGL_ERROR("SGL: invalid type"); break;
-							}
-						}
+						if(it == v.m_type->members.end()) SGL_ERROR("SGL: invalid type member");
+						v.data = static_cast<char*>(v.data) + it->offset;
+						v.m_type = it->m_type;
+						v.array_size = it->array_size;
+					}
+					else {
+						if(auto f1 = res->local_variables.find(s); f1 != res->local_variables.end()) {//local var
+							m_token t { value_v, cur_prior, t_custom };
+							t.object_v = f1->second;
+							tokens.push_back(t);
+						} 
+						else if(auto f2 = cur_state->global_constants.find(s); f2 != cur_state->global_constants.end()) {
+							m_token t { value_v, cur_prior, t_custom };
+							t.object_v = f2->second;
+							tokens.push_back(t);
+						} else SGL_ERROR("SGL: invalid value");
 					}
 				}
+				in.unget();
 			} break;		
 			}
 
@@ -1071,7 +1005,7 @@ namespace SGL {
 		//state* cur_state, const type* t, size_t array_size, char* data
 		std::function<iter(iter, const type*, size_t, char*)> get_result;
 		get_result = [&](iter it, const type* t, size_t array_size, char* data) -> iter {	
-			if(it->type == value_v && it->value_type == t_custom) {
+			if(it->type == value_v && it->value_type == t_custom && t->base_type == t_custom) {
 				if(it->object_v.m_type == t) {
 					if(it->object_v.array_size != array_size) {
 						SGL_ERROR("SGL: invalid array size");		
@@ -1100,7 +1034,7 @@ namespace SGL {
 					}
 					if(it->type == punct_v && it->punct_v == '}') it++;
 					else SGL_ERROR("SGL: excepted '}'");	
-					} else {
+				} else {
 						switch (t->base_type) {
 						case t_int8:  cast_to_type(*it,	 t_int8);  *reinterpret_cast<int8_t*>(cur_data)  = it->int_v.i8;  break;
 						case t_int16: cast_to_type(*it,	 t_int16); *reinterpret_cast<int16_t*>(cur_data) = it->int_v.i16; break;
