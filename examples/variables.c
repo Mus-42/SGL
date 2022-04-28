@@ -30,7 +30,10 @@ int main() {
     int d = 0;
     sgl_get_local_value(p, "d", &d);
     printf("int d = %i;\n", d);
-    //TODO add array example
+
+    int e = 0;
+    sgl_get_local_value(p, "e", &e);
+    printf("int e = %i;\n", e);
 
     sgl_delete_state(s);
     return 0;

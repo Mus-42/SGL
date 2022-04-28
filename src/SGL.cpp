@@ -7,6 +7,7 @@
 #include <cassert>
 #include <map>
 
+#define SGL_ASSERT(v) if(!(v)) { SGL::error("assertion failed in " + __LINE__); }
 #define SGL_ERROR(v) SGL::error(v)
 
 namespace SGL {
@@ -26,6 +27,9 @@ namespace SGL {
 			ret.m_destruct = v2;
 			ret.m_copy = v3;
 			return ret;
+		}
+		static void defualt_sgl_error_function(const std::string& description) {
+			std::cerr << description << std::endl;
 		}
 	}
 	static const type buildin_types_v[t_custom]{
@@ -86,7 +90,7 @@ namespace SGL {
 		for (auto& [name, var] : local_variables) details::destruct_val(var.m_type, 0, var.data);
 	}
 
-	static error_callback_t sgl_error_callback__ = nullptr;
+	static error_callback_t sgl_error_callback__ = details::defualt_sgl_error_function;
 
     void set_error_callback(error_callback_t f) {
 		sgl_error_callback__ = f;
@@ -125,7 +129,7 @@ namespace SGL {
 
 
 		type& register_struct(state& s, const std::string& name, size_t size, std::vector<type::member>&& members, void* v1, void* v2, void* v3) {
-			assert(([](const std::string& name)->bool {
+			SGL_ASSERT(([](const std::string& name)->bool {
 				if (name.empty() || (name.front() != '_' && !std::isalpha(static_cast<unsigned char>(name.front())))) return false;
 				for (auto ch : name) if (ch != '_' && !std::isalnum(static_cast<unsigned char>(ch))) return false;
 				return true;
@@ -139,12 +143,13 @@ namespace SGL {
 			for (auto& m : t.members)
 				if (m.type == t_custom) {
 					m.m_type = &s.global_types[m.custom_type_name];
-					assert(m.m_type);
+					SGL_ASSERT(m.m_type);
 				}
 				else m.m_type = &buildin_types_v[m.type];
 			auto& b = t.members.back();
 			size_t sz = b.offset + (b.array_size ? b.array_size : 1) * (b.type == t_custom ? b.m_type->size : type_size[b.type]);
-			assert(size && sz <= size);
+			SGL_ASSERT(size && sz <= size);
+
 			t.size = size;
 
 			t.m_construct = v1;
@@ -717,20 +722,18 @@ namespace SGL {
 		iter last_op = tokens.begin();
 		iter eval_beg = tokens.begin();
 
-		auto eval_expr = [&](){		
-			if (!ops_count) return; 
+		auto eval_expr = [&](size_t with_priority = 0){		
 			if(eval_beg == tokens.end()) 
 				eval_beg = tokens.begin();
 			auto it = eval_beg, prev_it = it, next_it = it;
 			next_it++;
 			using ops_val_t = std::pair<m_token*, std::pair<int, iter>>;
-			std::vector<ops_val_t> operators(ops_count, { nullptr, {0, it} });
-			ops_count = 0;
-			for (size_t i = 0; i < tokens.size() && it != tokens.end(); i++, prev_it = it, it = next_it, (next_it != tokens.end()) ? next_it++ : next_it) {
+			std::vector<ops_val_t> operators;
+			for (size_t i = it == tokens.begin() ? 0 : 1; i < tokens.size() && it != tokens.end(); i++, prev_it = it, it = next_it, (next_it != tokens.end()) ? next_it++ : next_it) {
 				auto& tok = *it;
 				const auto& prev = (it != prev_it) ? *prev_it : m_token(none_v, -1);
 				const auto& next = (next_it != tokens.end()) ? *next_it : m_token(none_v, -1);
-				if (tok.type != operator_v) continue;
+				if (tok.type != operator_v || tok.prior < with_priority) continue;
 				tok.is_unary = false;
 				if (tok.op_v.second == '\0' && ((i == 0 || prev.type == operator_v || prev.type == punct_v) && (tok.op_v.first == '+' || tok.op_v.first == '-') ||
 					tok.op_v.first == '!' || tok.op_v.first == '~' || tok.op_v.first == 't')) {	
@@ -740,8 +743,10 @@ namespace SGL {
 				if (i + 1 == tokens.size() || (next.type == punct_v && (
 					next.punct_v == '}' || next.punct_v == ','
 					))) SGL_ERROR("SGL: less than 2 args given to binary operator");
-				operators[ops_count++] = { &tok, {(int)i, it} };
+				operators.push_back({ &tok, {(int)i, it} });
 			}
+
+			if(operators.empty()) return;
 
 			std::sort(operators.begin(), operators.end(), [](const ops_val_t& a, const ops_val_t& b) {
 				if (a.first->prior != b.first->prior) return a.first->prior > b.first->prior;//brackets level
@@ -812,8 +817,7 @@ namespace SGL {
 				}
 			}
 			ops_count = 0;
-			eval_beg = tokens.end();
-			eval_beg--;
+			if(with_priority == 0) eval_beg = tokens.end(), eval_beg--;
 		};
 
 		while (in.good() && ch != ';') {
@@ -855,6 +859,27 @@ namespace SGL {
 			} break;
 			case '(': { cur_prior++; } break;
 			case ')': { cur_prior--; if(cur_prior < 0) SGL_ERROR("SGL: invalid brackets sequence"); } break;
+			case '[': { 
+				cur_prior+=2;
+				m_token t{ punct_v, cur_prior };
+				t.punct_v = ch;
+				tokens.push_back(t);
+			} break;
+			case ']': { 
+				cur_prior-=2;
+				eval_expr(cur_prior+1);
+				if(tokens.size() < 3) SGL_ERROR("SGL: invalid array element access");
+				cast_to_type(tokens.back(), t_uint64);
+				uint64_t index = tokens.back().int_v.ui64;
+				tokens.pop_back();
+				if(tokens.back().type != punct_v || tokens.back().punct_v != '[') SGL_ERROR("SGL: invalid array element access");
+				tokens.pop_back();
+				if(tokens.back().type != value_v || tokens.back().value_type != t_custom) SGL_ERROR("SGL: invalid array element access");
+				auto& v = tokens.back().object_v; 
+				if(v.array_size <= index) SGL_ERROR("SGL: invalid array element index");
+				v.array_size = 0;
+				v.data = static_cast<char*>(v.data) + (v.m_type->size * index);
+			} break;
 			case '}': case ',': { if (cur_prior != 0) SGL_ERROR("SGL: invalid brackets sequence"); eval_expr(); }
 			case '{': { m_token t{ punct_v, cur_prior }; t.punct_v = ch; tokens.push_back(t); } break;
 			case '.': {

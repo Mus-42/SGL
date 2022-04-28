@@ -1,8 +1,9 @@
 int a = 100;
 val c =  {
-    {25, 5, a, -20, 10},
+    {25, 5, a+5, -20, 10},
     float64(a)//explicit typecast int32 a to float64
 };
 
 val b = c;
 int d = c.g;//implicit typecast float64 c.g to int32
+int e = c.arr[4/2-1]+4;
