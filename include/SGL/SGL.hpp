@@ -73,6 +73,27 @@ namespace SGL {
     void set_error_callback(error_callback_t f);
     void error(const std::string& description);
 
+    struct function {
+        struct function_overload {
+            void* ptr;
+            primitive_type ret_type;
+            std::vector<primitive_type> args_types;
+            //only for primitive types args & ret value
+            function_overload(void* f_ptr, primitive_type ret_type, std::vector<primitive_type>&& args_types) : ptr(f_ptr), ret_type(ret_type), args_types(std::move(args_types)) {
+                if(args_types.size() > 3) SGL::error("SGL: SGL functions cant take more than 3 args");//replase with SGL_ASSERT?
+            }
+        };
+        function() = default;
+        function(function&&) = default;
+        function(const function&) = default;
+        function& operator=(function&&) = default;
+        function& operator=(const function&) = default;
+        function(std::vector<function_overload>&& overloads) : m_overloads(std::move(overloads)) {
+            if(m_overloads.empty()) SGL::error("SGL: no function overloads given");
+        }
+        std::vector<function_overload> m_overloads;//TODO sort it or store overloads by args count??
+    };
+
     namespace details {
         template<typename T> using t_construct = void(*)(T*);//this
         template<typename T> using t_destruct = void(*)(T*);//this
@@ -126,6 +147,7 @@ namespace SGL {
 
         std::unordered_map<std::string, value> global_constants;
         std::unordered_map<std::string, type> global_types;
+        std::unordered_map<std::string, function> global_functions;
         std::set<parse_result*> m_results;
 
         template<typename T>
@@ -144,6 +166,10 @@ namespace SGL {
         }
         void set_global_variable(const std::string& variable_name, const std::string& type_name, void* data, size_t array_size = 0) {
             details::set_global_variable(*this, variable_name, type_name, data, array_size);
+        }
+
+        void add_function(const std::string& name, function f) {
+            global_functions[name] = f;
         }
     };
 
@@ -179,21 +205,6 @@ namespace SGL {
         bool is_same_custom_type(const std::string& name, const std::string& type_name) {
             return SGL::is_same_custom_type(*this, name, type_name);
         }
-    };
-    struct function {
-        struct function_overload {
-            void* ptr;
-            primitive_type ret_type;
-            std::vector<primitive_type> args_types;
-            //only for primitive types args & ret value
-            function_overload(void* f_ptr, primitive_type ret_type, std::vector<primitive_type>&& args_types) : ptr(f_ptr), ret_type(ret_type), args_types(std::move(args_types)) {
-                if(args_types.size() > 3) SGL::error("SGL: SGL functions cant take more than 3 args");//replase with SGL_ASSERT?
-            }
-        };
-        function(std::vector<function_overload>&& overloads) : m_overloads(std::move(overloads)) {
-            if(m_overloads.empty()) SGL::error("SGL: no function overloads given");
-        }
-        std::vector<function_overload> m_overloads;//TODO sort it or store overloads by args count??
     };
 };
 

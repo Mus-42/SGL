@@ -67,6 +67,17 @@ namespace SGL {
 		static float 	m_max(float    a, float    b) { return a < b ? a : b; }
 		static double 	m_max(double   a, double   b) { return a < b ? a : b; }
 
+		static int8_t  	m_clamp(int8_t   v, int8_t   v_min, int8_t   v_max) { return v < v_min ? v_min : v > v_max ? v_max : v; }
+		static int16_t 	m_clamp(int16_t  v, int16_t  v_min, int16_t  v_max) { return v < v_min ? v_min : v > v_max ? v_max : v; }
+		static int32_t 	m_clamp(int32_t  v, int32_t  v_min, int32_t  v_max) { return v < v_min ? v_min : v > v_max ? v_max : v; }
+		static int64_t 	m_clamp(int64_t  v, int64_t  v_min, int64_t  v_max) { return v < v_min ? v_min : v > v_max ? v_max : v; }
+		static uint8_t  m_clamp(uint8_t  v, uint8_t  v_min, uint8_t  v_max) { return v < v_min ? v_min : v > v_max ? v_max : v; }
+		static uint16_t m_clamp(uint16_t v, uint16_t v_min, uint16_t v_max) { return v < v_min ? v_min : v > v_max ? v_max : v; }
+		static uint32_t m_clamp(uint32_t v, uint32_t v_min, uint32_t v_max) { return v < v_min ? v_min : v > v_max ? v_max : v; }
+		static uint64_t m_clamp(uint64_t v, uint64_t v_min, uint64_t v_max) { return v < v_min ? v_min : v > v_max ? v_max : v; }
+		static float 	m_clamp(float    v, float    v_min, float    v_max) { return v < v_min ? v_min : v > v_max ? v_max : v; }
+		static double 	m_clamp(double   v, double   v_min, double   v_max) { return v < v_min ? v_min : v > v_max ? v_max : v; }
+
 		//TODO add clamp function
 	}
 	static const type buildin_types_v[t_custom]{
@@ -136,11 +147,11 @@ namespace SGL {
 		}}},
 
 		{"max", {{
-			{(void*)(int8_t (*)(int8_t,  int8_t ))(details::m_max), t_int8 , {t_int8 , t_int8 }},
-			{(void*)(int16_t(*)(int16_t, int16_t))(details::m_max), t_int16, {t_int16, t_int16}},
-			{(void*)(int32_t(*)(int32_t, int32_t))(details::m_max), t_int32, {t_int32, t_int32}},
-			{(void*)(int64_t(*)(int64_t, int64_t))(details::m_max), t_int64, {t_int64, t_int64}},
-			{(void*)(uint8_t (*)(uint8_t ,  uint8_t ))(details::m_max), t_uint8 , {t_uint8 , t_uint8 }},
+			{(void*)(int8_t (*)(int8_t,    int8_t  ))(details::m_max), t_int8 , {t_int8 , t_int8 }},
+			{(void*)(int16_t(*)(int16_t,   int16_t ))(details::m_max), t_int16, {t_int16, t_int16}},
+			{(void*)(int32_t(*)(int32_t,   int32_t ))(details::m_max), t_int32, {t_int32, t_int32}},
+			{(void*)(int64_t(*)(int64_t,   int64_t ))(details::m_max), t_int64, {t_int64, t_int64}},
+			{(void*)(uint8_t (*)(uint8_t , uint8_t ))(details::m_max), t_uint8 , {t_uint8 , t_uint8 }},
 			{(void*)(uint16_t(*)(uint16_t, uint16_t))(details::m_max), t_uint16, {t_uint16, t_uint16}},
 			{(void*)(uint32_t(*)(uint32_t, uint32_t))(details::m_max), t_uint32, {t_uint32, t_uint32}},
 			{(void*)(uint64_t(*)(uint64_t, uint64_t))(details::m_max), t_uint64, {t_uint64, t_uint64}},
@@ -149,16 +160,29 @@ namespace SGL {
 		}}},
 		
 		{"min",{{
-			{(void*)(int8_t (*)(int8_t,  int8_t ))(details::m_min), t_int8 , {t_int8 , t_int8 }},
-			{(void*)(int16_t(*)(int16_t, int16_t))(details::m_min), t_int16, {t_int16, t_int16}},
-			{(void*)(int32_t(*)(int32_t, int32_t))(details::m_min), t_int32, {t_int32, t_int32}},
-			{(void*)(int64_t(*)(int64_t, int64_t))(details::m_min), t_int64, {t_int64, t_int64}},
+			{(void*)(int8_t (*)(int8_t,    int8_t  ))(details::m_min), t_int8 , {t_int8 , t_int8 }},
+			{(void*)(int16_t(*)(int16_t,   int16_t ))(details::m_min), t_int16, {t_int16, t_int16}},
+			{(void*)(int32_t(*)(int32_t,   int32_t ))(details::m_min), t_int32, {t_int32, t_int32}},
+			{(void*)(int64_t(*)(int64_t,   int64_t ))(details::m_min), t_int64, {t_int64, t_int64}},
 			{(void*)(uint8_t (*)(uint8_t,  uint8_t ))(details::m_min), t_uint8 , {t_uint8 , t_uint8 }},
 			{(void*)(uint16_t(*)(uint16_t, uint16_t))(details::m_min), t_uint16, {t_uint16, t_uint16}},
 			{(void*)(uint32_t(*)(uint32_t, uint32_t))(details::m_min), t_uint32, {t_uint32, t_uint32}},
 			{(void*)(uint64_t(*)(uint64_t, uint64_t))(details::m_min), t_uint64, {t_uint64, t_uint64}},
 			{(void*)(float(*)(float, float))(details::m_min), t_float32, {t_float32, t_float32}},
 			{(void*)(double(*)(double, double))(details::m_min), t_float64, {t_float64, t_float64}}
+		}}},
+
+		{"clamp",{{
+			{(void*)(int8_t  (*)(int8_t,   int8_t,   int8_t  ))(details::m_clamp), t_int8 , {t_int8 , t_int8 , t_int8 }},
+			{(void*)(int16_t (*)(int16_t,  int16_t,  int16_t ))(details::m_clamp), t_int16, {t_int16, t_int16, t_int16}},
+			{(void*)(int32_t (*)(int32_t,  int32_t,  int32_t ))(details::m_clamp), t_int32, {t_int32, t_int32, t_int32}},
+			{(void*)(int64_t (*)(int64_t,  int64_t,  int64_t ))(details::m_clamp), t_int64, {t_int64, t_int64, t_int64}},
+			{(void*)(uint8_t (*)(uint8_t,  uint8_t,  uint8_t ))(details::m_clamp), t_uint8 , {t_uint8 , t_uint8 , t_uint8 }},
+			{(void*)(uint16_t(*)(uint16_t, uint16_t, uint16_t))(details::m_clamp), t_uint16, {t_uint16, t_uint16, t_uint16}},
+			{(void*)(uint32_t(*)(uint32_t, uint32_t, uint32_t))(details::m_clamp), t_uint32, {t_uint32, t_uint32, t_uint32}},
+			{(void*)(uint64_t(*)(uint64_t, uint64_t, uint64_t))(details::m_clamp), t_uint64, {t_uint64, t_uint64, t_uint64}},
+			{(void*)(float(*)(float, float, float))(details::m_clamp), t_float32, {t_float32, t_float32, t_float32}},
+			{(void*)(double(*)(double, double, double))(details::m_clamp), t_float64, {t_float64, t_float64, t_float64}}
 		}}},
 		
 		{"nan", {{
@@ -1341,6 +1365,13 @@ namespace SGL {
 					tokens.push_back(t);
 					ops_count++;
 				} else if(auto f = buildin_functions.find(s); f != buildin_functions.end()) {//buildin function
+					skip_comments_and_spaces(in);
+					if(in.get() != '(') SGL_ERROR("SGL: missing open '(' in type cast");
+					m_token t{ function_v, cur_prior };
+					t.function_v = &f->second;	
+					tokens.push_back(t);
+					ops_count++;
+				} else if(auto f = cur_state->global_functions.find(s); f != cur_state->global_functions.end()) {//custom function
 					skip_comments_and_spaces(in);
 					if(in.get() != '(') SGL_ERROR("SGL: missing open '(' in type cast");
 					m_token t{ function_v, cur_prior };

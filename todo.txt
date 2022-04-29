@@ -5,7 +5,7 @@ ternary operator (a ? b : c)
 enumerations
 
 Lib:
-add custom functions pass from C++
+add custom functions pass in C API
 fix error processing
 do somesing with C++ exceptions in C API?
 add parse_... functions for string, ...? (in C++)
@@ -13,7 +13,7 @@ add CMake Install for library?
 for C API add file parsing for FILE*
 add redefine check
 add config.hpp?
-replase get_local_vaue(res, name, void* data) in c void* get_local_vaue(res, name)?
+replase get_local_value(res, name, void* data) in c void* get_local_value(res, name)?
 add get type from state? custom types definition -> get type from parse_result??
 add error levels? (warning, fatal ... ?)
 add tests
@@ -23,3 +23,4 @@ add init function for library??
 
 Examples:
 add more SGL (*.sgl files) for examples?
+function
