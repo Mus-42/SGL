@@ -20,7 +20,7 @@
 #include <cassert>
 
 namespace SGL {
-    enum privitive_type : uint8_t {
+    enum primitive_type : uint8_t {
         t_void = 0,
         t_int8, t_int16, t_int32, t_int64,
         t_uint8, t_uint16, t_uint32, t_uint64,
@@ -39,17 +39,17 @@ namespace SGL {
     struct type {
         struct member {
             member() : type(t_void), name(), offset(0), m_type(nullptr) {}
-            member(const std::string& name, privitive_type type, size_t offset, size_t array_size = 0) : type(type), name(name), offset(offset),
+            member(const std::string& name, primitive_type type, size_t offset, size_t array_size = 0) : type(type), name(name), offset(offset),
                 m_type(nullptr), array_size(array_size) {}
             member(const std::string& name, const std::string& custom_type_name, size_t offset, size_t array_size = 0) : type(t_custom), name(name),
                 custom_type_name(custom_type_name), offset(offset), m_type(nullptr), array_size(array_size) {}
 
-            privitive_type type;
+            primitive_type type;
             size_t offset, array_size;
             const SGL::type* m_type;
             std::string name, custom_type_name;
         };
-        privitive_type base_type;//t_custom for custom
+        primitive_type base_type;//t_custom for custom
         //for custom:
         std::vector<member> members;
         size_t size;
@@ -85,7 +85,7 @@ namespace SGL {
         value* get_local_value(parse_result& p, const std::string& name);
         type& register_struct(state& s, const std::string& name, size_t size, std::vector<type::member>&& members, void*, void*, void*);
 
-        void set_global_variable(state& s, const std::string& variable_name, privitive_type t, void* data, size_t array_size);
+        void set_global_variable(state& s, const std::string& variable_name, primitive_type t, void* data, size_t array_size);
         void set_global_variable(state& s, const std::string& variable_name, const std::string& type_name, void* data, size_t array_size);
         //TODO type& get_type_ ...
     };
@@ -96,7 +96,7 @@ namespace SGL {
     bool is_primitive_type(parse_result& p, const std::string& name);
     bool is_custom_type(parse_result& p, const std::string& name);
     
-    bool is_same_primitive_type(parse_result& p, const std::string& name, privitive_type t);
+    bool is_same_primitive_type(parse_result& p, const std::string& name, primitive_type t);
     bool is_same_custom_type(parse_result& p, const std::string& name, const std::string& type_name);
 
     template<typename T>
@@ -136,7 +136,7 @@ namespace SGL {
             return SGL::parse_stream(*this, in);
         }
 
-        void set_global_variable(const std::string& variable_name, privitive_type t, void* data, size_t array_size = 0) {
+        void set_global_variable(const std::string& variable_name, primitive_type t, void* data, size_t array_size = 0) {
             details::set_global_variable(*this, variable_name, t, data, array_size);
         }
         void set_global_variable(const std::string& variable_name, const std::string& type_name, void* data, size_t array_size = 0) {
@@ -170,12 +170,25 @@ namespace SGL {
         bool is_custom_type(const std::string& name) {
             return SGL::is_custom_type(*this, name);
         }
-        bool is_same_primitive_type(const std::string& name, privitive_type t) {
+        bool is_same_primitive_type(const std::string& name, primitive_type t) {
             return SGL::is_same_primitive_type(*this, name, t);
         }
         bool is_same_custom_type(const std::string& name, const std::string& type_name) {
             return SGL::is_same_custom_type(*this, name, type_name);
         }
+    };
+    struct function {
+        struct function_overload {
+            void* ptr;
+            primitive_type ret_type;
+            std::vector<primitive_type> args_types;
+            //only for primitive types args & ret value
+            function_overload(void* f_ptr, primitive_type ret_type, std::vector<primitive_type>&& args_types) : ptr(f_ptr), ret_type(ret_type), args_types(std::move(args_types)) {}
+        };
+        function(std::vector<function_overload>&& overloads) : m_overloads(std::move(overloads)) {
+            
+        }
+        std::vector<function_overload> m_overloads;//TODO sort it or store overloads by args count??
     };
 };
 

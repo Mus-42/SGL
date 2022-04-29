@@ -5,6 +5,7 @@
 #include <functional>
 #include <list>
 #include <cassert>
+#include <numeric>
 #include <map>
 
 #define SGL_ASSERT(v) if(!(v)) { SGL::error("assertion failed in " + __LINE__); }
@@ -19,7 +20,7 @@ namespace SGL {
     	    4, 8,//float
     	    1, (uint8_t)sizeof(std::string), 1//bool, string, char
     	};
-		static inline type construct_type(privitive_type t = t_void, void* v1 = nullptr, void* v2 = nullptr, void* v3 = nullptr) {
+		static inline type construct_type(primitive_type t = t_void, void* v1 = nullptr, void* v2 = nullptr, void* v3 = nullptr) {
 			type ret;
 			ret.base_type = t;
             ret.size = type_size[t];
@@ -31,6 +32,30 @@ namespace SGL {
 		static void defualt_sgl_error_function(const std::string& description) {
 			std::cerr << description << std::endl;
 		}
+
+		static int8_t  	m_min(int8_t   a, int8_t   b) { return a < b ? a : b; }
+		static int16_t 	m_min(int16_t  a, int16_t  b) { return a < b ? a : b; }
+		static int32_t 	m_min(int32_t  a, int32_t  b) { return a < b ? a : b; }
+		static int64_t 	m_min(int64_t  a, int64_t  b) { return a < b ? a : b; }
+		static uint8_t  m_min(uint8_t  a, uint8_t  b) { return a < b ? a : b; }
+		static uint16_t m_min(uint16_t a, uint16_t b) { return a < b ? a : b; }
+		static uint32_t m_min(uint32_t a, uint32_t b) { return a < b ? a : b; }
+		static uint64_t m_min(uint64_t a, uint64_t b) { return a < b ? a : b; }
+		static float 	m_min(float    a, float    b) { return a < b ? a : b; }
+		static double 	m_min(double   a, double   b) { return a < b ? a : b; }
+
+		static int8_t  	m_max(int8_t   a, int8_t   b) { return a < b ? a : b; }
+		static int16_t 	m_max(int16_t  a, int16_t  b) { return a < b ? a : b; }
+		static int32_t 	m_max(int32_t  a, int32_t  b) { return a < b ? a : b; }
+		static int64_t 	m_max(int64_t  a, int64_t  b) { return a < b ? a : b; }
+		static uint8_t  m_max(uint8_t  a, uint8_t  b) { return a < b ? a : b; }
+		static uint16_t m_max(uint16_t a, uint16_t b) { return a < b ? a : b; }
+		static uint32_t m_max(uint32_t a, uint32_t b) { return a < b ? a : b; }
+		static uint64_t m_max(uint64_t a, uint64_t b) { return a < b ? a : b; }
+		static float 	m_max(float    a, float    b) { return a < b ? a : b; }
+		static double 	m_max(double   a, double   b) { return a < b ? a : b; }
+
+		//TODO add clamp function
 	}
 	static const type buildin_types_v[t_custom]{
 		details::construct_type(t_void),
@@ -79,6 +104,162 @@ namespace SGL {
 
 		{"int", &buildin_types_v[t_int32]}, {"uint", &buildin_types_v[t_uint32]},
 		{"float", &buildin_types_v[t_float32]}, {"double", &buildin_types_v[t_float64]},
+	};
+	static const std::unordered_map<std::string, const function> buildin_functions = {
+		{"abs", {{
+			{(int32_t(*)(int32_t))(std::abs), t_int32, {t_int32}},
+			{(int64_t(*)(int64_t))(std::abs), t_int64, {t_int64}},
+			{(float(*)(float))(std::abs), t_float32, {t_float32}},
+			{(double(*)(double))(std::abs), t_float64, {t_float64}}
+		}}},
+ 
+		{"fmod", {{
+			{(float(*)(float, float))(std::fmod), t_float32, {t_float32, t_float32}},
+			{(double(*)(double, double))(std::fmod), t_float64, {t_float64, t_float64}}
+		}}},
+
+		{"remainder", {{
+			{(float(*)(float, float))(std::remainder), t_float32, {t_float32, t_float32}},
+			{(double(*)(double, double))(std::remainder), t_float64, {t_float64, t_float64}}
+		}}},
+
+		{"max",{{
+			{(int8_t (*)(int8_t,  int8_t ))(details::m_max), t_int8 , {t_int8 , t_int8 }},
+			{(int16_t(*)(int16_t, int16_t))(details::m_max), t_int16, {t_int16, t_int16}},
+			{(int32_t(*)(int32_t, int32_t))(details::m_max), t_int32, {t_int32, t_int32}},
+			{(int64_t(*)(int64_t, int64_t))(details::m_max), t_int64, {t_int64, t_int64}},
+			{(uint8_t (*)(uint8_t ,  uint8_t ))(details::m_max), t_uint8 , {t_uint8 , t_uint8 }},
+			{(uint16_t(*)(uint16_t, uint16_t))(details::m_max), t_uint16, {t_uint16, t_uint16}},
+			{(uint32_t(*)(uint32_t, uint32_t))(details::m_max), t_uint32, {t_uint32, t_uint32}},
+			{(uint64_t(*)(uint64_t, uint64_t))(details::m_max), t_uint64, {t_uint64, t_uint64}},
+			{(float(*)(float, float))(details::m_max), t_float32, {t_float32, t_float32}},
+			{(double(*)(double, double))(details::m_max), t_float64, {t_float64, t_float64}}
+		}}},
+		
+		{"min",{{
+			{(int8_t (*)(int8_t,  int8_t ))(details::m_min), t_int8 , {t_int8 , t_int8 }},
+			{(int16_t(*)(int16_t, int16_t))(details::m_min), t_int16, {t_int16, t_int16}},
+			{(int32_t(*)(int32_t, int32_t))(details::m_min), t_int32, {t_int32, t_int32}},
+			{(int64_t(*)(int64_t, int64_t))(details::m_min), t_int64, {t_int64, t_int64}},
+
+			{(uint8_t (*)(uint8_t,  uint8_t ))(details::m_min), t_uint8 , {t_uint8 , t_uint8 }},
+			{(uint16_t(*)(uint16_t, uint16_t))(details::m_min), t_uint16, {t_uint16, t_uint16}},
+			{(uint32_t(*)(uint32_t, uint32_t))(details::m_min), t_uint32, {t_uint32, t_uint32}},
+			{(uint64_t(*)(uint64_t, uint64_t))(details::m_min), t_uint64, {t_uint64, t_uint64}},
+
+			{(float(*)(float, float))(details::m_min), t_float32, {t_float32, t_float32}},
+			{(double(*)(double, double))(details::m_min), t_float64, {t_float64, t_float64}}
+		}}},
+		
+		{"nan", {{
+			{(double(*)())(std::nan), t_float64, {}}
+		}}},
+		{"nanf", {{
+			{(float(*)())(std::nan), t_float32, {}},
+		}}},
+
+		#define SGL_DECLARE_FLOAT_FUNC_1(name)\
+		{#name, {{\
+			{(float(*)(float))(std::name), t_float32, {t_float32}},\
+			{(double(*)(double))(std::name), t_float64, {t_float64}}\
+		}}},
+
+		SGL_DECLARE_FLOAT_FUNC_1(exp)
+		SGL_DECLARE_FLOAT_FUNC_1(exp2)
+
+		SGL_DECLARE_FLOAT_FUNC_1(log)
+		SGL_DECLARE_FLOAT_FUNC_1(log2)
+		SGL_DECLARE_FLOAT_FUNC_1(log10)
+	
+		{"pow", {{
+			{(float(*)(float, float))(std::pow), t_float32, {t_float32, t_float32}},
+			{(double(*)(double, double))(std::pow), t_float64, {t_float64, t_float64}}
+		}}},
+		SGL_DECLARE_FLOAT_FUNC_1(sqrt)
+		SGL_DECLARE_FLOAT_FUNC_1(cbrt)
+
+		{"hypot", {{
+			{(float(*)(float, float))(std::hypot), t_float32, {t_float32, t_float32}},
+			{(double(*)(double, double))(std::hypot), t_float64, {t_float64, t_float64}},
+			{(float(*)(float, float, float))(std::hypot), t_float32, {t_float32, t_float32, t_float32}},
+			{(double(*)(double, double, double))(std::hypot), t_float64, {t_float64, t_float64, t_float64}}
+		}}},
+
+
+		SGL_DECLARE_FLOAT_FUNC_1(sin)
+		SGL_DECLARE_FLOAT_FUNC_1(cos)
+		SGL_DECLARE_FLOAT_FUNC_1(tan)
+		SGL_DECLARE_FLOAT_FUNC_1(asin)
+		SGL_DECLARE_FLOAT_FUNC_1(acos)
+		SGL_DECLARE_FLOAT_FUNC_1(atan)
+
+		{"atan2", {{
+			{(float(*)(float, float))(std::atan2), t_float32, {t_float32, t_float32}},
+			{(double(*)(double, double))(std::atan2), t_float64, {t_float64, t_float64}}
+		}}},
+		
+		SGL_DECLARE_FLOAT_FUNC_1(sinh)
+		SGL_DECLARE_FLOAT_FUNC_1(cosh)
+		SGL_DECLARE_FLOAT_FUNC_1(tanh)
+		SGL_DECLARE_FLOAT_FUNC_1(asinh)
+		SGL_DECLARE_FLOAT_FUNC_1(acosh)
+		SGL_DECLARE_FLOAT_FUNC_1(acosh)
+		SGL_DECLARE_FLOAT_FUNC_1(atanh)
+
+		SGL_DECLARE_FLOAT_FUNC_1(tgamma)
+		SGL_DECLARE_FLOAT_FUNC_1(lgamma)
+
+		SGL_DECLARE_FLOAT_FUNC_1(ceil)
+		SGL_DECLARE_FLOAT_FUNC_1(floor)
+		SGL_DECLARE_FLOAT_FUNC_1(round)
+		SGL_DECLARE_FLOAT_FUNC_1(nearbyint)
+		SGL_DECLARE_FLOAT_FUNC_1(rint)
+
+		{"copysign", {{
+			{(float(*)(float, float))(std::copysign), t_float32, {t_float32, t_float32}},
+			{(double(*)(double, double))(std::copysign), t_float64, {t_float64, t_float64}}
+		}}},
+
+		
+		{"isfinite", {{
+			{(bool(*)(float))(std::isfinite), t_bool, {t_float32}},
+			{(bool(*)(double))(std::isfinite), t_bool, {t_float64}}
+		}}},
+		{"isinf", {{
+			{(bool(*)(float))(std::isinf), t_bool, {t_float32}},
+			{(bool(*)(double))(std::isinf), t_bool, {t_float64}}
+		}}},
+		{"isnan", {{
+			{(bool(*)(float))(std::isnan), t_bool, {t_float32}},
+			{(bool(*)(double))(std::isnan), t_bool, {t_float64}}
+		}}},
+		{"isnormal", {{
+			{(bool(*)(float))(std::isnormal), t_bool, {t_float32}},
+			{(bool(*)(double))(std::isnormal), t_bool, {t_float64}}
+		}}},
+
+		{"gcd", {{
+			{(int8_t (*)(int8_t,  int8_t ))(std::gcd<int8_t , int8_t >), t_int8 , {t_int8 , t_int8 }},
+			{(int16_t(*)(int16_t, int16_t))(std::gcd<int16_t, int16_t>), t_int16, {t_int16, t_int16}},
+			{(int32_t(*)(int32_t, int32_t))(std::gcd<int32_t, int32_t>), t_int32, {t_int32, t_int32}},
+			{(int64_t(*)(int64_t, int64_t))(std::gcd<int64_t, int64_t>), t_int64, {t_int64, t_int64}},
+
+			{(uint8_t (*)(uint8_t,  uint8_t ))(std::gcd<uint8_t , uint8_t >), t_uint8 , {t_uint8 , t_uint8 }},
+			{(uint16_t(*)(uint16_t, uint16_t))(std::gcd<uint16_t, uint16_t>), t_uint16, {t_uint16, t_uint16}},
+			{(uint32_t(*)(uint32_t, uint32_t))(std::gcd<uint32_t, uint32_t>), t_uint32, {t_uint32, t_uint32}},
+			{(uint64_t(*)(uint64_t, uint64_t))(std::gcd<uint64_t, uint64_t>), t_uint64, {t_uint64, t_uint64}},
+		}}},
+		{"lcm", {{
+			{(int8_t (*)(int8_t,  int8_t ))(std::lcm<int8_t , int8_t >), t_int8 , {t_int8 , t_int8 }},
+			{(int16_t(*)(int16_t, int16_t))(std::lcm<int16_t, int16_t>), t_int16, {t_int16, t_int16}},
+			{(int32_t(*)(int32_t, int32_t))(std::lcm<int32_t, int32_t>), t_int32, {t_int32, t_int32}},
+			{(int64_t(*)(int64_t, int64_t))(std::lcm<int64_t, int64_t>), t_int64, {t_int64, t_int64}},
+
+			{(uint8_t (*)(uint8_t,  uint8_t ))(std::lcm<uint8_t , uint8_t >), t_uint8 , {t_uint8 , t_uint8 }},
+			{(uint16_t(*)(uint16_t, uint16_t))(std::lcm<uint16_t, uint16_t>), t_uint16, {t_uint16, t_uint16}},
+			{(uint32_t(*)(uint32_t, uint32_t))(std::lcm<uint32_t, uint32_t>), t_uint32, {t_uint32, t_uint32}},
+			{(uint64_t(*)(uint64_t, uint64_t))(std::lcm<uint64_t, uint64_t>), t_uint64, {t_uint64, t_uint64}},
+		}}},
 	};
 
 	state::~state() {
@@ -163,7 +344,7 @@ namespace SGL {
 			return &(f->second);
 		}
 
-        void set_global_variable(state& s, const std::string& variable_name, privitive_type t, void* data, size_t array_size) {
+        void set_global_variable(state& s, const std::string& variable_name, primitive_type t, void* data, size_t array_size) {
 			auto& v = s.global_constants[variable_name];
 			v.array_size = array_size;
 			v.m_type = &buildin_types_v[t];
@@ -195,7 +376,7 @@ namespace SGL {
     bool is_custom_type(parse_result& p, const std::string& name) {
 		return !is_primitive_type(p, name);
 	}
-    bool is_same_primitive_type(parse_result& p, const std::string& name, privitive_type t) {
+    bool is_same_primitive_type(parse_result& p, const std::string& name, primitive_type t) {
 		auto f = p.local_variables.find(name);
 		if (f == p.local_variables.end()) return false;
 		return f->second.m_type->base_type == t;
@@ -247,7 +428,7 @@ namespace SGL {
 		operator_v,//binary + - * / % ^ | & << >> && || == != > < <= >=, unary + - ! ~
 	};
 	struct m_token {
-		m_token(token_type t, int p, privitive_type vt = t_void) : type(t), prior(p), value_type(vt) {
+		m_token(token_type t, int p, primitive_type vt = t_void) : type(t), prior(p), value_type(vt) {
 			if (type == value_v && value_type == t_string) new (&str_v) std::string;
 		}
 		m_token(const m_token& v) : type(v.type), prior(v.prior), value_type(v.value_type) {
@@ -267,7 +448,7 @@ namespace SGL {
 			if (type == value_v && value_type == t_string) str_v.~basic_string(); 
 		}
 		token_type type = none_v;
-		privitive_type value_type = t_void;//value type or cast_to type
+		primitive_type value_type = t_void;//value type or cast_to type
 		int prior = -1;
 		union {
 			//values
@@ -346,12 +527,12 @@ namespace SGL {
 		}
 	}
 
-	static constexpr privitive_type result_of_value(privitive_type a, privitive_type b) {
+	static constexpr primitive_type result_of_value(primitive_type a, primitive_type b) {
 		if(a == b) return a;
 		if(t_int8 <= a && a <= t_uint64) {
 			if(t_int8 <= b && b <= t_uint64) {
-				if(t_uint8 <= a && a <= t_uint64) a = privitive_type(a - 4);
-				if(t_uint8 <= b && b <= t_uint64) b = privitive_type(b - 4);
+				if(t_uint8 <= a && a <= t_uint64) a = primitive_type(a - 4);
+				if(t_uint8 <= b && b <= t_uint64) b = primitive_type(b - 4);
 				return std::max(a, b);
 			}
 			else if(t_float32 == b || b == t_float64) return t_float64;	
@@ -361,7 +542,7 @@ namespace SGL {
 		SGL_ERROR("SGL: invalid type for binary operator");
 		return t_void;
 	}
-	static void cast_to_type(m_token& val, privitive_type t) {
+	static void cast_to_type(m_token& val, primitive_type t) {
 		if(val.type != value_v) SGL_ERROR("SGL: invalid type cast");
 		if(val.value_type == t) return;
 		if(val.value_type == t_custom) {
@@ -513,11 +694,11 @@ namespace SGL {
 		SGL_ERROR("SGL: invalid type cast");
 	}
 
-	using binary_operator_template_func_t = void(*)(m_token& a, m_token& b, privitive_type t);
+	using binary_operator_template_func_t = void(*)(m_token& a, m_token& b, primitive_type t);
 	template<binary_operator_template_func_t func> 
 	static void binary_operator_template(m_token& a, m_token& b) {
-		privitive_type at = a.value_type == t_custom ? a.object_v.m_type->base_type : a.value_type;
-		privitive_type bt = b.value_type == t_custom ? b.object_v.m_type->base_type : b.value_type;
+		primitive_type at = a.value_type == t_custom ? a.object_v.m_type->base_type : a.value_type;
+		primitive_type bt = b.value_type == t_custom ? b.object_v.m_type->base_type : b.value_type;
 		auto result_type = result_of_value(at, bt);
 		cast_to_type(a, result_type);
 		cast_to_type(b, result_type);
@@ -549,7 +730,7 @@ namespace SGL {
 
 	#define binary_operator_def(name, func, en_int, en_float, en_string, en_char, en_bool)\
 	static void binary_operator_##name(m_token& val, m_token& other) {\
-		auto v = [](m_token& a, m_token& b, privitive_type t){\
+		auto v = [](m_token& a, m_token& b, primitive_type t){\
 			switch (t) {\
 				binary_operator_def_i##en_int(func)\
 				binary_operator_def_f##en_float(func)\
@@ -577,7 +758,7 @@ namespace SGL {
 	binary_operator_def(rsh, >>=, 1, 0, 0, 0, 0);
 	//logic && || == != > < >= <=
 	static void binary_operator_and(m_token& val, m_token& other) {
-		auto v = [](m_token& a, m_token& b, privitive_type t){
+		auto v = [](m_token& a, m_token& b, primitive_type t){
 			bool v = false;
 			switch (t) {
 			case t_int8:   v = a.int_v.i8   && b.int_v.i8;   break;
@@ -599,7 +780,7 @@ namespace SGL {
 		binary_operator_template<v>(val, other);
 	}
 	static void binary_operator_or(m_token& val, m_token& other) {
-		auto v = [](m_token& a, m_token& b, privitive_type t){
+		auto v = [](m_token& a, m_token& b, primitive_type t){
 			bool v = false;
 			switch (t) {
 			case t_int8:   v = a.int_v.i8   || b.int_v.i8;   break;
@@ -621,7 +802,7 @@ namespace SGL {
 		binary_operator_template<v>(val, other);
 	}
 	static void binary_operator_eqal(m_token& val, m_token& other) {	
-		auto v = [](m_token& a, m_token& b, privitive_type t){
+		auto v = [](m_token& a, m_token& b, primitive_type t){
 			bool v = false;
 			switch (t) {
 			case t_int8:   v = a.int_v.i8   == b.int_v.i8;   break;
@@ -645,7 +826,7 @@ namespace SGL {
 		binary_operator_template<v>(val, other);
 	}
 	static void binary_operator_not_eqal(m_token& val, m_token& other) {
-		auto v = [](m_token& a, m_token& b, privitive_type t){
+		auto v = [](m_token& a, m_token& b, primitive_type t){
 			bool v = false;
 			switch (t) {
 			case t_int8:   v = a.int_v.i8   != b.int_v.i8;   break;
@@ -669,7 +850,7 @@ namespace SGL {
 		binary_operator_template<v>(val, other);
 	}
 	static void binary_operator_greater(m_token& val, m_token& other) {	
-		auto v = [](m_token& a, m_token& b, privitive_type t){
+		auto v = [](m_token& a, m_token& b, primitive_type t){
 			bool v = false;
 			switch (t) {
 			case t_int8:   v = a.int_v.i8   > b.int_v.i8;   break;
@@ -693,7 +874,7 @@ namespace SGL {
 		binary_operator_template<v>(val, other);
 	}
 	static void binary_operator_less(m_token& val, m_token& other) {
-		auto v = [](m_token& a, m_token& b, privitive_type t){
+		auto v = [](m_token& a, m_token& b, primitive_type t){
 			bool v = false;
 			switch (t) {
 			case t_int8:   v = a.int_v.i8   < b.int_v.i8;   break;

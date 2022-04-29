@@ -6,8 +6,9 @@ basic math functions support
 enumerations
 
 Lib:
+function call impl
+
 do somesing with C++ exceptions in C API?
-add contains function for parse_result
 add parse_... functions for string, ...? (in C++)
 add CMake Install for library?
 for C API add file parsing for FILE*
@@ -19,6 +20,7 @@ add error levels? (warning, fatal ... ?)
 add tests
 set minimum type size = 1 byte (for allocations)
 add default error function (print errors in std::cerr?)
+add init function for library??
 
 Examples:
 add more SGL (*.sgl files) for examples?

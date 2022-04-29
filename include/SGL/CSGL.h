@@ -21,7 +21,7 @@ typedef enum {
     t_char,
 
     t_custom
-} sgl_privitive_type;
+} sgl_primitive_type;
 
 //in C we work with poiters to C++ classes
 
@@ -36,7 +36,7 @@ typedef void(*sgl_value_copy)(void* dst, void* srs);
 typedef void(*sgl_error_callback_t)(const char* descriprion);
 
 typedef struct {//same as C++ SGL::type::member but use const char* instead of std::string
-    sgl_privitive_type type;
+    sgl_primitive_type type;
     size_t offset, array_size;
     sgl_type m_type;
     const char* name;
@@ -54,10 +54,10 @@ void sgl_delete_state(sgl_state s);
 sgl_parse_result sgl_new_parse_result();
 void sgl_delete_parse_result(sgl_parse_result p);
 
-sgl_type_member sgl_create_type_member_buildin_t(const char* name, sgl_privitive_type type, size_t offset);
+sgl_type_member sgl_create_type_member_buildin_t(const char* name, sgl_primitive_type type, size_t offset);
 sgl_type_member sgl_create_type_member_custom_t(const char* name, const char* type_name, size_t offset);
 
-sgl_type_member sgl_create_type_member_buildin_t_array(const char* name, sgl_privitive_type type, size_t offset, size_t array_size);
+sgl_type_member sgl_create_type_member_buildin_t_array(const char* name, sgl_primitive_type type, size_t offset, size_t array_size);
 sgl_type_member sgl_create_type_member_custom_t_array(const char* name, const char* type_name, size_t offset, size_t array_size);
 
 //if your type don't have constructor|destructor|copy function - pass NULL. it will be generated automaticly
@@ -81,12 +81,12 @@ bool sgl_is_array(sgl_parse_result p, const char* name);
 bool sgl_is_primitive_type(sgl_parse_result p, const char* name);
 bool sgl_is_custom_type(sgl_parse_result p, const char* name);
 
-bool sgl_is_same_primitive_type(sgl_parse_result p, const char* name, sgl_privitive_type t);
+bool sgl_is_same_primitive_type(sgl_parse_result p, const char* name, sgl_primitive_type t);
 bool sgl_is_same_custom_type(sgl_parse_result p, const char* name, const char* type_name);
 
-void sgl_set_global_variable_primitive_type(sgl_state s, const char* variable_name, sgl_privitive_type t, void* data);
+void sgl_set_global_variable_primitive_type(sgl_state s, const char* variable_name, sgl_primitive_type t, void* data);
 void sgl_set_global_variable_custom_type(sgl_state s, const char* variable_name, const char* type_name, void* data);
-void sgl_set_global_variable_primitive_type_array(sgl_state s, const char* variable_name, sgl_privitive_type t, void* data, size_t array_size);
+void sgl_set_global_variable_primitive_type_array(sgl_state s, const char* variable_name, sgl_primitive_type t, void* data, size_t array_size);
 void sgl_set_global_variable_custom_type_array(sgl_state s, const char* variable_name, const char* type_name, void* data, size_t array_size);
 
 #ifdef  __cplusplus
