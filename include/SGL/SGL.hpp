@@ -184,7 +184,7 @@ namespace SGL {
             std::vector<primitive_type> args_types;
             //only for primitive types args & ret value
             function_overload(void* f_ptr, primitive_type ret_type, std::vector<primitive_type>&& args_types) : ptr(f_ptr), ret_type(ret_type), args_types(std::move(args_types)) {
-                if(args_types.size() > 4) SGL::error("SGL: SGL functions cant take more than 4 args");//replase with SGL_ASSERT?
+                if(args_types.size() > 3) SGL::error("SGL: SGL functions cant take more than 3 args");//replase with SGL_ASSERT?
             }
         };
         function(std::vector<function_overload>&& overloads) : m_overloads(std::move(overloads)) {

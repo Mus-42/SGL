@@ -738,8 +738,8 @@ namespace SGL {
 		SGL_CALL_FUNCTION_WITH_ARGS_COUNT(0);
 		SGL_CALL_FUNCTION_WITH_ARGS_COUNT(1);
 		SGL_CALL_FUNCTION_WITH_ARGS_COUNT(2);
-		SGL_CALL_FUNCTION_WITH_ARGS_COUNT(3);
-		SGL_CALL_FUNCTION_WITH_ARGS_COUNT(4);//more than 4 args compile to long and increase binary size
+		SGL_CALL_FUNCTION_WITH_ARGS_COUNT(3);//more than 3 args compile to long and increase binary size
+		//SGL_CALL_FUNCTION_WITH_ARGS_COUNT(4);
 		#undef SGL_CALL_FUNCTION_WITH_ARGS_COUNT
 		default: SGL_ERROR("SGL: invalid arguments count"); break;
 		}
@@ -1095,9 +1095,20 @@ namespace SGL {
 				auto cur = v.second.second, next = cur, prev = cur;
 				next++;
 				if(cur->type == function_v) {
-
-				}
-				else {
+					std::vector<m_token*> args;
+					size_t args_count = 0;
+					for(auto it = next; it != tokens.end(); it++) {
+						if(it->prior <= cur->prior) break;
+						if((args_count%2 == 0 && it->type != value_v) || (args_count%2 == 1 && (it->type != punct_v || it->punct_v != ','))) 
+							SGL_ERROR("SGL: invalid function args operator");
+						if(args_count%2 == 0) args.push_back(&*it);
+					}
+					function_call(cur->function_v, &*cur, args.data(), args.size());
+					auto it = cur;
+					it++;
+					if(args.size()) for(size_t i = 0, s = args.size() * 2 - 1; i < s; i++) 	
+						it = tokens.erase(it);
+				} else {
 					if (v.first->is_unary) {
 						switch (v.first->op_v.first) {
 						case '-': unary_operator_minus(*next); break;
