@@ -6,6 +6,7 @@ basic math functions support
 enumerations
 
 Lib:
+fix error processing
 do somesing with C++ exceptions in C API?
 add contains function for parse_result
 add parse_... functions for string, ...? (in C++)

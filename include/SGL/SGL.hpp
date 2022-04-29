@@ -87,7 +87,10 @@ namespace SGL {
 
         void set_global_variable(state& s, const std::string& variable_name, privitive_type t, void* data, size_t array_size);
         void set_global_variable(state& s, const std::string& variable_name, const std::string& type_name, void* data, size_t array_size);
+
         //TODO type& get_type_ ...
+
+        void pass_iternal_cxx_exceprion_in_error_callback(bool pass);//by default false
     };
 
     bool contains(parse_result& p, const std::string& name);

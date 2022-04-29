@@ -7,11 +7,22 @@
 #include <cassert>
 #include <map>
 
-#define SGL_ASSERT(v) if(!(v)) { SGL::error("assertion failed in " + __LINE__); }
-#define SGL_ERROR(v) SGL::error(v)
+#define SGL_ASSERT(v) if(!(v)) { SGL::error("assertion failed in " + std::to_string(__LINE__)); }
+#define SGL_ERROR(v) throw SGL::details::sgl_exception(v)
 
 namespace SGL {
 	namespace details {
+		class sgl_exception : public std::exception {
+		public:
+			sgl_exception() = default;
+			sgl_exception(const char* msg) : msg(msg) {}
+			virtual ~sgl_exception() = default; 
+			virtual const char* what() const noexcept override {
+				return msg;
+			};
+		private:
+			const char* msg = nullptr;
+		};
     	static_assert(sizeof(float) == 4 && sizeof(double) == 8, "required float size 32 bit & 64 bit for double");
     	static constexpr uint8_t type_size[] {
     	    0,//void
@@ -91,6 +102,7 @@ namespace SGL {
 	}
 
 	static error_callback_t sgl_error_callback__ = details::defualt_sgl_error_function;
+	static bool sgl_pass_iternal_cxx_exceprion_in_error_callback__ = false;
 
     void set_error_callback(error_callback_t f) {
 		sgl_error_callback__ = f;
@@ -176,6 +188,10 @@ namespace SGL {
 			v.m_type = &s.global_types.find(type_name)->second;
 			v.data = new char[(array_size ? array_size : 1) * v.m_type->size];
 			details::copy_val(v.m_type, array_size, v.data, data);
+		}
+
+		void pass_iternal_cxx_exceprion_in_error_callback(bool pass) {
+			sgl_pass_iternal_cxx_exceprion_in_error_callback__ = pass;
 		}
 	}
 		
@@ -370,7 +386,7 @@ namespace SGL {
 			#define SGL_CAST_TO_T(name, value, var)\
 			case name: {\
 				m_token t{value_v, val.prior, name};\
-				t.##var = *static_cast<value*>(val.object_v.data);\
+				t.var = *static_cast<value*>(val.object_v.data);\
 				val = t;\
 			} break;
 			SGL_CAST_TO_T(t_int8,  int8_t,  int_v.i8)
@@ -458,13 +474,13 @@ namespace SGL {
 				val.float_v = f;
 				return;			
 			}
-			else if(val.type == t_char) {
+			else if(val.value_type == t_char) {
 				double i = (double)val.char_v;
 				val = m_token(value_v, val.prior, t_float64);
 				val.float_v = i;
 				return;	
 			}
-			else if(val.type == t_bool) {
+			else if(val.value_type == t_bool) {
 				double i = (double)val.bool_v;
 				val = m_token(value_v, val.prior, t_float64);
 				val.float_v = i;
@@ -472,7 +488,7 @@ namespace SGL {
 			}
 		} break;
 		case t_string: {
-			if(val.type == t_char) {
+			if(val.value_type == t_char) {
 				char ch = val.char_v;
 				val = m_token(value_v, val.prior, t_string);
 				val.str_v += ch;
@@ -1122,50 +1138,59 @@ namespace SGL {
 
 	parse_result& parse_stream(state& cur_state, std::istream& in) {
 		parse_result* res = new parse_result;
-		cur_state.m_results.insert(res);
-		res->m_state = &cur_state;
-		int ch = in.get();
-		std::string s;
-		while (in.good()) {
-			skip_comments_and_spaces(in);
-			ch = in.get();
+		try {
+			cur_state.m_results.insert(res);
+			res->m_state = &cur_state;
+			int ch = in.get();
+			std::string s;
+			while (in.good()) {
+				skip_comments_and_spaces(in);
+				ch = in.get();
 
-			if (!in.good()) break;
-			//scan type name
-			if (!std::isalpha(ch) && ch != '_') SGL_ERROR("SGL: type name must begin from alphabet character or from _");
-			std::string type_name;
-			while (in.good() && (std::isalnum(ch) || ch == '_')) type_name += ch, ch = in.get();
+				if (!in.good()) break;
+				//scan type name
+				if (!std::isalpha(ch) && ch != '_') SGL_ERROR("SGL: type name must begin from alphabet character or from _");
+				std::string type_name;
+				while (in.good() && (std::isalnum(ch) || ch == '_')) type_name += ch, ch = in.get();
 
-			if (!in.good()) SGL_ERROR("SGL: unexpected end of file");
+				if (!in.good()) SGL_ERROR("SGL: unexpected end of file");
 
-			skip_comments_and_spaces(in);
-			ch = in.get();
+				skip_comments_and_spaces(in);
+				ch = in.get();
 
-			if (!std::isalpha(ch) && ch != '_') SGL_ERROR("SGL: variable name must begin from alphabet character or from _");
-			std::string name;
-			while (in.good() && (std::isalnum(ch) || ch == '_')) name += ch, ch = in.get();
+				if (!std::isalpha(ch) && ch != '_') SGL_ERROR("SGL: variable name must begin from alphabet character or from _");
+				std::string name;
+				while (in.good() && (std::isalnum(ch) || ch == '_')) name += ch, ch = in.get();
 
-			skip_comments_and_spaces(in);
-			ch = in.get();
+				skip_comments_and_spaces(in);
+				ch = in.get();
 
-			if (!in.good()) SGL_ERROR("SGL: unexpected end of file");
-			if (ch != '=') SGL_ERROR("SGL: expected '=' caracter");
-			ch = in.get();
+				if (!in.good()) SGL_ERROR("SGL: unexpected end of file");
+				if (ch != '=') SGL_ERROR("SGL: expected '=' caracter");
+				ch = in.get();
 
-			auto tf = cur_state.global_types.find(type_name);
-			auto btf = buildin_types.find(type_name);
-			if (tf == cur_state.global_types.end() && btf == buildin_types.end()) SGL_ERROR("SGL: invalid type name");
-			const type* t = (tf != cur_state.global_types.end()) ? &(tf->second) : btf->second;
+				auto tf = cur_state.global_types.find(type_name);
+				auto btf = buildin_types.find(type_name);
+				if (tf == cur_state.global_types.end() && btf == buildin_types.end()) SGL_ERROR("SGL: invalid type name");
+				const type* t = (tf != cur_state.global_types.end()) ? &(tf->second) : btf->second;
 
-			auto& cur_val = res->local_variables[name];
-			cur_val.m_type = t;
-			char* data = new char[t->size];
-			cur_val.data = data;
+				auto& cur_val = res->local_variables[name];
+				cur_val.m_type = t;
+				char* data = new char[t->size];
+				cur_val.data = data;
 
-			details::construct_val(t, 0, data);
+				details::construct_val(t, 0, data);
 
-			parse_expession(&cur_state, res, t, 0, data, in);
-			ch = in.get();
+				parse_expession(&cur_state, res, t, 0, data, in);
+				ch = in.get();
+			}
+		}
+		catch(details::sgl_exception& ex) {
+			SGL::error(ex.what());
+		}
+		catch(std::exception& ex) {
+			if(sgl_pass_iternal_cxx_exceprion_in_error_callback__) SGL::error(ex.what());
+			else throw ex;//rethrow std::exception
 		}
 		return *res;
 	}
