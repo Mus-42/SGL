@@ -6,6 +6,7 @@ enumerations
 
 Lib:
 add custom functions pass from C++
+fix error processing
 do somesing with C++ exceptions in C API?
 add parse_... functions for string, ...? (in C++)
 add CMake Install for library?
