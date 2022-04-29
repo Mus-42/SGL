@@ -7,6 +7,7 @@
 #include <cassert>
 #include <numeric>
 #include <map>
+#include <tuple>
 
 #define SGL_ASSERT(v) if(!(v)) { SGL::error("assertion failed in " + __LINE__); }
 #define SGL_ERROR(v) SGL::error(v)
@@ -107,61 +108,59 @@ namespace SGL {
 	};
 	static const std::unordered_map<std::string, const function> buildin_functions = {
 		{"abs", {{
-			{(int32_t(*)(int32_t))(std::abs), t_int32, {t_int32}},
-			{(int64_t(*)(int64_t))(std::abs), t_int64, {t_int64}},
-			{(float(*)(float))(std::abs), t_float32, {t_float32}},
-			{(double(*)(double))(std::abs), t_float64, {t_float64}}
+			{(void*)(int32_t(*)(int32_t))(std::abs), t_int32, {t_int32}},
+			{(void*)(int64_t(*)(int64_t))(std::abs), t_int64, {t_int64}},
+			{(void*)(float(*)(float))(std::abs), t_float32, {t_float32}},
+			{(void*)(double(*)(double))(std::abs), t_float64, {t_float64}}
 		}}},
  
 		{"fmod", {{
-			{(float(*)(float, float))(std::fmod), t_float32, {t_float32, t_float32}},
-			{(double(*)(double, double))(std::fmod), t_float64, {t_float64, t_float64}}
+			{(void*)(float(*)(float, float))(std::fmod), t_float32, {t_float32, t_float32}},
+			{(void*)(double(*)(double, double))(std::fmod), t_float64, {t_float64, t_float64}}
 		}}},
 
 		{"remainder", {{
-			{(float(*)(float, float))(std::remainder), t_float32, {t_float32, t_float32}},
-			{(double(*)(double, double))(std::remainder), t_float64, {t_float64, t_float64}}
+			{(void*)(float(*)(float, float))(std::remainder), t_float32, {t_float32, t_float32}},
+			{(void*)(double(*)(double, double))(std::remainder), t_float64, {t_float64, t_float64}}
 		}}},
 
-		{"max",{{
-			{(int8_t (*)(int8_t,  int8_t ))(details::m_max), t_int8 , {t_int8 , t_int8 }},
-			{(int16_t(*)(int16_t, int16_t))(details::m_max), t_int16, {t_int16, t_int16}},
-			{(int32_t(*)(int32_t, int32_t))(details::m_max), t_int32, {t_int32, t_int32}},
-			{(int64_t(*)(int64_t, int64_t))(details::m_max), t_int64, {t_int64, t_int64}},
-			{(uint8_t (*)(uint8_t ,  uint8_t ))(details::m_max), t_uint8 , {t_uint8 , t_uint8 }},
-			{(uint16_t(*)(uint16_t, uint16_t))(details::m_max), t_uint16, {t_uint16, t_uint16}},
-			{(uint32_t(*)(uint32_t, uint32_t))(details::m_max), t_uint32, {t_uint32, t_uint32}},
-			{(uint64_t(*)(uint64_t, uint64_t))(details::m_max), t_uint64, {t_uint64, t_uint64}},
-			{(float(*)(float, float))(details::m_max), t_float32, {t_float32, t_float32}},
-			{(double(*)(double, double))(details::m_max), t_float64, {t_float64, t_float64}}
+		{"max", {{
+			{(void*)(int8_t (*)(int8_t,  int8_t ))(details::m_max), t_int8 , {t_int8 , t_int8 }},
+			{(void*)(int16_t(*)(int16_t, int16_t))(details::m_max), t_int16, {t_int16, t_int16}},
+			{(void*)(int32_t(*)(int32_t, int32_t))(details::m_max), t_int32, {t_int32, t_int32}},
+			{(void*)(int64_t(*)(int64_t, int64_t))(details::m_max), t_int64, {t_int64, t_int64}},
+			{(void*)(uint8_t (*)(uint8_t ,  uint8_t ))(details::m_max), t_uint8 , {t_uint8 , t_uint8 }},
+			{(void*)(uint16_t(*)(uint16_t, uint16_t))(details::m_max), t_uint16, {t_uint16, t_uint16}},
+			{(void*)(uint32_t(*)(uint32_t, uint32_t))(details::m_max), t_uint32, {t_uint32, t_uint32}},
+			{(void*)(uint64_t(*)(uint64_t, uint64_t))(details::m_max), t_uint64, {t_uint64, t_uint64}},
+			{(void*)(float(*)(float, float))(details::m_max), t_float32, {t_float32, t_float32}},
+			{(void*)(double(*)(double, double))(details::m_max), t_float64, {t_float64, t_float64}}
 		}}},
 		
 		{"min",{{
-			{(int8_t (*)(int8_t,  int8_t ))(details::m_min), t_int8 , {t_int8 , t_int8 }},
-			{(int16_t(*)(int16_t, int16_t))(details::m_min), t_int16, {t_int16, t_int16}},
-			{(int32_t(*)(int32_t, int32_t))(details::m_min), t_int32, {t_int32, t_int32}},
-			{(int64_t(*)(int64_t, int64_t))(details::m_min), t_int64, {t_int64, t_int64}},
-
-			{(uint8_t (*)(uint8_t,  uint8_t ))(details::m_min), t_uint8 , {t_uint8 , t_uint8 }},
-			{(uint16_t(*)(uint16_t, uint16_t))(details::m_min), t_uint16, {t_uint16, t_uint16}},
-			{(uint32_t(*)(uint32_t, uint32_t))(details::m_min), t_uint32, {t_uint32, t_uint32}},
-			{(uint64_t(*)(uint64_t, uint64_t))(details::m_min), t_uint64, {t_uint64, t_uint64}},
-
-			{(float(*)(float, float))(details::m_min), t_float32, {t_float32, t_float32}},
-			{(double(*)(double, double))(details::m_min), t_float64, {t_float64, t_float64}}
+			{(void*)(int8_t (*)(int8_t,  int8_t ))(details::m_min), t_int8 , {t_int8 , t_int8 }},
+			{(void*)(int16_t(*)(int16_t, int16_t))(details::m_min), t_int16, {t_int16, t_int16}},
+			{(void*)(int32_t(*)(int32_t, int32_t))(details::m_min), t_int32, {t_int32, t_int32}},
+			{(void*)(int64_t(*)(int64_t, int64_t))(details::m_min), t_int64, {t_int64, t_int64}},
+			{(void*)(uint8_t (*)(uint8_t,  uint8_t ))(details::m_min), t_uint8 , {t_uint8 , t_uint8 }},
+			{(void*)(uint16_t(*)(uint16_t, uint16_t))(details::m_min), t_uint16, {t_uint16, t_uint16}},
+			{(void*)(uint32_t(*)(uint32_t, uint32_t))(details::m_min), t_uint32, {t_uint32, t_uint32}},
+			{(void*)(uint64_t(*)(uint64_t, uint64_t))(details::m_min), t_uint64, {t_uint64, t_uint64}},
+			{(void*)(float(*)(float, float))(details::m_min), t_float32, {t_float32, t_float32}},
+			{(void*)(double(*)(double, double))(details::m_min), t_float64, {t_float64, t_float64}}
 		}}},
 		
 		{"nan", {{
-			{(double(*)())(std::nan), t_float64, {}}
+			{(void*)(double(*)())(std::nan), t_float64, {}}
 		}}},
 		{"nanf", {{
-			{(float(*)())(std::nan), t_float32, {}},
+			{(void*)(float(*)())(std::nan), t_float32, {}},
 		}}},
 
 		#define SGL_DECLARE_FLOAT_FUNC_1(name)\
 		{#name, {{\
-			{(float(*)(float))(std::name), t_float32, {t_float32}},\
-			{(double(*)(double))(std::name), t_float64, {t_float64}}\
+			{(void*)(float(*)(float))(std::name), t_float32, {t_float32}},\
+			{(void*)(double(*)(double))(std::name), t_float64, {t_float64}}\
 		}}},
 
 		SGL_DECLARE_FLOAT_FUNC_1(exp)
@@ -172,17 +171,17 @@ namespace SGL {
 		SGL_DECLARE_FLOAT_FUNC_1(log10)
 	
 		{"pow", {{
-			{(float(*)(float, float))(std::pow), t_float32, {t_float32, t_float32}},
-			{(double(*)(double, double))(std::pow), t_float64, {t_float64, t_float64}}
+			{(void*)(float(*)(float, float))(std::pow), t_float32, {t_float32, t_float32}},
+			{(void*)(double(*)(double, double))(std::pow), t_float64, {t_float64, t_float64}}
 		}}},
 		SGL_DECLARE_FLOAT_FUNC_1(sqrt)
 		SGL_DECLARE_FLOAT_FUNC_1(cbrt)
 
 		{"hypot", {{
-			{(float(*)(float, float))(std::hypot), t_float32, {t_float32, t_float32}},
-			{(double(*)(double, double))(std::hypot), t_float64, {t_float64, t_float64}},
-			{(float(*)(float, float, float))(std::hypot), t_float32, {t_float32, t_float32, t_float32}},
-			{(double(*)(double, double, double))(std::hypot), t_float64, {t_float64, t_float64, t_float64}}
+			{(void*)(float(*)(float, float))(std::hypot), t_float32, {t_float32, t_float32}},
+			{(void*)(double(*)(double, double))(std::hypot), t_float64, {t_float64, t_float64}},
+			{(void*)(float(*)(float, float, float))(std::hypot), t_float32, {t_float32, t_float32, t_float32}},
+			{(void*)(double(*)(double, double, double))(std::hypot), t_float64, {t_float64, t_float64, t_float64}}
 		}}},
 
 
@@ -194,8 +193,8 @@ namespace SGL {
 		SGL_DECLARE_FLOAT_FUNC_1(atan)
 
 		{"atan2", {{
-			{(float(*)(float, float))(std::atan2), t_float32, {t_float32, t_float32}},
-			{(double(*)(double, double))(std::atan2), t_float64, {t_float64, t_float64}}
+			{(void*)(float(*)(float, float))(std::atan2), t_float32, {t_float32, t_float32}},
+			{(void*)(double(*)(double, double))(std::atan2), t_float64, {t_float64, t_float64}}
 		}}},
 		
 		SGL_DECLARE_FLOAT_FUNC_1(sinh)
@@ -216,49 +215,47 @@ namespace SGL {
 		SGL_DECLARE_FLOAT_FUNC_1(rint)
 
 		{"copysign", {{
-			{(float(*)(float, float))(std::copysign), t_float32, {t_float32, t_float32}},
-			{(double(*)(double, double))(std::copysign), t_float64, {t_float64, t_float64}}
+			{(void*)(float(*)(float, float))(std::copysign), t_float32, {t_float32, t_float32}},
+			{(void*)(double(*)(double, double))(std::copysign), t_float64, {t_float64, t_float64}}
 		}}},
 
 		
 		{"isfinite", {{
-			{(bool(*)(float))(std::isfinite), t_bool, {t_float32}},
-			{(bool(*)(double))(std::isfinite), t_bool, {t_float64}}
+			{(void*)(bool(*)(float))(std::isfinite), t_bool, {t_float32}},
+			{(void*)(bool(*)(double))(std::isfinite), t_bool, {t_float64}}
 		}}},
 		{"isinf", {{
-			{(bool(*)(float))(std::isinf), t_bool, {t_float32}},
-			{(bool(*)(double))(std::isinf), t_bool, {t_float64}}
+			{(void*)(bool(*)(float))(std::isinf), t_bool, {t_float32}},
+			{(void*)(bool(*)(double))(std::isinf), t_bool, {t_float64}}
 		}}},
 		{"isnan", {{
-			{(bool(*)(float))(std::isnan), t_bool, {t_float32}},
-			{(bool(*)(double))(std::isnan), t_bool, {t_float64}}
+			{(void*)(bool(*)(float))(std::isnan), t_bool, {t_float32}},
+			{(void*)(bool(*)(double))(std::isnan), t_bool, {t_float64}}
 		}}},
 		{"isnormal", {{
-			{(bool(*)(float))(std::isnormal), t_bool, {t_float32}},
-			{(bool(*)(double))(std::isnormal), t_bool, {t_float64}}
+			{(void*)(bool(*)(float))(std::isnormal), t_bool, {t_float32}},
+			{(void*)(bool(*)(double))(std::isnormal), t_bool, {t_float64}}
 		}}},
 
 		{"gcd", {{
-			{(int8_t (*)(int8_t,  int8_t ))(std::gcd<int8_t , int8_t >), t_int8 , {t_int8 , t_int8 }},
-			{(int16_t(*)(int16_t, int16_t))(std::gcd<int16_t, int16_t>), t_int16, {t_int16, t_int16}},
-			{(int32_t(*)(int32_t, int32_t))(std::gcd<int32_t, int32_t>), t_int32, {t_int32, t_int32}},
-			{(int64_t(*)(int64_t, int64_t))(std::gcd<int64_t, int64_t>), t_int64, {t_int64, t_int64}},
-
-			{(uint8_t (*)(uint8_t,  uint8_t ))(std::gcd<uint8_t , uint8_t >), t_uint8 , {t_uint8 , t_uint8 }},
-			{(uint16_t(*)(uint16_t, uint16_t))(std::gcd<uint16_t, uint16_t>), t_uint16, {t_uint16, t_uint16}},
-			{(uint32_t(*)(uint32_t, uint32_t))(std::gcd<uint32_t, uint32_t>), t_uint32, {t_uint32, t_uint32}},
-			{(uint64_t(*)(uint64_t, uint64_t))(std::gcd<uint64_t, uint64_t>), t_uint64, {t_uint64, t_uint64}},
+			{(void*)(int8_t (*)(int8_t,  int8_t ))(std::gcd<int8_t , int8_t >), t_int8 , {t_int8 , t_int8 }},
+			{(void*)(int16_t(*)(int16_t, int16_t))(std::gcd<int16_t, int16_t>), t_int16, {t_int16, t_int16}},
+			{(void*)(int32_t(*)(int32_t, int32_t))(std::gcd<int32_t, int32_t>), t_int32, {t_int32, t_int32}},
+			{(void*)(int64_t(*)(int64_t, int64_t))(std::gcd<int64_t, int64_t>), t_int64, {t_int64, t_int64}},
+			{(void*)(uint8_t (*)(uint8_t,  uint8_t ))(std::gcd<uint8_t , uint8_t >), t_uint8 , {t_uint8 , t_uint8 }},
+			{(void*)(uint16_t(*)(uint16_t, uint16_t))(std::gcd<uint16_t, uint16_t>), t_uint16, {t_uint16, t_uint16}},
+			{(void*)(uint32_t(*)(uint32_t, uint32_t))(std::gcd<uint32_t, uint32_t>), t_uint32, {t_uint32, t_uint32}},
+			{(void*)(uint64_t(*)(uint64_t, uint64_t))(std::gcd<uint64_t, uint64_t>), t_uint64, {t_uint64, t_uint64}},
 		}}},
 		{"lcm", {{
-			{(int8_t (*)(int8_t,  int8_t ))(std::lcm<int8_t , int8_t >), t_int8 , {t_int8 , t_int8 }},
-			{(int16_t(*)(int16_t, int16_t))(std::lcm<int16_t, int16_t>), t_int16, {t_int16, t_int16}},
-			{(int32_t(*)(int32_t, int32_t))(std::lcm<int32_t, int32_t>), t_int32, {t_int32, t_int32}},
-			{(int64_t(*)(int64_t, int64_t))(std::lcm<int64_t, int64_t>), t_int64, {t_int64, t_int64}},
-
-			{(uint8_t (*)(uint8_t,  uint8_t ))(std::lcm<uint8_t , uint8_t >), t_uint8 , {t_uint8 , t_uint8 }},
-			{(uint16_t(*)(uint16_t, uint16_t))(std::lcm<uint16_t, uint16_t>), t_uint16, {t_uint16, t_uint16}},
-			{(uint32_t(*)(uint32_t, uint32_t))(std::lcm<uint32_t, uint32_t>), t_uint32, {t_uint32, t_uint32}},
-			{(uint64_t(*)(uint64_t, uint64_t))(std::lcm<uint64_t, uint64_t>), t_uint64, {t_uint64, t_uint64}},
+			{(void*)(int8_t (*)(int8_t,  int8_t ))(std::lcm<int8_t , int8_t >), t_int8 , {t_int8 , t_int8 }},
+			{(void*)(int16_t(*)(int16_t, int16_t))(std::lcm<int16_t, int16_t>), t_int16, {t_int16, t_int16}},
+			{(void*)(int32_t(*)(int32_t, int32_t))(std::lcm<int32_t, int32_t>), t_int32, {t_int32, t_int32}},
+			{(void*)(int64_t(*)(int64_t, int64_t))(std::lcm<int64_t, int64_t>), t_int64, {t_int64, t_int64}},
+			{(void*)(uint8_t (*)(uint8_t,  uint8_t ))(std::lcm<uint8_t , uint8_t >), t_uint8 , {t_uint8 , t_uint8 }},
+			{(void*)(uint16_t(*)(uint16_t, uint16_t))(std::lcm<uint16_t, uint16_t>), t_uint16, {t_uint16, t_uint16}},
+			{(void*)(uint32_t(*)(uint32_t, uint32_t))(std::lcm<uint32_t, uint32_t>), t_uint32, {t_uint32, t_uint32}},
+			{(void*)(uint64_t(*)(uint64_t, uint64_t))(std::lcm<uint64_t, uint64_t>), t_uint64, {t_uint64, t_uint64}},
 		}}},
 	};
 
@@ -426,6 +423,7 @@ namespace SGL {
 
 		punct_v,//{} () [] . ,
 		operator_v,//binary + - * / % ^ | & << >> && || == != > < <= >=, unary + - ! ~
+		function_v,
 	};
 	struct m_token {
 		m_token(token_type t, int p, primitive_type vt = t_void) : type(t), prior(p), value_type(vt) {
@@ -472,76 +470,10 @@ namespace SGL {
 				bool is_unary;
 			};
 			value object_v;
+			const function* function_v;
 		};
-
 	};
 
-	static void unary_operator_plus(m_token& value) {
-		if(!(value.type == value_v && t_int8 <= value.value_type && value.value_type <= t_float64)) SGL_ERROR("SGL: type must be integer or boolean for unary + operator");
-	}
-	static void unary_operator_minus(m_token& value) {
-		if(value.type != value_v) SGL_ERROR("SGL: invalid type for unary - operator");
-		else switch (value.value_type) {
-		case t_int8:   value.int_v.i8 =  -value.int_v.i8;  break;
-		case t_int16:  value.int_v.i16 = -value.int_v.i16; break;
-		case t_int32:  value.int_v.i32 = -value.int_v.i32; break;
-		case t_int64:  value.int_v.i64 = -value.int_v.i64; break;
-		case t_uint8:  value.value_type = t_int64; value.int_v.i64 = -int64_t(value.int_v.ui8);  break;
-		case t_uint16: value.value_type = t_int64; value.int_v.i64 = -int64_t(value.int_v.ui16); break;
-		case t_uint32: value.value_type = t_int64; value.int_v.i64 = -int64_t(value.int_v.ui32); break;
-		case t_uint64: value.value_type = t_int64; value.int_v.i64 = -int64_t(value.int_v.ui64); break;
-		case t_float32: value.float_v = -value.float_v;
-		case t_float64: value.float_v = -value.float_v;
-		default: SGL_ERROR("SGL: invalid type for unary - operator"); break;
-		}
-		
-	}
-	static void unary_operator_not(m_token& value) {
-		if(value.type != value_v) SGL_ERROR("SGL: invalid type for unary ! operator");
-		else switch (value.value_type) {
-		case t_int8:   value.bool_v = !value.int_v.i8;   break;
-		case t_int16:  value.bool_v = !value.int_v.i16;  break;
-		case t_int32:  value.bool_v = !value.int_v.i32;  break;
-		case t_int64:  value.bool_v = !value.int_v.i64;  break;
-		case t_uint8:  value.bool_v = !value.int_v.ui8;  break;
-		case t_uint16: value.bool_v = !value.int_v.ui16; break;
-		case t_uint32: value.bool_v = !value.int_v.ui32; break;
-		case t_uint64: value.bool_v = !value.int_v.ui64; break;
-		case t_bool:   value.bool_v = !value.bool_v; 	 break;
-		default: SGL_ERROR("SGL: type must be integer or boolean for unary ! operator"); break;
-		}
-
-	}
-	static void unary_operator_bitwise_not(m_token& value) {
-		if(value.type != value_v) SGL_ERROR("SGL: invalid type for unary ~ operator");
-		else switch (value.value_type) {
-		case t_int8:   value.int_v.i8   = ~value.int_v.i8;   break;
-		case t_int16:  value.int_v.i16  = ~value.int_v.i16;  break;
-		case t_int32:  value.int_v.i32  = ~value.int_v.i32;  break;
-		case t_int64:  value.int_v.i64  = ~value.int_v.i64;  break;
-		case t_uint8:  value.int_v.ui8  = ~value.int_v.ui8;  break;
-		case t_uint16: value.int_v.ui16 = ~value.int_v.ui16; break;
-		case t_uint32: value.int_v.ui32 = ~value.int_v.ui32; break;
-		case t_uint64: value.int_v.ui64 = ~value.int_v.ui64; break;	
-		default: SGL_ERROR("SGL: type must be integer for unary ~ operator"); break;
-		}
-	}
-
-	static constexpr primitive_type result_of_value(primitive_type a, primitive_type b) {
-		if(a == b) return a;
-		if(t_int8 <= a && a <= t_uint64) {
-			if(t_int8 <= b && b <= t_uint64) {
-				if(t_uint8 <= a && a <= t_uint64) a = primitive_type(a - 4);
-				if(t_uint8 <= b && b <= t_uint64) b = primitive_type(b - 4);
-				return std::max(a, b);
-			}
-			else if(t_float32 == b || b == t_float64) return t_float64;	
-		} else if(t_float32 == a || a == t_float64) {
-			if(t_float32 == b || b == t_float64 || t_int8 <= b && b <= t_uint64) return t_float64;
-		} else if((a == t_string || a == t_char) && (b == t_string || b == t_char)) return t_string;//a != b
-		SGL_ERROR("SGL: invalid type for binary operator");
-		return t_void;
-	}
 	static void cast_to_type(m_token& val, primitive_type t) {
 		if(val.type != value_v) SGL_ERROR("SGL: invalid type cast");
 		if(val.value_type == t) return;
@@ -551,7 +483,7 @@ namespace SGL {
 			#define SGL_CAST_TO_T(name, value, var)\
 			case name: {\
 				m_token t{value_v, val.prior, name};\
-				t.##var = *static_cast<value*>(val.object_v.data);\
+				t. var = *static_cast<value*>(val.object_v.data);\
 				val = t;\
 			} break;
 			SGL_CAST_TO_T(t_int8,  int8_t,  int_v.i8)
@@ -692,6 +624,192 @@ namespace SGL {
 		default: break;
 		}
 		SGL_ERROR("SGL: invalid type cast");
+	}
+	template<size_t depth, size_t max_depth, typename... Args>
+	static void call_function_impl(const function::function_overload* func, m_token* ans, m_token** args_t, Args... args) {
+		if constexpr(depth < max_depth) {
+			switch(args_t[depth]->value_type) {
+			case t_int8 : 	call_function_impl<depth+1, max_depth, Args..., int8_t >(func, ans, args_t, args..., args_t[depth]->int_v.i8 ); break;
+			case t_int16: 	call_function_impl<depth+1, max_depth, Args..., int16_t>(func, ans, args_t, args..., args_t[depth]->int_v.i16); break;
+			case t_int32: 	call_function_impl<depth+1, max_depth, Args..., int32_t>(func, ans, args_t, args..., args_t[depth]->int_v.i32); break;
+			case t_int64: 	call_function_impl<depth+1, max_depth, Args..., int64_t>(func, ans, args_t, args..., args_t[depth]->int_v.i64); break;
+			case t_uint8 : 	call_function_impl<depth+1, max_depth, Args..., uint8_t >(func, ans, args_t, args..., args_t[depth]->int_v.ui8 ); break;
+			case t_uint16: 	call_function_impl<depth+1, max_depth, Args..., uint16_t>(func, ans, args_t, args..., args_t[depth]->int_v.ui16); break;
+			case t_uint32: 	call_function_impl<depth+1, max_depth, Args..., uint32_t>(func, ans, args_t, args..., args_t[depth]->int_v.ui32); break;
+			case t_uint64: 	call_function_impl<depth+1, max_depth, Args..., uint64_t>(func, ans, args_t, args..., args_t[depth]->int_v.ui64); break;
+
+			case t_float32: call_function_impl<depth+1, max_depth, Args..., float>(func, ans, args_t, args..., (double)args_t[depth]->float_v); break;
+			case t_float64: call_function_impl<depth+1, max_depth, Args..., double>(func, ans, args_t, args..., args_t[depth]->float_v); break;
+
+			case t_bool: 	call_function_impl<depth+1, max_depth, Args..., bool>(func, ans, args_t, args..., (double)args_t[depth]->bool_v); break;
+			case t_string: 	call_function_impl<depth+1, max_depth, Args..., std::string>(func, ans, args_t, args..., args_t[depth]->str_v); break;
+			case t_char: 	call_function_impl<depth+1, max_depth, Args..., char>(func, ans, args_t, args..., args_t[depth]->char_v); break;
+
+			default: SGL_ERROR("SGL: invalid function args type");
+			}
+		} else {//do function call
+			switch(func->ret_type) {
+			case t_int8 : {
+				*ans = m_token(value_v, ans->prior, t_int8);
+				ans->int_v.i8 = reinterpret_cast<int8_t(*)(Args...)>(func->ptr)(args...);
+			} break;
+			case t_int16: {
+				*ans = m_token(value_v, ans->prior, t_int16);
+				ans->int_v.i16 = reinterpret_cast<int16_t(*)(Args...)>(func->ptr)(args...);
+			} break;
+			case t_int32: {
+				*ans = m_token(value_v, ans->prior, t_int32);
+				ans->int_v.i32 = reinterpret_cast<int32_t(*)(Args...)>(func->ptr)(args...);
+			} break;	
+			case t_int64: {
+				*ans = m_token(value_v, ans->prior, t_int64);
+				ans->int_v.i64 = reinterpret_cast<int64_t(*)(Args...)>(func->ptr)(args...);
+			} break;
+			case t_uint8 : {
+				*ans = m_token(value_v, ans->prior, t_uint8);
+				ans->int_v.ui8 = reinterpret_cast<uint8_t(*)(Args...)>(func->ptr)(args...);
+			} break;
+			case t_uint16: {
+				*ans = m_token(value_v, ans->prior, t_uint16);
+				ans->int_v.ui16 = reinterpret_cast<uint16_t(*)(Args...)>(func->ptr)(args...);
+			} break;
+			case t_uint32: {
+				*ans = m_token(value_v, ans->prior, t_uint32);
+				ans->int_v.ui32 = reinterpret_cast<uint32_t(*)(Args...)>(func->ptr)(args...);
+			} break;
+			case t_uint64: {
+				*ans = m_token(value_v, ans->prior, t_uint64);
+				ans->int_v.ui64 = reinterpret_cast<uint64_t(*)(Args...)>(func->ptr)(args...);
+			} break;
+			case t_float32: {
+				*ans = m_token(value_v, ans->prior, t_float64);
+				ans->float_v = (double)reinterpret_cast<float(*)(Args...)>(func->ptr)(args...);
+			} break;
+			case t_float64: {
+				*ans = m_token(value_v, ans->prior, t_float64);
+				ans->float_v = reinterpret_cast<double(*)(Args...)>(func->ptr)(args...);
+			} break;
+			case t_bool: {
+				*ans = m_token(value_v, ans->prior, t_bool);
+				ans->bool_v = reinterpret_cast<bool(*)(Args...)>(func->ptr)(args...);
+			} break;
+			case t_string: {
+				*ans = m_token(value_v, ans->prior, t_string);
+				ans->str_v = reinterpret_cast<std::string(*)(Args...)>(func->ptr)(args...);
+			} break;
+			case t_cstring: {
+				*ans = m_token(value_v, ans->prior, t_string);
+				auto cstr = reinterpret_cast<cstring(*)(Args...)>(func->ptr)(args...);
+				ans->str_v = std::string(cstr.data, cstr.data+cstr.size);
+			} break;
+			case t_char: {
+				*ans = m_token(value_v, ans->prior, t_char);
+				ans->char_v = reinterpret_cast<char(*)(Args...)>(func->ptr)(args...);
+			} break;
+			default: SGL_ERROR("SGL: invalid function args type");
+			}
+		}
+	}
+
+	static void function_call(const function* f, m_token* ans, m_token** args, size_t args_count) {
+		const function::function_overload* valid_overload = nullptr;
+		{
+			size_t min_diff = (size_t)1e9, count = 0;
+			for(size_t i = 0, s = f->m_overloads.size(); i < s; i++)
+				if(f->m_overloads[i].args_types.size() == args_count) {
+					size_t diff = 0;
+					for(size_t j = 0; j < args_count; j++)
+						diff += args[j]->value_type == f->m_overloads[i].args_types[j];
+					if(diff == min_diff) count++;
+					else if(diff < min_diff) {
+						valid_overload = &f->m_overloads[i];
+						count = 1;
+					}
+				}
+			if(!valid_overload) SGL_ERROR("SGL: cannot choose function overload. invalid arguments count");
+			if(count > 1) SGL_ERROR("SGL: cannot choose function overload");
+			//TODO if min_diff != 0 add warinig about typecast?
+		}
+		for(size_t i = 0; i < args_count; i++)
+			cast_to_type(*args[i], valid_overload->args_types[i]);
+		switch (valid_overload->args_types.size()) {
+		#define SGL_CALL_FUNCTION_WITH_ARGS_COUNT(n)\
+		case n: call_function_impl<0, n>(valid_overload, ans, args); break;
+		SGL_CALL_FUNCTION_WITH_ARGS_COUNT(0);
+		SGL_CALL_FUNCTION_WITH_ARGS_COUNT(1);
+		SGL_CALL_FUNCTION_WITH_ARGS_COUNT(2);
+		SGL_CALL_FUNCTION_WITH_ARGS_COUNT(3);
+		SGL_CALL_FUNCTION_WITH_ARGS_COUNT(4);//more than 4 args compile to long and increase binary size
+		#undef SGL_CALL_FUNCTION_WITH_ARGS_COUNT
+		default: SGL_ERROR("SGL: invalid arguments count"); break;
+		}
+	}
+
+	static void unary_operator_plus(m_token& value) {
+		if(!(value.type == value_v && t_int8 <= value.value_type && value.value_type <= t_float64)) SGL_ERROR("SGL: type must be integer or boolean for unary + operator");
+	}
+	static void unary_operator_minus(m_token& value) {
+		if(value.type != value_v) SGL_ERROR("SGL: invalid type for unary - operator");
+		else switch (value.value_type) {
+		case t_int8:   value.int_v.i8 =  -value.int_v.i8;  break;
+		case t_int16:  value.int_v.i16 = -value.int_v.i16; break;
+		case t_int32:  value.int_v.i32 = -value.int_v.i32; break;
+		case t_int64:  value.int_v.i64 = -value.int_v.i64; break;
+		case t_uint8:  value.value_type = t_int64; value.int_v.i64 = -int64_t(value.int_v.ui8);  break;
+		case t_uint16: value.value_type = t_int64; value.int_v.i64 = -int64_t(value.int_v.ui16); break;
+		case t_uint32: value.value_type = t_int64; value.int_v.i64 = -int64_t(value.int_v.ui32); break;
+		case t_uint64: value.value_type = t_int64; value.int_v.i64 = -int64_t(value.int_v.ui64); break;
+		case t_float32: value.float_v = -value.float_v;
+		case t_float64: value.float_v = -value.float_v;
+		default: SGL_ERROR("SGL: invalid type for unary - operator"); break;
+		}
+		
+	}
+	static void unary_operator_not(m_token& value) {
+		if(value.type != value_v) SGL_ERROR("SGL: invalid type for unary ! operator");
+		else switch (value.value_type) {
+		case t_int8:   value.bool_v = !value.int_v.i8;   break;
+		case t_int16:  value.bool_v = !value.int_v.i16;  break;
+		case t_int32:  value.bool_v = !value.int_v.i32;  break;
+		case t_int64:  value.bool_v = !value.int_v.i64;  break;
+		case t_uint8:  value.bool_v = !value.int_v.ui8;  break;
+		case t_uint16: value.bool_v = !value.int_v.ui16; break;
+		case t_uint32: value.bool_v = !value.int_v.ui32; break;
+		case t_uint64: value.bool_v = !value.int_v.ui64; break;
+		case t_bool:   value.bool_v = !value.bool_v; 	 break;
+		default: SGL_ERROR("SGL: type must be integer or boolean for unary ! operator"); break;
+		}
+
+	}
+	static void unary_operator_bitwise_not(m_token& value) {
+		if(value.type != value_v) SGL_ERROR("SGL: invalid type for unary ~ operator");
+		else switch (value.value_type) {
+		case t_int8:   value.int_v.i8   = ~value.int_v.i8;   break;
+		case t_int16:  value.int_v.i16  = ~value.int_v.i16;  break;
+		case t_int32:  value.int_v.i32  = ~value.int_v.i32;  break;
+		case t_int64:  value.int_v.i64  = ~value.int_v.i64;  break;
+		case t_uint8:  value.int_v.ui8  = ~value.int_v.ui8;  break;
+		case t_uint16: value.int_v.ui16 = ~value.int_v.ui16; break;
+		case t_uint32: value.int_v.ui32 = ~value.int_v.ui32; break;
+		case t_uint64: value.int_v.ui64 = ~value.int_v.ui64; break;	
+		default: SGL_ERROR("SGL: type must be integer for unary ~ operator"); break;
+		}
+	}
+
+	static constexpr primitive_type result_of_value(primitive_type a, primitive_type b) {
+		if(a == b) return a;
+		if(t_int8 <= a && a <= t_uint64) {
+			if(t_int8 <= b && b <= t_uint64) {
+				if(t_uint8 <= a && a <= t_uint64) a = primitive_type(a - 4);
+				if(t_uint8 <= b && b <= t_uint64) b = primitive_type(b - 4);
+				return std::max(a, b);
+			}
+			else if(t_float32 == b || b == t_float64) return t_float64;	
+		} else if(t_float32 == a || a == t_float64) {
+			if(t_float32 == b || b == t_float64 || t_int8 <= b && b <= t_uint64) return t_float64;
+		} else if((a == t_string || a == t_char) && (b == t_string || b == t_char)) return t_string;//a != b
+		SGL_ERROR("SGL: invalid type for binary operator");
+		return t_void;
 	}
 
 	using binary_operator_template_func_t = void(*)(m_token& a, m_token& b, primitive_type t);
@@ -914,7 +1032,7 @@ namespace SGL {
 		using iter = typename decltype(tokens)::iterator;
 		std::string s;
 		int cur_prior = 0;
-		size_t ops_count = 0;
+		size_t ops_count = 0;//TODO remove it?
 		iter last_op = tokens.begin();
 		iter eval_beg = tokens.begin();
 
@@ -929,16 +1047,18 @@ namespace SGL {
 				auto& tok = *it;
 				const auto& prev = (it != prev_it) ? *prev_it : m_token(none_v, -1);
 				const auto& next = (next_it != tokens.end()) ? *next_it : m_token(none_v, -1);
-				if (tok.type != operator_v || tok.prior < with_priority) continue;
-				tok.is_unary = false;
-				if (tok.op_v.second == '\0' && ((i == 0 || prev.type == operator_v || prev.type == punct_v) && (tok.op_v.first == '+' || tok.op_v.first == '-') ||
-					tok.op_v.first == '!' || tok.op_v.first == '~' || tok.op_v.first == 't')) {	
-					tok.is_unary = true;
-					//else SGL_ERROR("SGL: less than 2 args given to binary operator");
+				if ((tok.type != operator_v && tok.type != function_v) || tok.prior < with_priority) continue;
+				if(tok.type == operator_v ) {
+					tok.is_unary = false;
+					if (tok.op_v.second == '\0' && ((i == 0 || prev.type == operator_v || prev.type == punct_v) && (tok.op_v.first == '+' || tok.op_v.first == '-') ||
+						tok.op_v.first == '!' || tok.op_v.first == '~' || tok.op_v.first == 't')) {	
+						tok.is_unary = true;
+						//else SGL_ERROR("SGL: less than 2 args given to binary operator");
+					}
+					if (i + 1 == tokens.size() || (next.type == punct_v && (
+						next.punct_v == '}' || next.punct_v == ','
+						))) SGL_ERROR("SGL: less than 2 args given to binary operator");
 				}
-				if (i + 1 == tokens.size() || (next.type == punct_v && (
-					next.punct_v == '}' || next.punct_v == ','
-					))) SGL_ERROR("SGL: less than 2 args given to binary operator");
 				operators.push_back({ &tok, {(int)i, it} });
 			}
 
@@ -946,6 +1066,8 @@ namespace SGL {
 
 			std::sort(operators.begin(), operators.end(), [](const ops_val_t& a, const ops_val_t& b) {
 				if (a.first->prior != b.first->prior) return a.first->prior > b.first->prior;//brackets level
+				if (a.first->type != b.first->type) return a.first->type > b.first->type;
+				if (a.first->type == function_v) return false;
 				if (a.first->is_unary != b.first->is_unary) return int(a.first->is_unary) > int(b.first->is_unary);//unary priority greater then binary
 				if (a.first->is_unary) return a.second.first > b.second.first;//a && b is unary -> priority from right	
 				//by precedence: 1: {  * / %  } 2: {  + -  } 3: {  << >>  } 4: {  > < <= >=  } 5: {  == !=  } 6: {  ^  } 7: {  &  } 8: {  |  } 9: {  &&  } 10: { || }
@@ -972,46 +1094,52 @@ namespace SGL {
 			for (auto& v : operators) {
 				auto cur = v.second.second, next = cur, prev = cur;
 				next++;
-				if (v.first->is_unary) {
-					switch (v.first->op_v.first) {
-					case '-': unary_operator_minus(*next); break;
-					case '~': unary_operator_bitwise_not(*next); break;
-					case '!': unary_operator_not(*next); break;
-					case '+': unary_operator_plus(*next); break;
-					case 't': cast_to_type(*next, v.first->value_type); break;
-					}
-					tokens.erase(v.second.second);//erase operator
+				if(cur->type == function_v) {
+
 				}
 				else {
-					prev--;
-					switch ((int(v.first->op_v.first) << 8) | int(v.first->op_v.second)) {
-					//arithmetic + - * / % 
-					case (int('+') << 8) | int('\0'): binary_operator_sum(*prev, *next); break;
-					case (int('-') << 8) | int('\0'): binary_operator_sub(*prev, *next); break;
-					case (int('*') << 8) | int('\0'): binary_operator_mul(*prev, *next); break;
-					case (int('/') << 8) | int('\0'): binary_operator_div(*prev, *next); break;
-					case (int('%') << 8) | int('\0'): binary_operator_mod(*prev, *next); break;
-					//bitwise ^ | & << >>
-					case (int('^') << 8) | int('\0'): binary_operator_xor(*prev, *next); 		break;
-					case (int('|') << 8) | int('\0'): binary_operator_bitwise_or(*prev, *next); break;
-					case (int('&') << 8) | int('\0'): binary_operator_bitwise_and(*prev, *next);break;	
-					case (int('<') << 8) | int('<'):  binary_operator_lsh(*prev, *next); 		break;
-					case (int('>') << 8) | int('>'):  binary_operator_rsh(*prev, *next); 		break;
-					//logic && || == != > < >= <=
-					case (int('&') << 8) | int('&'):  binary_operator_and(*prev, *next);		break;
-					case (int('|') << 8) | int('|'):  binary_operator_or(*prev, *next);			break;
-					case (int('=') << 8) | int('='):  binary_operator_eqal(*prev, *next);		break;
-					case (int('!') << 8) | int('='):  binary_operator_not_eqal(*prev, *next);	break;
-					case (int('>') << 8) | int('\0'): binary_operator_greater(*prev, *next);	break;
-					case (int('<') << 8) | int('\0'): binary_operator_less(*prev, *next);		break;
-					case (int('>') << 8) | int('='):  binary_operator_not_less(*prev, *next);	break;
-					case (int('<') << 8) | int('='):  binary_operator_not_greater(*prev, *next);break;
-					default: SGL_ERROR("SGL: invalid operator");
-					}					
-					tokens.erase(v.second.second);
-					tokens.erase(next);
+					if (v.first->is_unary) {
+						switch (v.first->op_v.first) {
+						case '-': unary_operator_minus(*next); break;
+						case '~': unary_operator_bitwise_not(*next); break;
+						case '!': unary_operator_not(*next); break;
+						case '+': unary_operator_plus(*next); break;
+						case 't': cast_to_type(*next, v.first->value_type); break;
+						}
+						tokens.erase(v.second.second);//erase operator
+					}
+					else {
+						prev--;
+						switch ((int(v.first->op_v.first) << 8) | int(v.first->op_v.second)) {
+						//arithmetic + - * / % 
+						case (int('+') << 8) | int('\0'): binary_operator_sum(*prev, *next); break;
+						case (int('-') << 8) | int('\0'): binary_operator_sub(*prev, *next); break;
+						case (int('*') << 8) | int('\0'): binary_operator_mul(*prev, *next); break;
+						case (int('/') << 8) | int('\0'): binary_operator_div(*prev, *next); break;
+						case (int('%') << 8) | int('\0'): binary_operator_mod(*prev, *next); break;
+						//bitwise ^ | & << >>
+						case (int('^') << 8) | int('\0'): binary_operator_xor(*prev, *next); 		break;
+						case (int('|') << 8) | int('\0'): binary_operator_bitwise_or(*prev, *next); break;
+						case (int('&') << 8) | int('\0'): binary_operator_bitwise_and(*prev, *next);break;	
+						case (int('<') << 8) | int('<'):  binary_operator_lsh(*prev, *next); 		break;
+						case (int('>') << 8) | int('>'):  binary_operator_rsh(*prev, *next); 		break;
+						//logic && || == != > < >= <=
+						case (int('&') << 8) | int('&'):  binary_operator_and(*prev, *next);		break;
+						case (int('|') << 8) | int('|'):  binary_operator_or(*prev, *next);			break;
+						case (int('=') << 8) | int('='):  binary_operator_eqal(*prev, *next);		break;
+						case (int('!') << 8) | int('='):  binary_operator_not_eqal(*prev, *next);	break;
+						case (int('>') << 8) | int('\0'): binary_operator_greater(*prev, *next);	break;
+						case (int('<') << 8) | int('\0'): binary_operator_less(*prev, *next);		break;
+						case (int('>') << 8) | int('='):  binary_operator_not_less(*prev, *next);	break;
+						case (int('<') << 8) | int('='):  binary_operator_not_greater(*prev, *next);break;
+						default: SGL_ERROR("SGL: invalid operator");
+						}					
+						tokens.erase(v.second.second);
+						tokens.erase(next);
+					}
 				}
 			}
+
 			ops_count = 0;
 			if(with_priority == 0) eval_beg = tokens.end(), eval_beg--;
 		};
@@ -1183,6 +1311,13 @@ namespace SGL {
 					if(in.get() != '(') SGL_ERROR("SGL: missing open '(' in type cast");
 					m_token t{ operator_v, cur_prior, f->second->base_type };
 					t.op_v = { 't', '\0' };
+					tokens.push_back(t);
+					ops_count++;
+				} else if(auto f = buildin_functions.find(s); f != buildin_functions.end()) {//buildin function
+					skip_comments_and_spaces(in);
+					if(in.get() != '(') SGL_ERROR("SGL: missing open '(' in type cast");
+					m_token t{ function_v, cur_prior };
+					t.function_v = &f->second;	
 					tokens.push_back(t);
 					ops_count++;
 				}
