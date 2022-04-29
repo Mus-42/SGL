@@ -85,6 +85,8 @@ namespace SGL {
         value* get_local_value(parse_result& p, const std::string& name);
         type& register_struct(state& s, const std::string& name, size_t size, std::vector<type::member>&& members, void*, void*, void*);
 
+        void set_global_variable(state& s, const std::string& variable_name, privitive_type t, void* data, size_t array_size);
+        void set_global_variable(state& s, const std::string& variable_name, const std::string& type_name, void* data, size_t array_size);
         //TODO type& get_type_ ...
     };
 
@@ -132,6 +134,13 @@ namespace SGL {
 
         parse_result& parse_stream(std::istream& in) {
             return SGL::parse_stream(*this, in);
+        }
+
+        void set_global_variable(const std::string& variable_name, privitive_type t, void* data, size_t array_size = 0) {
+            details::set_global_variable(*this, variable_name, t, data, array_size);
+        }
+        void set_global_variable(const std::string& variable_name, const std::string& type_name, void* data, size_t array_size = 0) {
+            details::set_global_variable(*this, variable_name, type_name, data, array_size);
         }
     };
 

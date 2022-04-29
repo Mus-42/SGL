@@ -10,7 +10,6 @@ do somesing with C++ exceptions in C API?
 add contains function for parse_result
 add parse_... functions for string, ...? (in C++)
 add CMake Install for library?
-way to add|change global variables 
 for C API add file parsing for FILE*
 add redefine check
 add config.hpp?

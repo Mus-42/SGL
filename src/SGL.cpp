@@ -82,12 +82,12 @@ namespace SGL {
 	};
 
 	state::~state() {
-		while (!m_results.empty()) (*m_results.begin())->~parse_result();//TODO fix array size
-		for (auto& [name, var] : global_constants) details::destruct_val(var.m_type, 0, var.data);
+		while (!m_results.empty()) (*m_results.begin())->~parse_result();
+		for (auto& [name, var] : global_constants) details::destruct_val(var.m_type, var.array_size, var.data);
 	}
 	parse_result::~parse_result() {
 		if (m_state) m_state->m_results.erase(this);
-		for (auto& [name, var] : local_variables) details::destruct_val(var.m_type, 0, var.data);
+		for (auto& [name, var] : local_variables) details::destruct_val(var.m_type, var.array_size, var.data);
 	}
 
 	static error_callback_t sgl_error_callback__ = details::defualt_sgl_error_function;
@@ -133,7 +133,7 @@ namespace SGL {
 				if (name.empty() || (name.front() != '_' && !std::isalpha(static_cast<unsigned char>(name.front())))) return false;
 				for (auto ch : name) if (ch != '_' && !std::isalnum(static_cast<unsigned char>(ch))) return false;
 				return true;
-					})(name) && "incorrect type name");
+					})(name));//correct type name
 			auto& t = s.global_types[name];
 			t.base_type = t_custom;
 			t.members = members;
@@ -161,6 +161,21 @@ namespace SGL {
 			auto f = p.local_variables.find(name);
 			if (f == p.local_variables.end()) return nullptr;
 			return &(f->second);
+		}
+
+        void set_global_variable(state& s, const std::string& variable_name, privitive_type t, void* data, size_t array_size) {
+			auto& v = s.global_constants[variable_name];
+			v.array_size = array_size;
+			v.m_type = &buildin_types_v[t];
+			v.data = new char[(array_size ? array_size : 1) * v.m_type->size];
+			details::copy_val(v.m_type, array_size, v.data, data);
+		}
+        void set_global_variable(state& s, const std::string& variable_name, const std::string& type_name, void* data, size_t array_size) {
+			auto& v = s.global_constants[variable_name];
+			v.array_size = array_size;
+			v.m_type = &s.global_types.find(type_name)->second;
+			v.data = new char[(array_size ? array_size : 1) * v.m_type->size];
+			details::copy_val(v.m_type, array_size, v.data, data);
 		}
 	}
 		

@@ -113,4 +113,18 @@ extern "C" {
     bool sgl_is_same_custom_type(sgl_parse_result p, const char* name, const char* type_name) {
         return static_cast<SGL::parse_result*>(p)->is_same_custom_type(name, type_name);
     }
+
+    
+    void set_global_variable_primitive_type(sgl_state s, const char* variable_name, sgl_privitive_type t, void* data) {
+        set_global_variable_primitive_type_array(s, variable_name, t, data, 0);
+    }
+    void set_global_variable_custom_type(sgl_state s, const char* variable_name, const char* type_name, void* data) {
+        set_global_variable_custom_type_array(s, variable_name, type_name, data, 0);
+    }
+    void set_global_variable_primitive_type_array(sgl_state s, const char* variable_name, sgl_privitive_type t, void* data, size_t array_size) {
+        SGL::details::set_global_variable(*static_cast<SGL::state*>(s), variable_name, static_cast<SGL::privitive_type>(t), data, array_size);
+    }
+    void set_global_variable_custom_type_array(sgl_state s, const char* variable_name, const char* type_name, void* data, size_t array_size) {
+        SGL::details::set_global_variable(*static_cast<SGL::state*>(s), variable_name, type_name, data, array_size);
+    }
 }

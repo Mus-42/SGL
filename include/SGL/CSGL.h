@@ -84,6 +84,11 @@ bool sgl_is_custom_type(sgl_parse_result p, const char* name);
 bool sgl_is_same_primitive_type(sgl_parse_result p, const char* name, sgl_privitive_type t);
 bool sgl_is_same_custom_type(sgl_parse_result p, const char* name, const char* type_name);
 
+void set_global_variable_primitive_type(sgl_state s, const char* variable_name, sgl_privitive_type t, void* data);
+void set_global_variable_custom_type(sgl_state s, const char* variable_name, const char* type_name, void* data);
+void set_global_variable_primitive_type_array(sgl_state s, const char* variable_name, sgl_privitive_type t, void* data, size_t array_size);
+void set_global_variable_custom_type_array(sgl_state s, const char* variable_name, const char* type_name, void* data, size_t array_size);
+
 #ifdef  __cplusplus
 }//extern "C"
 #endif//__cplusplus
