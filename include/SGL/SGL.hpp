@@ -33,7 +33,7 @@ namespace SGL {
         t_custom
     };
     struct cstring {
-        char* data = nullptr;
+        const char* data = nullptr;
         size_t size = 0;
     };
     struct type {
@@ -168,7 +168,7 @@ namespace SGL {
             details::set_global_variable(*this, variable_name, type_name, data, array_size);
         }
 
-        void add_function(const std::string& name, function f) {
+        void add_function(const std::string& name, const function& f) {
             global_functions[name] = f;
         }
     };

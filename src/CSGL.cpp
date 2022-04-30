@@ -11,6 +11,19 @@ extern "C" {
     void sgl_delete_state(sgl_state s) {
         delete reinterpret_cast<SGL::state*>(s);
     }
+    sgl_function sgl_new_function(sgl_function_overload* overloads, size_t overloads_count) {
+        std::vector<SGL::function::function_overload> o;
+        for(size_t i = 0; i < overloads_count; i++) {
+            SGL::function::function_overload f(overloads[i].ptr, static_cast<SGL::primitive_type>(overloads[i].ret_type), 
+                std::vector<SGL::primitive_type>(reinterpret_cast<SGL::primitive_type*>(overloads[i].args_types), 
+                reinterpret_cast<SGL::primitive_type*>(overloads[i].args_types) + overloads[i].args_types_count));
+            o.push_back(std::move(f));
+        } 
+        return new SGL::function(std::move(o));
+    }
+    void sgl_delete_function(sgl_function f) {
+        delete reinterpret_cast<SGL::function*>(f);
+    }
     sgl_parse_result sgl_new_parse_result() {
         return new SGL::parse_result;
     }
@@ -126,5 +139,9 @@ extern "C" {
     }
     void sgl_set_global_variable_custom_type_array(sgl_state s, const char* variable_name, const char* type_name, void* data, size_t array_size) {
         SGL::details::set_global_variable(*static_cast<SGL::state*>(s), variable_name, type_name, data, array_size);
+    }
+
+    void sgl_add_function(sgl_state s, const char* name, sgl_function f) {
+        static_cast<SGL::state*>(s)->add_function(name, *static_cast<SGL::function*>(f));
     }
 }

@@ -108,9 +108,10 @@ namespace SGL {
 				if(v->data) delete v->data;
 			}),
 			(void*)(details::t_copy<SGL::cstring>)([](SGL::cstring* v, SGL::cstring* from) {
-				v->data = new char[from->size+1];
+				char* d = new char[from->size+1];
+				memcpy(d, from->data, from->size+1);
+				v->data = d;
 				v->size = from->size;
-				memcpy(v->data, from->data, from->size+1);
 			})
 		),
 		details::construct_type(t_char)
@@ -624,7 +625,8 @@ namespace SGL {
 				return;	
 			}
 		} break;
-		case t_string: {
+		case t_string: case t_cstring: {
+			if(val.value_type == t_string) return;
 			if(val.value_type == t_char) {
 				char ch = val.char_v;
 				val = m_token(value_v, val.prior, t_string);
@@ -668,7 +670,7 @@ namespace SGL {
 	template<size_t depth, size_t max_depth, typename... Args>
 	static void call_function_impl(const function::function_overload* func, m_token* ans, m_token** args_t, Args... args) {
 		if constexpr(depth < max_depth) {
-			switch(args_t[depth]->value_type) {
+			switch(func->args_types[depth]) {
 			case t_int8 : 	call_function_impl<depth+1, max_depth, Args..., int8_t >(func, ans, args_t, args..., args_t[depth]->int_v.i8 ); break;
 			case t_int16: 	call_function_impl<depth+1, max_depth, Args..., int16_t>(func, ans, args_t, args..., args_t[depth]->int_v.i16); break;
 			case t_int32: 	call_function_impl<depth+1, max_depth, Args..., int32_t>(func, ans, args_t, args..., args_t[depth]->int_v.i32); break;
@@ -678,11 +680,12 @@ namespace SGL {
 			case t_uint32: 	call_function_impl<depth+1, max_depth, Args..., uint32_t>(func, ans, args_t, args..., args_t[depth]->int_v.ui32); break;
 			case t_uint64: 	call_function_impl<depth+1, max_depth, Args..., uint64_t>(func, ans, args_t, args..., args_t[depth]->int_v.ui64); break;
 
-			case t_float32: call_function_impl<depth+1, max_depth, Args..., float>(func, ans, args_t, args..., (double)args_t[depth]->float_v); break;
+			case t_float32: call_function_impl<depth+1, max_depth, Args..., float>(func, ans, args_t, args..., (float)args_t[depth]->float_v); break;
 			case t_float64: call_function_impl<depth+1, max_depth, Args..., double>(func, ans, args_t, args..., args_t[depth]->float_v); break;
 
-			case t_bool: 	call_function_impl<depth+1, max_depth, Args..., bool>(func, ans, args_t, args..., (double)args_t[depth]->bool_v); break;
+			case t_bool: 	call_function_impl<depth+1, max_depth, Args..., bool>(func, ans, args_t, args..., args_t[depth]->bool_v); break;
 			case t_string: 	call_function_impl<depth+1, max_depth, Args..., std::string>(func, ans, args_t, args..., args_t[depth]->str_v); break;
+			case t_cstring: call_function_impl<depth+1, max_depth, Args..., cstring>(func, ans, args_t, args..., cstring{args_t[depth]->str_v.c_str(), args_t[depth]->str_v.size()}); break;
 			case t_char: 	call_function_impl<depth+1, max_depth, Args..., char>(func, ans, args_t, args..., args_t[depth]->char_v); break;
 
 			default: SGL_ERROR("SGL: invalid function args type");
@@ -1142,6 +1145,7 @@ namespace SGL {
 						if((args_count%2 == 0 && it->type != value_v) || (args_count%2 == 1 && (it->type != punct_v || it->punct_v != ','))) 
 							SGL_ERROR("SGL: invalid function args operator");
 						if(args_count%2 == 0) args.push_back(&*it);
+						args_count++;
 					}
 					function_call(cur->function_v, &*cur, args.data(), args.size());
 					auto it = cur;
@@ -1255,7 +1259,8 @@ namespace SGL {
 				v.array_size = 0;
 				v.data = static_cast<char*>(v.data) + (v.m_type->size * index);
 			} break;
-			case '}': case ',': { if (cur_prior != 0) SGL_ERROR("SGL: invalid brackets sequence"); eval_expr(); }
+			case '}': { if (cur_prior != 0) SGL_ERROR("SGL: invalid brackets sequence"); eval_expr(); } 
+			case ',': { if (cur_prior == 0) eval_expr(); }
 			case '{': { m_token t{ punct_v, cur_prior }; t.punct_v = ch; tokens.push_back(t); } break;
 			case '.': {
 				if (!std::isdigit(in.peek())) { m_token t{ punct_v, cur_prior };t.punct_v = ch;tokens.push_back(t);break; }
@@ -1348,7 +1353,7 @@ namespace SGL {
 
 			default: {
 				std::string s;
-				while(in.good() && std::isalnum(ch)) s += ch, ch = in.get();
+				while(in.good() && (std::isalnum(ch) || ch == '_')) s += ch, ch = in.get();
 				if(s == "true") {
 					m_token t{ value_v, cur_prior, t_bool };
 					t.bool_v = true;
@@ -1466,9 +1471,10 @@ namespace SGL {
 						case t_cstring: {
 							cast_to_type(*it, t_string);
 							auto& str = *reinterpret_cast<SGL::cstring*>(cur_data);
-							str.data = new char[it->str_v.size()+1];
+							char* d = new char[it->str_v.size()+1];
+							memcpy(d, it->str_v.data(), str.size+1);
+							str.data = d;
 							str.size = it->str_v.size();
-							memcpy(str.data, it->str_v.data(), str.size+1);
 						} break;		
 						case t_char: cast_to_type(*it, t_char); *reinterpret_cast<char*>(cur_data) = it->char_v; break;		
 						case t_bool: cast_to_type(*it, t_bool); *reinterpret_cast<bool*>(cur_data) = it->bool_v; break;	
@@ -1490,6 +1496,7 @@ namespace SGL {
 			}
 			return it;
 		};
+		if(tokens.empty()) SGL_ERROR("SGL: invalid initilizer");
 		auto it = get_result(tokens.begin(), t, array_size, data);
 		if(it != tokens.end()) SGL_ERROR("SGL: excepted ';'");
 	}

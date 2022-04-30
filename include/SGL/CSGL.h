@@ -27,6 +27,7 @@ typedef enum {
 
 typedef void* sgl_state;
 typedef void* sgl_type;
+typedef void* sgl_function;
 typedef void* sgl_parse_result;
 
 typedef void(*sgl_value_constructor)(void* value);
@@ -44,12 +45,22 @@ typedef struct {//same as C++ SGL::type::member but use const char* instead of s
 } sgl_type_member;
 
 typedef struct {
-    char* data;
+    const char* data;
     size_t size;
 } sgl_cstring;
 
+typedef struct {
+    void* ptr;//function pointer
+    sgl_primitive_type ret_type;
+    size_t args_types_count;
+    sgl_primitive_type* args_types;
+} sgl_function_overload;
+
 sgl_state sgl_new_state();
 void sgl_delete_state(sgl_state s);
+
+sgl_function sgl_new_function(sgl_function_overload* overloads, size_t overloads_count);
+void sgl_delete_function(sgl_function f);
 
 sgl_parse_result sgl_new_parse_result();
 void sgl_delete_parse_result(sgl_parse_result p);
@@ -88,6 +99,8 @@ void sgl_set_global_variable_primitive_type(sgl_state s, const char* variable_na
 void sgl_set_global_variable_custom_type(sgl_state s, const char* variable_name, const char* type_name, void* data);
 void sgl_set_global_variable_primitive_type_array(sgl_state s, const char* variable_name, sgl_primitive_type t, void* data, size_t array_size);
 void sgl_set_global_variable_custom_type_array(sgl_state s, const char* variable_name, const char* type_name, void* data, size_t array_size);
+
+void sgl_add_function(sgl_state s, const char* name, sgl_function f);
 
 #ifdef  __cplusplus
 }//extern "C"
