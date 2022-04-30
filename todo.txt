@@ -1,11 +1,10 @@
 Lang:
-add top-level array & dynamic array support
+dynamic array support
 custom types definition
 ternary operator (a ? b : c)
 enumerations
 
 Lib:
-add custom functions pass in C API
 fix error processing
 do somesing with C++ exceptions in C API?
 add parse_... functions for string, ...? (in C++)

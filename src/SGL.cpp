@@ -521,25 +521,25 @@ namespace SGL {
 		if(val.value_type == t_custom) {
 			if(val.object_v.array_size != 0) SGL_ERROR("SGL: cannot cast array to scalar value");
 			switch (val.object_v.m_type->base_type) {
-			#define SGL_CAST_TO_T(name, value, var)\
+			#define SGL_CAST_TO_T(name, value_type, value, var)\
 			case name: {\
-				m_token t{value_v, val.prior, name};\
+				m_token t{value_v, val.prior, value_type};\
 				t.var = *static_cast<value*>(val.object_v.data);\
 				val = t;\
 			} break;
-			SGL_CAST_TO_T(t_int8,  int8_t,  int_v.i8)
-			SGL_CAST_TO_T(t_int16, int16_t, int_v.i16)
-			SGL_CAST_TO_T(t_int32, int32_t, int_v.i32)
-			SGL_CAST_TO_T(t_int64, int64_t, int_v.i64)
-			SGL_CAST_TO_T(t_uint8,  uint8_t,  int_v.ui8)
-			SGL_CAST_TO_T(t_uint16, uint16_t, int_v.ui16)
-			SGL_CAST_TO_T(t_uint32, uint32_t, int_v.ui32)
-			SGL_CAST_TO_T(t_uint64, uint64_t, int_v.ui64)
-			SGL_CAST_TO_T(t_float32, float, float_v)
-			SGL_CAST_TO_T(t_float64, double, float_v)
-			SGL_CAST_TO_T(t_bool, bool, bool_v)
-			SGL_CAST_TO_T(t_char, char, char_v)
-			SGL_CAST_TO_T(t_string, std::string, str_v)
+			SGL_CAST_TO_T(t_int8,    t_int8,    int8_t,  int_v.i8)
+			SGL_CAST_TO_T(t_int16,   t_int16,   int16_t, int_v.i16)
+			SGL_CAST_TO_T(t_int32,   t_int32,   int32_t, int_v.i32)
+			SGL_CAST_TO_T(t_int64,   t_int64,   int64_t, int_v.i64)
+			SGL_CAST_TO_T(t_uint8,   t_uint8,   uint8_t,  int_v.ui8)
+			SGL_CAST_TO_T(t_uint16,  t_uint16,  uint16_t, int_v.ui16)
+			SGL_CAST_TO_T(t_uint32,  t_uint32,  uint32_t, int_v.ui32)
+			SGL_CAST_TO_T(t_uint64,  t_uint64,  uint64_t, int_v.ui64)
+			SGL_CAST_TO_T(t_float32, t_float64, float, float_v)
+			SGL_CAST_TO_T(t_float64, t_float64, double, float_v)
+			SGL_CAST_TO_T(t_bool,    t_bool,    bool, bool_v)
+			SGL_CAST_TO_T(t_char,    t_char,    char, char_v)
+			SGL_CAST_TO_T(t_string,  t_string,  std::string, str_v)
 			#undef SGL_CAST_TO_T
 			default: SGL_ERROR("SGL: invalid type cast"); break;
 			}
@@ -594,6 +594,9 @@ namespace SGL {
 		SGL_CAST_TO_INT_T(uint64, ui64);
 		#undef SGL_CAST_TO_INT_T
 		
+		case t_float32: {
+			if(val.value_type == t_float64) return;
+		}
 		case t_float64: {
 			if(t_int8 <= val.value_type && val.value_type <= t_uint64) {
 				double f = 0;
@@ -840,7 +843,10 @@ namespace SGL {
 	}
 
 	static constexpr primitive_type result_of_value(primitive_type a, primitive_type b) {
-		if(a == b) return a;
+		if(a == b) {
+			if(a == t_float32) return t_float64;
+			return a;
+		}
 		if(t_int8 <= a && a <= t_uint64) {
 			if(t_int8 <= b && b <= t_uint64) {
 				if(t_uint8 <= a && a <= t_uint64) a = primitive_type(a - 4);
@@ -1067,7 +1073,7 @@ namespace SGL {
 		unary_operator_not(val);
 	}
 
-	static void parse_expession(const state* cur_state, const parse_result* res, const type* t, size_t array_size, char* data, std::istream& in) {
+	static void parse_expession(const state* cur_state, const parse_result* res, const type* t, size_t array_size, char* data, std::istream& in, char parse_end) {
 		//{1, 2, 3, int(23), g.v, 12+13, 12.4, "qq all"}
 		skip_comments_and_spaces(in);
 		int ch = in.get();
@@ -1199,9 +1205,13 @@ namespace SGL {
 			if(with_priority == 0) eval_beg = tokens.end(), eval_beg--;
 		};
 
-		while (in.good() && ch != ';') {
+		while (in.good()) {
 			skip_comments_and_spaces(in);
 			ch = in.get();
+			if(ch == parse_end) {
+				if(parse_end == ']' || parse_end == ')') { if(cur_prior == 0) break; }
+				else break;	
+			}
 			if (!in.good()) break;
 			switch (ch) {
 			case '+': case '-': case '*': case '/': case '%':
@@ -1530,6 +1540,21 @@ namespace SGL {
 				skip_comments_and_spaces(in);
 				ch = in.get();
 
+				size_t array_size = 0;
+
+				if(ch == '[') {
+					uint64_t sz = 0;
+					ch = in.get();
+					parse_expession(&cur_state, res, &buildin_types_v[t_uint64], 0, reinterpret_cast<char*>(&sz), in, ']');
+					array_size = sz;
+					skip_comments_and_spaces(in);
+					ch = in.get();
+					if (ch != ']') SGL_ERROR("SGL: expected ']' caracter");
+					ch = in.get();
+					skip_comments_and_spaces(in);
+					ch = in.get();
+				}
+
 				if (!in.good()) SGL_ERROR("SGL: unexpected end of file");
 				if (ch != '=') SGL_ERROR("SGL: expected '=' caracter");
 				ch = in.get();
@@ -1541,12 +1566,13 @@ namespace SGL {
 
 				auto& cur_val = res->local_variables[name];
 				cur_val.m_type = t;
-				char* data = new char[t->size];
+				cur_val.array_size = array_size;
+				char* data = new char[t->size * (array_size ? array_size : 1)];
 				cur_val.data = data;
 
-				details::construct_val(t, 0, data);
+				details::construct_val(t, array_size, data);
 
-				parse_expession(&cur_state, res, t, 0, data, in);
+				parse_expession(&cur_state, res, t, array_size, data, in, ';');
 				ch = in.get();
 			}
 		}
