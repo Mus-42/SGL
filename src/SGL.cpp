@@ -361,11 +361,14 @@ namespace SGL {
 					SGL_ASSERT(m.m_type);
 				}
 				else m.m_type = &buildin_types_v[m.type];
-			auto& b = t.members.back();
-			size_t sz = b.offset + (b.array_size ? b.array_size : 1) * (b.type == t_custom ? b.m_type->size : type_size[b.type]);
-			SGL_ASSERT(size && sz <= size);
+			
+			if(t.members.size()) {
+				auto& b = t.members.back();
+				size_t sz = b.offset + (b.array_size ? b.array_size : 1) * (b.type == t_custom ? b.m_type->size : type_size[b.type]);
+				SGL_ASSERT(size && sz <= size);
+			}
 
-			t.size = size;
+			t.size = std::max(size, (size_t)1);
 
 			t.m_construct = v1;
 			t.m_destruct = v2;
@@ -1111,7 +1114,10 @@ namespace SGL {
 				operators.push_back({ &tok, {(int)i, it} });
 			}
 
-			if(operators.empty()) return;
+			if(operators.empty()) {
+				if(with_priority == 0) eval_beg = tokens.end(), eval_beg--;
+				return;
+			}
 
 			std::sort(operators.begin(), operators.end(), [](const ops_val_t& a, const ops_val_t& b) {
 				if (a.first->prior != b.first->prior) return a.first->prior > b.first->prior;//brackets level
@@ -1369,7 +1375,7 @@ namespace SGL {
 					t.bool_v = true;
 					tokens.push_back(t);
 				} else if(s == "false") {
-					m_token t{ value_v, cur_prior };
+					m_token t{ value_v, cur_prior, t_bool };
 					t.bool_v = false;
 					tokens.push_back(t);
 				} else if(auto f = buildin_types.find(s); f != buildin_types.end()) {//typecast
@@ -1419,7 +1425,8 @@ namespace SGL {
 							m_token t { value_v, cur_prior, t_custom };
 							t.object_v = f2->second;
 							tokens.push_back(t);
-						} else SGL_ERROR("SGL: invalid value");
+						} 
+						else SGL_ERROR("SGL: invalid value");
 					}
 				}
 				in.unget();
