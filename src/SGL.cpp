@@ -93,7 +93,7 @@ namespace SGL {
 			(void*)(details::t_destruct<std::string>)([](std::string* v) {
 				v->~basic_string();
 			}),
-			(void*)(details::t_copy<std::string>)([](std::string* v, std::string* from) {
+			(void*)(details::t_copy<std::string>)([](std::string* v, const std::string* from) {
 				new (v) std::string(*from);
 			})
 		),
@@ -106,7 +106,7 @@ namespace SGL {
 			(void*)(details::t_destruct<SGL::cstring>)([](SGL::cstring* v) {
 				if(v->data) delete v->data;
 			}),
-			(void*)(details::t_copy<SGL::cstring>)([](SGL::cstring* v, SGL::cstring* from) {
+			(void*)(details::t_copy<SGL::cstring>)([](SGL::cstring* v, const SGL::cstring* from) {
 				char* d = new char[from->size+1];
 				memcpy(d, from->data, from->size+1);
 				v->data = d;
@@ -331,12 +331,12 @@ namespace SGL {
 					destruct_val(m.m_type, m.array_size, (static_cast<char*>(v) + i * t->size + m.offset));
 			}
 		}
-		void copy_val(const type* t, size_t arr_size, void* v, void* from) {
+		void copy_val(const type* t, size_t arr_size, void* v, const void* from) {
 			if (t->m_copy) for (size_t i = 0, s = arr_size ? arr_size : 1; i < s; i++)
-				reinterpret_cast<t_copy<void>>(t->m_copy)(static_cast<char*>(v) + i * t->size, static_cast<char*>(from) + i * t->size);
+				reinterpret_cast<t_copy<void>>(t->m_copy)(static_cast<char*>(v) + i * t->size, static_cast<const char*>(from) + i * t->size);
 			else {
 				if (t->base_type == t_custom) for (size_t i = 0, s = arr_size ? arr_size : 1; i < s; i++) for (auto m : t->members)
-					copy_val(m.m_type, m.array_size, (static_cast<char*>(v) + i * t->size + m.offset), (static_cast<char*>(from) + i * t->size + m.offset));
+					copy_val(m.m_type, m.array_size, (static_cast<char*>(v) + i * t->size + m.offset), (static_cast<const char*>(from) + i * t->size + m.offset));
 				else memcpy(v, from, (arr_size ? arr_size : 1) * t->size);
 			}
 		}
@@ -380,14 +380,14 @@ namespace SGL {
 			return &(f->second);
 		}
 
-        void set_global_variable(state& s, const std::string& variable_name, primitive_type t, void* data, size_t array_size) {
+        void set_global_variable(state& s, const std::string& variable_name, primitive_type t, const void* data, size_t array_size) {
 			auto& v = s.global_constants[variable_name];
 			v.array_size = array_size;
 			v.m_type = &buildin_types_v[t];
 			v.data = new char[(array_size ? array_size : 1) * v.m_type->size];
 			details::copy_val(v.m_type, array_size, v.data, data);
 		}
-        void set_global_variable(state& s, const std::string& variable_name, const std::string& type_name, void* data, size_t array_size) {
+        void set_global_variable(state& s, const std::string& variable_name, const std::string& type_name, const void* data, size_t array_size) {
 			auto& v = s.global_constants[variable_name];
 			v.array_size = array_size;
 			v.m_type = &s.global_types.find(type_name)->second;
