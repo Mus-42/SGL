@@ -19,6 +19,10 @@
 #include <cmath>
 #include <cassert>
 
+#ifndef SGL_ASSERT
+    #define SGL_ASSERT(v) { if(!(v)) { SGL::error("assertion failed in " + std::to_string(__LINE__)); } }
+#endif
+
 namespace SGL {
     enum primitive_type : uint8_t {
         t_void = 0,
@@ -133,12 +137,30 @@ namespace SGL {
     parse_result& parse_stream(state& s, std::istream& in);
 
     template<typename T>
-    inline T get_local_value(parse_result& p, const std::string& name) {
+    inline void get_local_value(parse_result& p, const std::string& name, T& val) {
         value* v = details::get_local_value(p, name);
-        assert(v && v->data && sizeof(T) == v->m_type->size);
-        T val;
+        SGL_ASSERT(v && v->data && sizeof(T) == v->m_type->size);
         details::copy_val(v->m_type, 0, &val, v->data);
+    }
+    template<typename T>
+    inline T get_local_value(parse_result& p, const std::string& name) {  
+        T val;
+        get_local_value<T>(p, name, val);
         return val;
+    }
+
+    
+    template<typename T>//pair array pointer & size_t size
+    inline std::pair<T*, size_t> get_local_value_array(parse_result& p, const std::string& name) {
+        value* v = details::get_local_value(p, name);
+        SGL_ASSERT(v && v->data && sizeof(T) == v->m_type->size && );
+        return { static_cast<T*>(v->data), v->array_size };
+    }
+    template<typename T>//pair array pointer & size_t size
+    inline void get_local_value_array(parse_result& p, const std::string& name, T* array, size_t array_size) {
+        value* v = details::get_local_value(p, name);
+        SGL_ASSERT(v && v->data && sizeof(T) == v->m_type->size && array_size <= v->array_size);
+        details::copy_val(v->m_type, array_size, array, v->data);
     }
 
     struct state {
@@ -183,6 +205,20 @@ namespace SGL {
         template<typename T>
         T get_local_value(const std::string& name) {
             return SGL::get_local_value<T>(*this, name);
+        }
+        template<typename T>
+        void get_local_value(const std::string& name, T& val) {
+            SGL::get_local_value<T>(*this, name, val);
+        }
+
+
+        template<typename T>//pair array pointer & size_t size
+        inline std::pair<T*, size_t> get_local_value_array(const std::string& name) {
+            return get_local_value_array<T>(*this, name);
+        }
+        template<typename T>
+        inline void get_local_value_array(const std::string& name, T* array, size_t array_size) {
+            get_local_value_array<T>(*this, name, array, array_size);
         }
 
         

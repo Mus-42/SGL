@@ -96,6 +96,25 @@ extern "C" {
         }
         else SGL::details::copy_val(r->m_type, 0, dest, r->data);
     }
+    void* sgl_get_local_value_array(sgl_parse_result p, const char* var_name, size_t* array_size) {
+        if(!p || !array_size || !var_name) return nullptr;
+        auto r = SGL::details::get_local_value(*static_cast<SGL::parse_result*>(p), var_name);
+        *array_size = r->array_size;
+        if(r->m_type->base_type == SGL::t_string) {
+            sgl_cstring* ret = static_cast<sgl_cstring*>(malloc(sizeof(sgl_cstring) * (r->array_size ? r->array_size : 1)));
+            std::string* str = static_cast<std::string*>(r->data);
+            for(size_t i = 0, s = r->array_size ? r->array_size : 1; i < s; i++) {
+                ret[i].data = str[i].data();
+                ret[i].size = str[i].size();
+            }
+            return ret;
+        } 
+        else {     
+            void* ret = malloc(r->m_type->size * (r->array_size ? r->array_size : 1));
+            SGL::details::copy_val(r->m_type, r->array_size, ret, r->data);
+            return ret;
+        }
+    }
 
     void sgl_set_error_callback(sgl_error_callback_t f) {
         SGL::set_error_callback([f](const std::string& description) {

@@ -78,10 +78,8 @@ void sgl_register_struct(sgl_state s, const char* name, size_t struct_size, cons
 sgl_parse_result sgl_parse_file(sgl_state s, const char* filename);
 sgl_parse_result sgl_parse_string(sgl_state s, const char* string);
 
-//copy variable to dest
-void sgl_get_local_value(sgl_parse_result p, const char* var_name, void* dest);
-//TODO add get_local_value for array?
-
+void sgl_get_local_value(sgl_parse_result p, const char* var_name, void* dest); //copy variable to dest
+void* sgl_get_local_value_array(sgl_parse_result p, const char* var_name, size_t* array_size); //void* pointer to array copy, array_size - size
 
 void sgl_set_error_callback(sgl_error_callback_t f);
 void sgl_error(const char* description);

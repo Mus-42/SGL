@@ -9,7 +9,6 @@
 #include <map>
 #include <tuple>
 
-#define SGL_ASSERT(v) if(!(v)) { SGL::error("assertion failed in " + std::to_string(__LINE__)); }
 #define SGL_ERROR(v) throw SGL::details::sgl_exception(v)
 
 namespace SGL {
