@@ -12,6 +12,7 @@
 #include <set>
 #include <vector>
 #include <iostream>
+#include <fstream>
 #include <type_traits>
 #include <functional>
 
@@ -97,17 +98,17 @@ namespace SGL {
     namespace details {
         template<typename T> using t_construct = void(*)(T*);//this
         template<typename T> using t_destruct = void(*)(T*);//this
-        template<typename T> using t_copy = void(*)(T*, T*);//this, other
+        template<typename T> using t_copy = void(*)(T*, const T*);//this, other
 
         void construct_val(const type* t, size_t arr_size, void* v);
         void destruct_val(const type* t, size_t arr_size, void* v);
-        void copy_val(const type* t, size_t arr_size, void* v, void* from);
+        void copy_val(const type* t, size_t arr_size, void* v, const void* from);
 
         value* get_local_value(parse_result& p, const std::string& name);
         type& register_struct(state& s, const std::string& name, size_t size, std::vector<type::member>&& members, void*, void*, void*);
 
-        void set_global_variable(state& s, const std::string& variable_name, primitive_type t, void* data, size_t array_size);
-        void set_global_variable(state& s, const std::string& variable_name, const std::string& type_name, void* data, size_t array_size);
+        void set_global_variable(state& s, const std::string& variable_name, primitive_type t, const void* data, size_t array_size);
+        void set_global_variable(state& s, const std::string& variable_name, const std::string& type_name, const void* data, size_t array_size);
 
         //TODO type& get_type_ ...
 
@@ -157,14 +158,27 @@ namespace SGL {
             return details::register_struct(*this, name, sizeof(T), std::move(members), (void*)v1, (void*)v2, (void*)v3);
         }
 
+        parse_result& parse_file(const std::string& filename) {
+            std::ifstream in(filename);
+            return SGL::parse_stream(*this, in);
+        }
         parse_result& parse_stream(std::istream& in) {
             return SGL::parse_stream(*this, in);
         }
 
-        void set_global_variable(const std::string& variable_name, primitive_type t, void* data, size_t array_size = 0) {
+        template<typename T>
+        void set_global_variable(const std::string& variable_name, primitive_type t, const T& data, size_t array_size = 0) {
+            details::set_global_variable(*this, variable_name, t, static_cast<const void*>(&data), array_size);
+        }
+        template<typename T>
+        void set_global_variable(const std::string& variable_name, const std::string& type_name, const T& data, size_t array_size = 0) {
+            details::set_global_variable(*this, variable_name, type_name, static_cast<const void*>(&data), array_size);
+        }
+
+        void set_global_variable(const std::string& variable_name, primitive_type t, const void* data, size_t array_size = 0) {
             details::set_global_variable(*this, variable_name, t, data, array_size);
         }
-        void set_global_variable(const std::string& variable_name, const std::string& type_name, void* data, size_t array_size = 0) {
+        void set_global_variable(const std::string& variable_name, const std::string& type_name, const void* data, size_t array_size = 0) {
             details::set_global_variable(*this, variable_name, type_name, data, array_size);
         }
 
