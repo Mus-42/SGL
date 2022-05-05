@@ -154,7 +154,7 @@ namespace SGL {
     template<typename T>//pair array pointer & size_t size
     inline std::pair<T*, size_t> get_local_value_array(parse_result& p, const std::string& name) {
         value* v = details::get_local_value(p, name);
-        SGL_ASSERT(v && v->data && sizeof(T) == v->m_type->size && );
+        SGL_ASSERT(v && v->data && sizeof(T) == v->m_type->size);
         return { static_cast<T*>(v->data), v->array_size };
     }
     template<typename T>//pair array pointer & size_t size
@@ -228,11 +228,11 @@ namespace SGL {
 
         template<typename T>//pair array pointer & size_t size
         inline std::pair<T*, size_t> get_local_value_array(const std::string& name) {
-            return get_local_value_array<T>(*this, name);
+            return SGL::get_local_value_array<T>(*this, name);
         }
         template<typename T>
         inline void get_local_value_array(const std::string& name, T* array, size_t array_size) {
-            get_local_value_array<T>(*this, name, array, array_size);
+            SGL::get_local_value_array<T>(*this, name, array, array_size);
         }
 
         

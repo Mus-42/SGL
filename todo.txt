@@ -1,3 +1,6 @@
+rewrite type loading
+drop C API
+
 Lang:
 dynamic array support
 custom types definition
