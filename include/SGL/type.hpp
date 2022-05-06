@@ -101,18 +101,15 @@ namespace SGL {
     };
 
     template<typename T> struct sgl_type_identity {};
+    class state;
 
     class type {
     public:
         template<typename T>
-        explicit type(sgl_type_identity<T> t) : m_impl(new type_impl<T>) 
-#if defined(SGL_OPTION_TYPE_CHECKS) && SGL_OPTION_TYPE_CHECKS  
-            , m_type(typeid(T))
-#endif//SGL_OPTION_TYPE_CHECKS   
-        {
-
+        explicit type(sgl_type_identity<T> t, std::string_view type_name, const state* state) : m_impl(new type_impl<T>), 
+            m_type_name(type_name), m_type(typeid(T)), m_state(state) {
+            //TODO check type_name for correct type name
         }
-
         
         //no copy
         type(const type&) = delete;
@@ -120,6 +117,10 @@ namespace SGL {
         //but move
         type(type&&) = default;
         type& operator=(type&&) = default;
+
+        ~type() {
+            delete m_impl;
+        }
 
         template<typename T> void default_construct(T& data) const { check_type<T>(); m_impl->default_construct(&data); }
         template<typename T> void copy_construct(T& data, const T& from) const { check_type<T>(); m_impl->copy_construct(&data, &from); }
@@ -130,16 +131,22 @@ namespace SGL {
         
         template<typename T> void copy_assign(T& data, const T& from) const { check_type<T>(); m_impl->copy_assign(&data, &from); }
         template<typename T> void move_assign(T& data, T&& from) const { check_type<T>(); m_impl->move_assign(&data, &from); }
-    private:
-#if defined(SGL_OPTION_TYPE_CHECKS) && SGL_OPTION_TYPE_CHECKS
-        const type_info& m_type;
-#endif//SGL_OPTION_TYPE_CHECKS
-        type_impl_base* m_impl;
+
+        template<typename T, typename U> type& add_member(std::string_view member_name, U T::*member_ptr) {
+            m_state->get_type<U>();
+        }
+        
+    protected:
+        friend class state;
+        const type_info& m_type;//used in state and in check_type
+        const type_impl_base* m_impl;
+        const std::string m_type_name;
+        const state* const m_state;
 
         template<typename T>
         void check_type() const {
 #if defined(SGL_OPTION_TYPE_CHECKS) && SGL_OPTION_TYPE_CHECKS
-            SGL_ASSERT(m_type == typeid(T));
+            SGL_ASSERT(m_type == typeid(T), "type specified in constructor call must me same with T");
 #endif//SGL_OPTION_TYPE_CHECKS
         }
     };

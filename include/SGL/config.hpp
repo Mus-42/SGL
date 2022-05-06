@@ -5,7 +5,7 @@
 //assertion macro
 #ifndef SGL_ASSERT
 #include <iostream>//std::cerr
-#define SGL_ASSERT(v) {if(!(v)) { std::cerr << "SGL assertion failed (l:" << __LINE__ << " f:" << __FUNCTION__  << ")"<< std::endl; }}
+#define SGL_ASSERT(v, msg) {if(!(v)) { std::cerr << "SGL assertion failed (l:" << __LINE__ << " f:" << __FUNCTION__  << ") " << (msg) << std::endl; }}
 #endif//SGL_ASSERT
 
 //check function types in SGL 

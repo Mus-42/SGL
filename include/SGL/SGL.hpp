@@ -4,6 +4,6 @@
 
 #include "config.hpp"
 
-#include "type.hpp"
+#include "state.hpp"
 
 #endif//SGL_SGL_HPP_INCLUDE_
