@@ -1,0 +1,40 @@
+types:
+(u?)int(8|16|32|64)
+float(32|64)
+char
+string
+bool
+
+type aliases:
+int = int32
+uint = uint32
+double = float64
+float = float32
+
+ref & pointer types?
+
+constant values:
+true false nan
+
+operators:
+
+ariphmetic: + -  *  /  %  ++  --  
+bitwise:    | ~  &  ^  >> <<  
+assignment: = += -= *= /= |=  %= <<= >>= ^= %= 
+logic:      ! >  <  <= >= <=> != == && ||
+unary operators: +a  -a   *a  &a 
+member access:   a.b a->b
+
+buildin functions:
+addressof, sizeof, typeof
+abs
+mod, rem
+max, min, clamp
+exp, exp2, log, log2, log10
+pow, sqrt, cbrt, hypot
+sin, cos, tan, asin, acos, atan, atan2
+sinh, cosh, tanh, asinh, acosh, atanh
+gamma ?
+ceil, floor, round, nearbyint, rint
+copysign, isfinite, isinf, isnan, isnormal
+gcd, lcm

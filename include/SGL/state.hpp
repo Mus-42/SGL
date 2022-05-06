@@ -32,24 +32,28 @@ namespace SGL {
         template<typename T, std::enable_if_t<std::is_same_v<std::remove_reference_t<std::remove_cv_t<T>>, T>, bool> = true>
         type& register_type(std::string_view type_name) { 
             auto i = std::type_index(typeid(T));
-            auto f1 = m_types.find(type_name);
-            SGL_ASSERT(f1 == m_types.end(), "check for state object already contains same type");
-            auto f2 = m_type_names.find(i); 
-            SGL_ASSERT(f2 == m_type_names.end(), "check for state object already contains type with same name");
-            auto t = new type(sgl_type_identity<T>{}, type_name);
+
+            SGL_ASSERT(m_types.find(type_name) == m_types.end(), "check for state object already contains same type");
+            SGL_ASSERT(m_type_names.find(i) == m_type_names.end(), "check for state object already contains type with same name");
+            
+            auto t = new type(sgl_type_identity<T>{}, type_name, this);
+
             m_types[t->m_type_name] = t;
             m_type_names[i] = t->m_type_name;
+            
             return *t;
         }
         //T must not be ref or cv type
-        template<typename T, std::enable_if_t<std::is_same_v<std::remove_reference_t<std::remove_cv<T>>, T>, bool> = true>
+        template<typename T, std::enable_if_t<std::is_same_v<std::remove_reference_t<std::remove_cv_t<T>>, T>, bool> = true>
         type& get_type() const { 
-            //if constexpr(std::is_fundamental_v<T>) return *m_types.at(std::type_index(typeid(T)));//TODO replace with constexpr val
-            //else return 
-            *m_types.at(std::type_index(typeid(T))); 
+            //if constexpr(std::is_fundamental_v<T>)//TODO replace with constexpr val?
+            return *m_types.at(m_type_names.at(std::type_index(typeid(T)))); 
+        }
+        type& get_type(std::string_view type_name) const { 
+            return *m_types.at(type_name); 
         }
         //T must not be ref or cv type
-        template<typename T, std::enable_if_t<std::is_same_v<std::remove_reference_t<std::remove_cv<T>>, T>, bool> = true>
+        template<typename T, std::enable_if_t<std::is_same_v<std::remove_reference_t<std::remove_cv_t<T>>, T>, bool> = true>
         void remove_type() { 
             auto i = std::type_index(typeid(T));
             m_types.erase(m_type_names.at(i));

@@ -10,7 +10,7 @@ int main() {
 
     SGL::state s;
     auto& t_str = s.register_type<std::string>("string");   
-    auto& t_str = s.register_type<std::vector<int>>("vector_int");   
+    auto& t_vector_int = s.register_type<std::vector<int>>("vector_int");   
 
     char buf[sizeof(std::string)];
     auto& str = *reinterpret_cast<std::string*>(buf);
@@ -25,4 +25,20 @@ int main() {
     
     std::cout << str << std::endl;
     std::cout << other.size() << std::endl;
+
+    struct struct_with_member {
+        std::string s;
+    };  
+
+    auto& t_struct_with_member = s.register_type<struct_with_member>("struct_with_member");
+    t_struct_with_member.add_member("s", &struct_with_member::s);
+
+    char arr[sizeof(struct_with_member)];
+
+    auto& struct_with_member_val = *reinterpret_cast<struct_with_member*>(arr);
+    t_struct_with_member.default_construct(struct_with_member_val);    
+
+    struct_with_member_val.s = "SimplifiedGenLang";
+
+    std::cout << t_struct_with_member.get_member<std::string>(struct_with_member_val, "s") << std::endl;
 }

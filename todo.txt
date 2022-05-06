@@ -1,5 +1,6 @@
 Features:
 More than 1 constuctor
+Support for pointer|link types
 C++ templates support
 Custom types definition
 Custom operators 

@@ -6,7 +6,7 @@
 
 #include <cstdint>
 #include <string>
-#include <vector>
+#include <unordered_map>
 
 #include <type_traits>
 
@@ -31,8 +31,7 @@ namespace SGL {
         t_double = t_float64,
         t_int = t_int32,
         t_uint = t_uint32,
-    };//*///now build lib without this enum
-    
+    };//*///now try to build lib without this enum
     class type_impl_base {
     public:
         virtual void default_construct(void* data) const {}
@@ -58,6 +57,7 @@ namespace SGL {
         } traits;
         size_t size;
     };
+
     template<typename T>
     class type_impl : public type_impl_base {
     public:
@@ -132,22 +132,48 @@ namespace SGL {
         template<typename T> void copy_assign(T& data, const T& from) const { check_type<T>(); m_impl->copy_assign(&data, &from); }
         template<typename T> void move_assign(T& data, T&& from) const { check_type<T>(); m_impl->move_assign(&data, &from); }
 
-        template<typename T, typename U> type& add_member(std::string_view member_name, U T::*member_ptr) {
-            m_state->get_type<U>();
+        template<typename T, typename U> type& add_member(const std::string& member_name, U T::*member_ptr) {
+            check_type<T>();
+            const auto member_t = &m_state->get_type<U>();
+
+            add_member(member_name, member_t, m_offsetof(member_ptr));
+
+            return *this;
         }
+
+        template<typename U, typename T> U& get_member(T& val, const std::string& member_name) const {
+            check_type<T>();
+            auto [member_t, offset] = m_members.at(member_name);
+            member_t->check_type<U>();
+            return *reinterpret_cast<U*>(reinterpret_cast<char*>(&val) + offset);
+        } 
         
     protected:
         friend class state;
-        const type_info& m_type;//used in state and in check_type
+        friend class value;
+        
         const type_impl_base* m_impl;
+        const type_info& m_type;//used in state and in check_type
         const std::string m_type_name;
         const state* const m_state;
+
+        std::unordered_map<std::string, std::pair<const type*, size_t>> m_members;//name, type, offset of member
 
         template<typename T>
         void check_type() const {
 #if defined(SGL_OPTION_TYPE_CHECKS) && SGL_OPTION_TYPE_CHECKS
             SGL_ASSERT(m_type == typeid(T), "type specified in constructor call must me same with T");
 #endif//SGL_OPTION_TYPE_CHECKS
+        }
+
+        void add_member(const std::string& member_name, const type* member_t, size_t offset) {
+            SGL_ASSERT(m_members.find(member_name) == m_members.end(), "type contains member with same name");
+            m_members[member_name] = { member_t,  offset };
+        }
+
+        template<typename U, typename T> 
+        static constexpr size_t m_offsetof(U T::*member_ptr) {
+            return reinterpret_cast<size_t>(&(static_cast<T*>(nullptr)->*member_ptr));
         }
     };
 } // namespace SGL
