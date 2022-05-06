@@ -2,6 +2,8 @@
 #ifndef SGL_STATE_HPP_INCLUDE_
 #define SGL_STATE_HPP_INCLUDE_
 
+#include "config.hpp"
+
 #include <typeinfo>
 #include <typeindex>
 #include <unordered_map>

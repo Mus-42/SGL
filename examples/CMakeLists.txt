@@ -14,6 +14,11 @@ foreach(example_source_file IN LISTS examples_sources)
     #add example executable
     add_executable(${example_name} ${example_source_file})
     target_link_libraries(${example_name} PUBLIC SGL)
+    set_target_properties(${example_name} PROPERTIES 
+        CXX_STANDARD 17
+        CXX_STANDARD_REQUIRED YES      
+        CXX_EXTENSIONS NO
+    )
 endforeach()
 
 #copy data folder to binary folder

@@ -4,3 +4,4 @@ C++ templates support
 Custom types definition
 Custom operators 
 Typecasts to|from custom types
+32-bit systems support

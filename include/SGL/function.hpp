@@ -2,6 +2,8 @@
 #ifndef SGL_VALUE_HPP_INCLUDE_
 #define SGL_VALUE_HPP_INCLUDE_
 
+#include "config.hpp"
+
 #include <vector>
 #include <functional>
 

@@ -2,6 +2,8 @@
 #ifndef SGL_VALUE_HPP_INCLUDE_
 #define SGL_VALUE_HPP_INCLUDE_
 
+#include "config.hpp"
+
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -29,28 +31,17 @@ namespace SGL {
         t_double = t_float64,
         t_int = t_int32,
         t_uint = t_uint32,
-    };
-
-    class custom_type {//passed from C++ or from SGL
-    public:
-        
-    };
-
-    class type {
-    public:
-        constexpr type(primitive_type t = t_void) : prim(t), cust(nullptr) {}
-        constexpr type(const std::string& type_name) : prim(t_void), cust(nullptr) {}
-        constexpr type(const custom_type* type) : prim(t_void), cust(type) {}
-    protected:
-        const primitive_type prim;
-        const custom_type* cust;
-    };*/
+    };//*///now build lib without this enum
     
     class type_impl_base {
     public:
         virtual void default_construct(void* data) const {}
         virtual void copy_construct(void* data, const void* from) const {}
         virtual void move_construct(void* data, void* from) const {}
+        
+        virtual void copy_assign(void* data, const void* from) const {}
+        virtual void move_assign(void* data, void* from) const {}
+
         //TODO add custom constructors?
         virtual void destruct(void* data) const {}
 
@@ -65,6 +56,7 @@ namespace SGL {
 
             //TODO add is_ref | is_pointer?
         } traits;
+        size_t size;
     };
     template<typename T>
     class type_impl : public type_impl_base {
@@ -76,15 +68,30 @@ namespace SGL {
                 std::is_move_constructible_v<T>,
 
                 std::is_copy_assignable_v<T>,
-                std::is_move_assignable_v<T>,
-
+                std::is_move_assignable_v<T>
             };
+            size = sizeof(T);
         }
 
-        virtual void default_construct(void* data) const override { new (data) T(); }
-        virtual void copy_construct(void* data, const void* from) const override { new (data) T(*static_cast<const T*>(from)); }
-        virtual void move_construct(void* data, void* from) const override { new (data) T(std::move(*static_cast<T*>(from))); }
+        virtual void default_construct(void* data) const override { 
+            if constexpr (std::is_default_constructible_v<T>) new (data) T(); 
+        }
+        virtual void copy_construct(void* data, const void* from) const override { 
+            if constexpr (std::is_copy_constructible_v<T>) new (data) T(*static_cast<const T*>(from)); 
+        }
+        virtual void move_construct(void* data, void* from) const override { 
+            if constexpr (std::is_move_constructible_v<T>) new (data) T(std::move(*static_cast<T*>(from))); 
+        }
+
+        virtual void copy_assign(void* data, const void* from) const override {
+            if constexpr (std::is_copy_assignable_v<T>) *static_cast<T*>(data) = *static_cast<const T*>(from); 
+        }
+        virtual void move_assign(void* data, void* from) const override {
+            if constexpr (std::is_move_assignable_v<T>) *static_cast<T*>(data) = std::move(*static_cast<T*>(from)); 
+        }
+
         //TODO add custom constructors?
+
         virtual void destruct(void* data) const override {
             static_cast<T*>(data)->~T();
         }
@@ -98,7 +105,13 @@ namespace SGL {
     class type {
     public:
         template<typename T>
-        explicit type(sgl_type_identity<T> t) : m_impl(new type_impl<T>) {}
+        explicit type(sgl_type_identity<T> t) : m_impl(new type_impl<T>) 
+#if defined(SGL_OPTION_TYPE_CHECKS) && SGL_OPTION_TYPE_CHECKS  
+            , m_type(typeid(T))
+#endif//SGL_OPTION_TYPE_CHECKS   
+        {
+
+        }
 
         
         //no copy
@@ -108,7 +121,27 @@ namespace SGL {
         type(type&&) = default;
         type& operator=(type&&) = default;
 
+        template<typename T> void default_construct(T& data) const { check_type<T>(); m_impl->default_construct(&data); }
+        template<typename T> void copy_construct(T& data, const T& from) const { check_type<T>(); m_impl->copy_construct(&data, &from); }
+        template<typename T> void move_construct(T& data, T&& from) const { check_type<T>(); m_impl->move_construct(&data, &from); }
+        //TODO add custom constructors?
+        template<typename T> void destruct(T& data) const { check_type<T>(); m_impl->destruct(&data); }
+
+        
+        template<typename T> void copy_assign(T& data, const T& from) const { check_type<T>(); m_impl->copy_assign(&data, &from); }
+        template<typename T> void move_assign(T& data, T&& from) const { check_type<T>(); m_impl->move_assign(&data, &from); }
+    private:
+#if defined(SGL_OPTION_TYPE_CHECKS) && SGL_OPTION_TYPE_CHECKS
+        const type_info& m_type;
+#endif//SGL_OPTION_TYPE_CHECKS
         type_impl_base* m_impl;
+
+        template<typename T>
+        void check_type() const {
+#if defined(SGL_OPTION_TYPE_CHECKS) && SGL_OPTION_TYPE_CHECKS
+            SGL_ASSERT(m_type == typeid(T));
+#endif//SGL_OPTION_TYPE_CHECKS
+        }
     };
 } // namespace SGL
 

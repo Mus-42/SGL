@@ -2,18 +2,21 @@
 #include <iostream>
 
 int main() {
+    //TODO add example
+
+    //some test code
     const SGL::type t_str(SGL::sgl_type_identity<std::string>{});
 
     char buf[sizeof(std::string)];
-    t_str.m_impl->default_construct(buf);
     auto& str = *reinterpret_cast<std::string*>(buf);
+    t_str.default_construct(str);
 
     str += "cstdiofan";
     std::cout << str << std::endl;
 
     std::string other = "mimsus";
 
-    t_str.m_impl->move_construct(buf, &other); 
+    t_str.move_construct(str, std::move(other)); 
     
     std::cout << str << std::endl;
     std::cout << other.size() << std::endl;
