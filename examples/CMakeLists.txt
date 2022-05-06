@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 3.8)
 project(Examples)
 
 
-file(GLOB examples_sources "*.cpp" "*.c")
+file(GLOB examples_sources "*.cpp")
 
-#all examples - single *.c or *.cpp file
+#all examples - single *.cpp file
 foreach(example_source_file IN LISTS examples_sources)
     #convert filename to example name
     string(REPLACE "." "_" example_name ${example_source_file})

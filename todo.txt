@@ -1,28 +1,6 @@
-rewrite type loading
-drop C API
-
-Lang:
-dynamic array support
-custom types definition
-ternary operator (a ? b : c)
-enumerations
-
-Lib:
-fix error processing
-do somesing with C++ exceptions in C API?
-add parse_... functions for string, ...? (in C++)
-add CMake Install for library?
-for C API add file parsing for FILE*
-add redefine check
-add config.hpp?
-replase get_local_value(res, name, void* data) in c void* get_local_value(res, name)?
-add get type from state? custom types definition -> get type from parse_result??
-add error levels? (warning, fatal ... ?)
-add tests
-set minimum type size = 1 byte (for allocations)
-add default error function (print errors in std::cerr?)
-add init function for library??
-
-Examples:
-add more SGL (*.sgl files) for examples?
-function
+Features:
+More than 1 constuctor
+C++ templates support
+Custom types definition
+Custom operators 
+Typecasts to|from custom types
