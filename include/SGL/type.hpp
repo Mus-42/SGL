@@ -1,8 +1,9 @@
 #pragma once
-#ifndef SGL_VALUE_HPP_INCLUDE_
-#define SGL_VALUE_HPP_INCLUDE_
+#ifndef SGL_TYPE_HPP_INCLUDE_
+#define SGL_TYPE_HPP_INCLUDE_
 
 #include "config.hpp"
+#include "utils.hpp"
 
 #include <cstdint>
 #include <string>
@@ -100,23 +101,15 @@ namespace SGL {
         virtual ~type_impl() {}
     };
 
-    template<typename T> struct sgl_type_identity {};
     class state;
 
-    class type {
+    class type : public no_copy {
     public:
         template<typename T>
         explicit type(sgl_type_identity<T> t, std::string_view type_name, const state* state) : m_impl(new type_impl<T>), 
             m_type_name(type_name), m_type(typeid(T)), m_state(state) {
-            //TODO check type_name for correct type name
+            SGL_ASSERT(is_correct_identifier(type_name), "type name is incorrect");
         }
-        
-        //no copy
-        type(const type&) = delete;
-        type& operator=(const type&) = delete;
-        //but move
-        type(type&&) = default;
-        type& operator=(type&&) = default;
 
         ~type() {
             delete m_impl;
@@ -178,4 +171,4 @@ namespace SGL {
     };
 } // namespace SGL
 
-#endif// SGL_VALUE_HPP_INCLUDE_
+#endif// SGL_TYPE_HPP_INCLUDE_

@@ -13,15 +13,9 @@
 #include "type.hpp"
 
 namespace SGL {
-    class state {
+    class state : public no_copy {
     public:
         state() = default;
-        //no copy
-        state(const state&) = delete;
-        state& operator=(const state&) = delete;
-        //but move
-        state(state&&) = default;
-        state& operator=(state&&) = default;
         ~state() {
             for(auto [i, t] : m_types) delete t;
         };
@@ -72,4 +66,4 @@ namespace SGL {
     };
 };
 
-#endif SGL_STATE_HPP_INCLUDE_
+#endif//SGL_STATE_HPP_INCLUDE_

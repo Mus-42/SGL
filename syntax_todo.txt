@@ -11,10 +11,15 @@ uint = uint32
 double = float64
 float = float32
 
+add auto?? work like this:
+auto val = {1, 2.2, "qq"};
+represent struct:
+struct { int i = 1; double d = 2.2; std::string s = "qq"; } val;
+
 ref & pointer types?
 
 constant values:
-true false nan
+true false nan inf nullptr
 
 operators:
 
