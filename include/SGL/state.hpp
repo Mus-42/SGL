@@ -19,8 +19,6 @@ namespace SGL {
         ~state() {
             for(auto [i, t] : m_types) delete t;
         };
-
-
         
         //T must not be ref or cv type
         template<typename T, std::enable_if_t<std::is_same_v<std::remove_reference_t<std::remove_cv_t<T>>, T>, bool> = true>
@@ -64,6 +62,6 @@ namespace SGL {
         std::unordered_map<std::type_index, std::string_view> m_type_names;
         std::unordered_map<std::string_view, type*> m_types;
     };
-};
+}//namespace SGL
 
 #endif//SGL_STATE_HPP_INCLUDE_

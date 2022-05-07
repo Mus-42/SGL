@@ -8,6 +8,8 @@ int main() {
 
     //const SGL::type t_str(SGL::sgl_type_identity<std::string>{}, "string");
 
+    SGL::type t_int32(SGL::sgl_type_identity<int32_t>{}, "int32", nullptr);
+
     SGL::state s;
     auto& t_str = s.register_type<std::string>("string");   
     auto& t_vector_int = s.register_type<std::vector<int>>("vector_int");   
@@ -41,4 +43,7 @@ int main() {
     struct_with_member_val.s = "SimplifiedGenLang";
 
     std::cout << t_struct_with_member.get_member<std::string>(struct_with_member_val, "s") << std::endl;
+
+    SGL::tokenizer tk("int a = /* comment */ b;//comment\nint c = 0;");
+    
 }

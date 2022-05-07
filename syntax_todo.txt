@@ -24,9 +24,9 @@ true false nan inf nullptr
 operators:
 
 ariphmetic: + -  *  /  %  ++  --  
-bitwise:    | ~  &  ^  >> <<  
-assignment: = += -= *= /= |=  %= <<= >>= ^= %= 
-logic:      ! >  <  <= >= <=> != == && ||
+bitwise:    | &  ~  ^  >> <<  
+assignment: = += -= *= /= %=  |= <<= >>= ^=
+logic:      ! >  <  <= >= <=> != == &&  ||
 unary operators: +a  -a   *a  &a 
 member access:   a.b a->b
 

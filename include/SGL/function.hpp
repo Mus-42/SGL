@@ -23,6 +23,6 @@ namespace SGL {
     private:
 
     };
-}
+}//namespace SGL
 
 #endif//SGL_VALUE_HPP_INCLUDE_

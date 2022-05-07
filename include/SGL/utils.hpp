@@ -26,6 +26,6 @@ namespace SGL {
         if(!s.size() || !std::isalpha(s[0]) && s[0] != '_') return false;
         return std::all_of(s.begin(), s.end(), [](unsigned char ch) -> bool { return std::isalnum(ch) || ch == '_'; });
     }
-}
+}//namespace SGL
 
 #endif//SGL_UTILS_HPP_INCLUDE_

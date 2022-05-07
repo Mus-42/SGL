@@ -14,6 +14,6 @@ namespace SGL {
         //array, link, pointer & classes support
         //(call functions??)
     };
-}
+}//namespace SGL
 
 #endif//SGL_VALUE_HPP_INCLUDE_
