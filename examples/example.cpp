@@ -46,4 +46,6 @@ int main() {
 
     SGL::tokenizer tk("int a = /* comment */ b;//comment\nint c = 0;");
     
+
+    SGL::value_type(SGL::sgl_type_identity<int * const[100]>{}, &s);
 }

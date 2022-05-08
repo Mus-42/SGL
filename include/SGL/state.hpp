@@ -20,8 +20,7 @@ namespace SGL {
             for(auto [i, t] : m_types) delete t;
         };
         
-        //T must not be ref or cv type
-        template<typename T, std::enable_if_t<std::is_same_v<std::remove_reference_t<std::remove_cv_t<T>>, T>, bool> = true>
+        template<typename T, std::enable_if_t<is_base_type<T>, bool> = true>
         type& register_type(std::string_view type_name) { 
             auto i = std::type_index(typeid(T));
 
@@ -35,8 +34,7 @@ namespace SGL {
             
             return *t;
         }
-        //T must not be ref or cv type
-        template<typename T, std::enable_if_t<std::is_same_v<std::remove_reference_t<std::remove_cv_t<T>>, T>, bool> = true>
+        template<typename T, std::enable_if_t<is_base_type<T>, bool> = true>
         type& get_type() const { 
             //if constexpr(std::is_fundamental_v<T>)//TODO replace with constexpr val?
             return *m_types.at(m_type_names.at(std::type_index(typeid(T)))); 
@@ -44,8 +42,7 @@ namespace SGL {
         type& get_type(std::string_view type_name) const { 
             return *m_types.at(type_name); 
         }
-        //T must not be ref or cv type
-        template<typename T, std::enable_if_t<std::is_same_v<std::remove_reference_t<std::remove_cv_t<T>>, T>, bool> = true>
+        template<typename T, std::enable_if_t<is_base_type<T>, bool> = true>
         void remove_type() { 
             auto i = std::type_index(typeid(T));
             m_types.erase(m_type_names.at(i));

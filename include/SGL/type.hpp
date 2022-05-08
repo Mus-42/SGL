@@ -12,27 +12,6 @@
 #include <type_traits>
 
 namespace SGL {
-    /*
-    enum primitive_type : uint8_t {
-        t_void,
-
-        t_int8, t_int16, t_int32, t_int64,
-        t_uint8, t_uint16, t_uint32, t_uint64,
-
-        t_bool,
-
-        t_float32, t_float64,
-
-        t_char,
-        t_string,
-
-        _primitive_types_count,
-        //aliases
-        t_float = t_float32,
-        t_double = t_float64,
-        t_int = t_int32,
-        t_uint = t_uint32,
-    };//*///now try to build lib without this enum
     class type_impl_base {
     public:
         virtual void default_construct(void* data) const {}
@@ -144,6 +123,7 @@ namespace SGL {
     protected:
         friend class state;
         friend class value;
+        friend class value_type;
         
         const type_impl_base* m_impl;
         const type_info& m_type;//used in state and in check_type
@@ -159,6 +139,8 @@ namespace SGL {
 #endif//SGL_OPTION_TYPE_CHECKS
         }
 
+        //TODO not-template constructor. (for *.sgl deifned types). cannot cast value to C++ type. but can cast members?
+
         void add_member(const std::string& member_name, const type* member_t, size_t offset) {
             SGL_ASSERT(m_members.find(member_name) == m_members.end(), "type contains member with same name");
             m_members[member_name] = { member_t,  offset };
@@ -169,6 +151,85 @@ namespace SGL {
             return reinterpret_cast<size_t>(&(static_cast<T*>(nullptr)->*member_ptr));
         }
     };
+
+    class value_type {
+    public:
+        struct {
+            const bool is_array      = false;
+            const bool is_const      = false;
+            const bool is_pointer    = false;
+            const bool is_reference  = false;
+            const bool is_final_type = false;
+        } traits;
+
+        template<typename T>//, std::enable_if_t<is_base_type<T>, bool> = true
+        explicit value_type(sgl_type_identity<T> t, const state* state) : m_type(typeid(T)) {
+            //value_type(sgl_type_identity<T>{}, state);
+            std::cout << m_type.name() << std::endl;
+        }
+
+        //pointer
+        template<typename T>
+        explicit value_type(sgl_type_identity<T*> t, const state* state) : m_type(typeid(T*)) {
+            std::cout << m_type.name() << std::endl;
+            value_type(sgl_type_identity<T>{}, state);
+        }
+        template<typename T>
+        explicit value_type(sgl_type_identity<T*const> t, const state* state) : m_type(typeid(T*const)) {
+            std::cout << m_type.name() << std::endl;
+            value_type(sgl_type_identity<T>{}, state);
+        }
+        template<typename T>
+        explicit value_type(sgl_type_identity<T*volatile> t, const state* state) : m_type(typeid(T*volatile)) {
+            std::cout << m_type.name() << std::endl;
+            value_type(sgl_type_identity<T>{}, state);
+        }
+        template<typename T>
+        explicit value_type(sgl_type_identity<T*const volatile> t, const state* state) : m_type(typeid(T*const volatile)) {
+            std::cout << m_type.name() << std::endl;
+            value_type(sgl_type_identity<T>{}, state);
+        }
+
+        //link
+        template<typename T>
+        explicit value_type(sgl_type_identity<T&> t, const state* state) : m_type(typeid(T&)) {
+            std::cout << m_type.name() << std::endl;
+            value_type(sgl_type_identity<T>{}, state);
+        }
+        template<typename T>
+        explicit value_type(sgl_type_identity<T&&> t, const state* state) : m_type(typeid(T&&)) {
+            std::cout << m_type.name() << std::endl;
+            value_type(sgl_type_identity<T>{}, state);
+        }
+
+        //array
+        template<typename T, size_t N>
+        explicit value_type(sgl_type_identity<T[N]> t, const state* state) : m_type(typeid(T[N])) {
+            //function can't return value as T[N]. value get<T[N]> return T*? or pair <T*, size>?
+            std::cout << m_type.name() << std::endl;
+            value_type(sgl_type_identity<T>{}, state);
+        }
+        template<typename T>
+        explicit value_type(sgl_type_identity<T[]> t, const state* state) : m_type(typeid(T[])) {
+            //actually T[] same as T*
+            //array size from value. return value as T*?
+            std::cout << m_type.name() << std::endl;
+            value_type(sgl_type_identity<T>{}, state);
+        }
+    
+    protected:
+        friend class state;
+        friend class value;
+        friend class type;
+        
+        union {
+            const type* type_v = nullptr;       
+            const value_type* value_type_v;
+        };
+        const type_info& m_type;
+    };
+
+
 } // namespace SGL
 
 #endif// SGL_TYPE_HPP_INCLUDE_
