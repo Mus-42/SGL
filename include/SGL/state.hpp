@@ -52,12 +52,20 @@ namespace SGL {
             m_type_names.erase(m_types.at(type_name)->m_type);
             m_types.erase(type_name);
         }
+
+        template<typename T>
+        value_type get_value_type() {
+            return value_type(sgl_type_identity<T>{}, this);
+        }
+
     protected:
         friend class type;
+        friend class value_type_ref;
 
     private:
         std::unordered_map<std::type_index, std::string_view> m_type_names;
         std::unordered_map<std::string_view, type*> m_types;
+
     };
 }//namespace SGL
 

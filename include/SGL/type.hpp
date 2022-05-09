@@ -4,6 +4,7 @@
 
 #include "config.hpp"
 #include "utils.hpp"
+#include "function.hpp"
 
 #include <cstdint>
 #include <string>
@@ -152,83 +153,58 @@ namespace SGL {
         }
     };
 
+    enum class value_type_decorator {
+        d_none,
+        d_const,
+        d_pointer,
+        d_reference,//lvalue ref, T&
+        d_rvalue_reference,//T&&
+        d_array,//T[] or T[]
+    };
+
     class value_type {
     public:
-        struct {
-            const bool is_array      = false;
-            const bool is_const      = false;
-            const bool is_pointer    = false;
-            const bool is_reference  = false;
-            const bool is_final_type = false;
-        } traits;
+        template<typename T>
+        explicit value_type(sgl_type_identity<T> t, const state* s) : m_size(sizeof(T)), m_base_type(&s->get_type<make_base_type_t<T>>()), m_state(s) {
 
-        template<typename T>//, std::enable_if_t<is_base_type<T>, bool> = true
-        explicit value_type(sgl_type_identity<T> t, const state* state) : m_type(typeid(T)) {
-            //value_type(sgl_type_identity<T>{}, state);
-            std::cout << m_type.name() << std::endl;
-        }
+            for_each_type_decorator(t, [this](auto t){
+                using T = typename decltype(t)::type;
+                if constexpr(std::is_lvalue_reference_v<T>) m_decorators.push_back(value_type_decorator::d_reference);
+                else if constexpr(std::is_rvalue_reference_v<T>) m_decorators.push_back(value_type_decorator::d_rvalue_reference);
+                else if constexpr(std::is_array_v<T>) m_decorators.push_back(value_type_decorator::d_array);
+                else if constexpr(std::is_pointer_v<T>) m_decorators.push_back(value_type_decorator::d_pointer);
+                else if constexpr(std::is_const_v<T>) m_decorators.push_back(value_type_decorator::d_const);
+                else m_decorators.push_back(value_type_decorator::d_none);
+            });
 
-        //pointer
-        template<typename T>
-        explicit value_type(sgl_type_identity<T*> t, const state* state) : m_type(typeid(T*)) {
-            std::cout << m_type.name() << std::endl;
-            value_type(sgl_type_identity<T>{}, state);
-        }
-        template<typename T>
-        explicit value_type(sgl_type_identity<T*const> t, const state* state) : m_type(typeid(T*const)) {
-            std::cout << m_type.name() << std::endl;
-            value_type(sgl_type_identity<T>{}, state);
-        }
-        template<typename T>
-        explicit value_type(sgl_type_identity<T*volatile> t, const state* state) : m_type(typeid(T*volatile)) {
-            std::cout << m_type.name() << std::endl;
-            value_type(sgl_type_identity<T>{}, state);
-        }
-        template<typename T>
-        explicit value_type(sgl_type_identity<T*const volatile> t, const state* state) : m_type(typeid(T*const volatile)) {
-            std::cout << m_type.name() << std::endl;
-            value_type(sgl_type_identity<T>{}, state);
         }
 
-        //link
-        template<typename T>
-        explicit value_type(sgl_type_identity<T&> t, const state* state) : m_type(typeid(T&)) {
-            std::cout << m_type.name() << std::endl;
-            value_type(sgl_type_identity<T>{}, state);
-        }
-        template<typename T>
-        explicit value_type(sgl_type_identity<T&&> t, const state* state) : m_type(typeid(T&&)) {
-            std::cout << m_type.name() << std::endl;
-            value_type(sgl_type_identity<T>{}, state);
+        std::string name_string() const {
+            std::string str = m_base_type->m_type_name;
+            for(size_t s = m_decorators.size(), i = s-1; i < s; i--) {
+                switch (m_decorators[i]) {
+                case value_type_decorator::d_const: str += " const"; break;
+                case value_type_decorator::d_pointer: str += "*"; break;
+                case value_type_decorator::d_reference: str += '&'; break;
+                case value_type_decorator::d_rvalue_reference: str += "&&"; break;
+                case value_type_decorator::d_array: str += "[]"; break;
+                case value_type_decorator::d_none:  default: break;
+                }
+            }
+            return str;
         }
 
-        //array
-        template<typename T, size_t N>
-        explicit value_type(sgl_type_identity<T[N]> t, const state* state) : m_type(typeid(T[N])) {
-            //function can't return value as T[N]. value get<T[N]> return T*? or pair <T*, size>?
-            std::cout << m_type.name() << std::endl;
-            value_type(sgl_type_identity<T>{}, state);
-        }
-        template<typename T>
-        explicit value_type(sgl_type_identity<T[]> t, const state* state) : m_type(typeid(T[])) {
-            //actually T[] same as T*
-            //array size from value. return value as T*?
-            std::cout << m_type.name() << std::endl;
-            value_type(sgl_type_identity<T>{}, state);
-        }
-    
+
     protected:
         friend class state;
         friend class value;
         friend class type;
-        
-        union {
-            const type* type_v = nullptr;       
-            const value_type* value_type_v;
-        };
-        const type_info& m_type;
-    };
 
+        const state* m_state;
+        const type* m_base_type;
+        size_t m_size;
+        std::vector<value_type_decorator> m_decorators;
+    };
 
 } // namespace SGL
 

@@ -20,7 +20,9 @@ namespace SGL {
         no_copy& operator=(no_copy&&) = default;
     };
 
-    template<typename T> struct sgl_type_identity {};
+    template<typename T> struct sgl_type_identity {
+        using type = T;
+    };
 
     constexpr bool is_correct_identifier(std::string_view s) {
         if(!s.size() || !std::isalpha(s[0]) && s[0] != '_') return false;
@@ -47,14 +49,7 @@ namespace SGL {
     struct make_base_type<T* const volatile> {
         using type = typename make_base_type<std::remove_pointer_t<T>>::type;
     };
-    template<typename T>
-    struct make_base_type<T[]> {
-        using type = typename make_base_type<std::remove_all_extents_t<T>>::type;
-    };
-    template<typename T, size_t N>
-    struct make_base_type<T[N]> {
-        using type = typename make_base_type<std::remove_all_extents_t<T>>::type;
-    };
+    //reference
     template<typename T>
     struct make_base_type<T&> {
         using type = typename make_base_type<std::remove_reference_t<T>>::type;
@@ -63,12 +58,72 @@ namespace SGL {
     struct make_base_type<T&&> {
         using type = typename make_base_type<std::remove_reference_t<T>>::type;
     };
+    template<typename T>
+    struct make_base_type<T[]> {
+        using type = typename make_base_type<std::remove_all_extents_t<T>>::type;
+    };
+    template<typename T, size_t N>
+    struct make_base_type<T[N]> {
+        using type = typename make_base_type<std::remove_all_extents_t<T>>::type;
+    };
 
     template<typename T>
     using make_base_type_t = typename make_base_type<T>::type;
 
     template<typename T>
     constexpr bool is_base_type = std::is_same_v<T, make_base_type_t<T>>;
+
+
+    
+    template<typename T, typename F>
+    constexpr decltype(auto) for_each_type_decorator(sgl_type_identity<T> t, F func) {
+        //no decorator
+        if constexpr(!std::is_same_v<T, std::remove_cv_t<T>>) func(t);
+    }
+
+    //pointer
+    template<typename T, typename F>
+    constexpr decltype(auto) for_each_type_decorator(sgl_type_identity<T*> t, F func) {
+        func(t);
+        for_each_type_decorator(sgl_type_identity<T>{}, func);
+    }
+    template<typename T, typename F>
+    constexpr decltype(auto) for_each_type_decorator(sgl_type_identity<T*const> t, F func) {
+        func(t);
+        for_each_type_decorator(sgl_type_identity<T>{}, func);
+    }
+    template<typename T, typename F>
+    constexpr decltype(auto) for_each_type_decorator(sgl_type_identity<T*volatile> t, F func) {
+        func(t);
+        for_each_type_decorator(sgl_type_identity<T>{}, func);
+    }
+    template<typename T, typename F>
+    constexpr decltype(auto) for_each_type_decorator(sgl_type_identity<T*const volatile> t, F func) {
+        func(t);
+        for_each_type_decorator(sgl_type_identity<T>{}, func);
+    }
+    //reference
+    template<typename T, typename F>
+    constexpr decltype(auto) for_each_type_decorator(sgl_type_identity<T&> t, F func) {
+        func(t);
+        for_each_type_decorator(sgl_type_identity<T>{}, func);
+    }
+    template<typename T, typename F>
+    constexpr decltype(auto) for_each_type_decorator(sgl_type_identity<T&&> t, F func) {
+        func(t);
+        for_each_type_decorator(sgl_type_identity<T>{}, func);
+    }
+    //array
+    template<typename T, size_t N, typename F>
+    constexpr decltype(auto) for_each_type_decorator(sgl_type_identity<T[N]> t, F func) {
+        func(t);
+        for_each_type_decorator(sgl_type_identity<T>{}, func);      
+    }
+    template<typename T, typename F>
+    constexpr decltype(auto) for_each_type_decorator(sgl_type_identity<T[]> t, F func) {
+        func(t);
+        for_each_type_decorator(sgl_type_identity<T>{}, func);
+    }
 }//namespace SGL
 
 #endif//SGL_UTILS_HPP_INCLUDE_
