@@ -8,6 +8,8 @@ Typecasts to|from custom types
 32-bit systems support
 
 Lib:
+state .add (type|value|function) 
+
 Common type for SGL::type* ?
 make lib header only?
 

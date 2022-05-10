@@ -1,4 +1,6 @@
 #include <SGL/SGL.hpp>
+#include <SGL/function.hpp>
+
 #include <iostream>
 
 int main() {
@@ -13,6 +15,7 @@ int main() {
     SGL::state s;
     auto& t_str = s.register_type<std::string>("string");   
     auto& t_float = s.register_type<float>("float");   
+    auto& t_int = s.register_type<int>("int");   
     auto& t_vector_int = s.register_type<std::vector<int>>("vector_int");   
 
     char buf[sizeof(std::string)];
@@ -49,20 +52,43 @@ int main() {
     
 
     //SGL::value_type(SGL::sgl_type_identity<int * const[100]>{}, &s);
-    struct m_func {
-        void operator()() const {
-            std::cout << "fn call" << std::endl;
-        };
-    };
-    std::function<void()> f = m_func();
-    f();
+    //struct m_func {
+    //    void operator()() const {
+    //        std::cout << "fn call" << std::endl;
+    //    };
+    //};
+    //std::function<void()> f = m_func();
+    //f();
+
+
+    SGL::function func(std::function<void(int&, std::string&, std::vector<int>&)>([](int& a, std::string& s, std::vector<int>& vec) -> void {
+        std::cout << "sgl function call: " << a << '\n';
+        std::cout << "s: " << s << std::endl;
+        std::cout << "my vec: [ ";
+        for(auto v : vec) std::cout << v << ' ';
+        std::cout << "]\n";
+    }), &s);
+
+    int a_arg_v = 100;
+    std::string s_arg_v = "Mim OGD cstdiofan";
+    std::vector<int> arg_vec_v = {1, 42, 26, 34, 5};
+
+    SGL::value a_arg(SGL::sgl_type_identity<int&>{}, a_arg_v, s.get_value_type<int&>());
+    SGL::value s_arg(SGL::sgl_type_identity<std::string&>{}, s_arg_v, s.get_value_type<std::string&>());
+
+    SGL::value vec_arg(SGL::sgl_type_identity<std::vector<int>&>{}, arg_vec_v, s.get_value_type<std::vector<int>&>());
+
+    func.call({a_arg, s_arg, vec_arg});
 
 
     std::cout << std::boolalpha << std::endl;
 
     std::cout << (typeid(int[]) == typeid(int*)) << std::endl;
     std::cout << (typeid(int[]) == typeid(int[])) << std::endl;
-    std::cout << (typeid(int[]) == typeid(int[100])) << std::endl;
+    std::cout << typeid(std::add_pointer_t<int[]>).name() << std::endl;
+    std::cout << typeid(std::add_pointer_t<std::add_pointer_t<int[]>>).name() << std::endl;
+    std::cout << typeid(int(**)[]).name() << std::endl;
+    std::cout << typeid(int*[]).name() << std::endl;
 
     //SGL::for_each_type_decorator(SGL::sgl_type_identity<float[100][12][4]>{}, [](auto t){
     //    std::cout << typeid(typename decltype(t)::type).name() << std::endl;

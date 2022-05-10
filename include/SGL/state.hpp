@@ -54,7 +54,7 @@ namespace SGL {
         }
 
         template<typename T>
-        value_type get_value_type() {
+        value_type get_value_type() const {
             return value_type(sgl_type_identity<T>{}, this);
         }
 

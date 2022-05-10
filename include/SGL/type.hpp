@@ -4,7 +4,7 @@
 
 #include "config.hpp"
 #include "utils.hpp"
-#include "function.hpp"
+//#include "function.hpp"
 
 #include <cstdint>
 #include <string>
@@ -164,6 +164,24 @@ namespace SGL {
 
     class value_type {
     public:
+        value_type() {}
+
+        value_type(const value_type& v) : m_state(v.m_state), m_base_type(v.m_base_type), m_size(v.m_size), m_decorators(v.m_decorators) {}
+        value_type(value_type&& v) : m_state(v.m_state), m_base_type(v.m_base_type), m_size(v.m_size), m_decorators(std::move(v.m_decorators)) {}
+         
+        value_type& operator=(const value_type& v) {
+            m_state = v.m_state;
+            m_base_type = v.m_base_type;
+            m_size = v.m_size;
+            m_decorators = v.m_decorators;
+        }
+        value_type& operator=(value_type&& v) {
+            m_state = v.m_state;
+            m_base_type = v.m_base_type;
+            m_size = v.m_size;
+            m_decorators = std::move(v.m_decorators);
+        }
+
         template<typename T>
         explicit value_type(sgl_type_identity<T> t, const state* s) : m_size(sizeof(T)), m_base_type(&s->get_type<make_base_type_t<T>>()), m_state(s) {
 
@@ -180,6 +198,7 @@ namespace SGL {
         }
 
         std::string name_string() const {
+            if(!m_base_type) return std::string();
             std::string str = m_base_type->m_type_name;
             for(size_t s = m_decorators.size(), i = s-1; i < s; i--) {
                 switch (m_decorators[i]) {
@@ -200,9 +219,9 @@ namespace SGL {
         friend class value;
         friend class type;
 
-        const state* m_state;
-        const type* m_base_type;
-        size_t m_size;
+        const state* m_state = nullptr;
+        const type* m_base_type = nullptr;
+        size_t m_size = 0;
         std::vector<value_type_decorator> m_decorators;
     };
 
