@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <string>
+#include <memory>//smart pointers
 #include <unordered_map>
 
 #include <type_traits>
@@ -86,14 +87,11 @@ namespace SGL {
     class type : public no_copy {
     public:
         template<typename T>
-        explicit type(sgl_type_identity<T> t, std::string_view type_name, const state* state) : m_impl(new type_impl<T>), 
-            m_type_name(type_name), m_type(typeid(T)), m_state(state) {
+        explicit type(sgl_type_identity<T> t, std::string_view type_name) : m_impl(new type_impl<T>), 
+            m_type_name(type_name), m_type(typeid(T)) {
             SGL_ASSERT(is_correct_identifier(type_name), "type name is incorrect");
         }
-
-        ~type() {
-            delete m_impl;
-        }
+        ~type() = default;
 
         template<typename T> void default_construct(T& data) const { check_type<T>(); m_impl->default_construct(&data); }
         template<typename T> void copy_construct(T& data, const T& from) const { check_type<T>(); m_impl->copy_construct(&data, &from); }
@@ -104,7 +102,7 @@ namespace SGL {
         
         template<typename T> void copy_assign(T& data, const T& from) const { check_type<T>(); m_impl->copy_assign(&data, &from); }
         template<typename T> void move_assign(T& data, T&& from) const { check_type<T>(); m_impl->move_assign(&data, &from); }
-
+/*
         template<typename T, typename U> type& add_member(const std::string& member_name, U T::*member_ptr) {
             check_type<T>();
             const auto member_t = &m_state->get_type<U>();
@@ -120,18 +118,18 @@ namespace SGL {
             member_t->check_type<U>();
             return *reinterpret_cast<U*>(reinterpret_cast<char*>(&val) + offset);
         } 
-        
+*/      
+        //TODO fix members
     protected:
         friend class state;
         friend class value;
         friend class value_type;
         
-        const type_impl_base* m_impl;
+        const std::unique_ptr<type_impl_base> m_impl;
         const type_info& m_type;//used in state and in check_type
         const std::string m_type_name;
-        const state* const m_state;
 
-        std::unordered_map<std::string, std::pair<const type*, size_t>> m_members;//name, type, offset of member
+        //std::unordered_map<std::string, std::pair<const type*, size_t>> m_members;//name, type, offset of member
 
         template<typename T>
         void check_type() const {
@@ -141,18 +139,18 @@ namespace SGL {
         }
 
         //TODO not-template constructor. (for *.sgl deifned types). cannot cast value to C++ type. but can cast members?
-
+/*
         void add_member(const std::string& member_name, const type* member_t, size_t offset) {
             SGL_ASSERT(m_members.find(member_name) == m_members.end(), "type contains member with same name");
             m_members[member_name] = { member_t,  offset };
         }
-
+*/
         template<typename U, typename T> 
         static constexpr size_t m_offsetof(U T::*member_ptr) {
             return reinterpret_cast<size_t>(&(static_cast<T*>(nullptr)->*member_ptr));
         }
     };
-
+/*
     enum class value_type_decorator {
         d_none,
         d_const,
@@ -166,24 +164,22 @@ namespace SGL {
     public:
         value_type() {}
 
-        value_type(const value_type& v) : m_state(v.m_state), m_base_type(v.m_base_type), m_size(v.m_size), m_decorators(v.m_decorators) {}
-        value_type(value_type&& v) : m_state(v.m_state), m_base_type(v.m_base_type), m_size(v.m_size), m_decorators(std::move(v.m_decorators)) {}
+        value_type(const value_type& v) : m_base_type(v.m_base_type), m_size(v.m_size), m_decorators(v.m_decorators) {}
+        value_type(value_type&& v) : m_base_type(v.m_base_type), m_size(v.m_size), m_decorators(std::move(v.m_decorators)) {}
          
         value_type& operator=(const value_type& v) {
-            m_state = v.m_state;
             m_base_type = v.m_base_type;
             m_size = v.m_size;
             m_decorators = v.m_decorators;
         }
         value_type& operator=(value_type&& v) {
-            m_state = v.m_state;
             m_base_type = v.m_base_type;
             m_size = v.m_size;
             m_decorators = std::move(v.m_decorators);
         }
 
         template<typename T>
-        explicit value_type(sgl_type_identity<T> t, const state* s) : m_size(sizeof(T)), m_base_type(&s->get_type<make_base_type_t<T>>()), m_state(s) {
+        explicit value_type(sgl_type_identity<T> t) : m_size(sizeof(T)), m_base_type(&s->get_type<make_base_type_t<T>>()) {
 
             for_each_type_decorator(t, [this](auto t){
                 using T = typename decltype(t)::type;
@@ -219,12 +215,31 @@ namespace SGL {
         friend class value;
         friend class type;
 
-        const state* m_state = nullptr;
-        const type* m_base_type = nullptr;
-        size_t m_size = 0;
-        std::vector<value_type_decorator> m_decorators;
+        std::shared_ptr<const type> m_base_type = nullptr;
     };
+    */
+   
+    class value_type {
+    protected:
+        friend class value;
+        
+        std::shared_ptr<value_type> m_type;
+        std::shared_ptr<type> m_base_type;
+        size_t array_size = 0;
+        struct {
+            bool is_const       : 1;
+            bool is_pointer     : 1;
+            bool is_reference   : 1;
+            bool is_array       : 1;
+            bool is_void        : 1;//unitililized value also void
+            bool is_final_v     : 1;//value_type = (?const) base_type (?(*|&|&&))
+        } m_traits;
 
+        template<typename T>
+        static auto construct() {
+
+        }
+    };
 } // namespace SGL
 
 #endif// SGL_TYPE_HPP_INCLUDE_

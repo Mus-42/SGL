@@ -9,7 +9,7 @@ int main() {
     //some test code
 
     //const SGL::type t_str(SGL::sgl_type_identity<std::string>{}, "string");
-
+/*
     SGL::type t_int32(SGL::sgl_type_identity<int32_t>{}, "int32", nullptr);
 
     SGL::state s;
@@ -48,8 +48,8 @@ int main() {
 
     std::cout << t_struct_with_member.get_member<std::string>(struct_with_member_val, "s") << std::endl;
 
-    SGL::tokenizer tk("int a = /* comment */ b;//comment\nint c = 0;");
-    
+    SGL::tokenizer tk("int a = b;//comment\nint c = 0;");
+*/
 
     //SGL::value_type(SGL::sgl_type_identity<int * const[100]>{}, &s);
     //struct m_func {
@@ -60,7 +60,7 @@ int main() {
     //std::function<void()> f = m_func();
     //f();
 
-
+/*
     SGL::function func(std::function<void(int&, std::string&, std::vector<int>&)>([](int& a, std::string& s, std::vector<int>& vec) -> void {
         std::cout << "sgl function call: " << a << '\n';
         std::cout << "s: " << s << std::endl;
@@ -89,7 +89,7 @@ int main() {
     std::cout << typeid(std::add_pointer_t<std::add_pointer_t<int[]>>).name() << std::endl;
     std::cout << typeid(int(**)[]).name() << std::endl;
     std::cout << typeid(int*[]).name() << std::endl;
-
+*/
     //SGL::for_each_type_decorator(SGL::sgl_type_identity<float[100][12][4]>{}, [](auto t){
     //    std::cout << typeid(typename decltype(t)::type).name() << std::endl;
     //});
@@ -98,5 +98,6 @@ int main() {
     //std::cout << typeid(a[0]).name() << std::endl;
     //std::cout << typeid(a[0]).name() << std::endl;
 
-    std::cout << s.get_value_type<std::string const*&>().name_string() << std::endl;
+    //   std::cout << s.get_value_type<std::string const*&>().name_string() << std::endl;
+
 }

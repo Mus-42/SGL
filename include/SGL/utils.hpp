@@ -33,6 +33,7 @@ namespace SGL {
     struct make_base_type {
         using type = std::remove_cv_t<T>;
     };
+    //pointer
     template<typename T>
     struct make_base_type<T*> {
         using type = typename make_base_type<std::remove_pointer_t<T>>::type;
@@ -58,6 +59,7 @@ namespace SGL {
     struct make_base_type<T&&> {
         using type = typename make_base_type<std::remove_reference_t<T>>::type;
     };
+    //array
     template<typename T>
     struct make_base_type<T[]> {
         using type = typename make_base_type<std::remove_all_extents_t<T>>::type;

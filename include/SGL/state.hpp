@@ -16,7 +16,7 @@ namespace SGL {
     class state : public no_copy {
     public:
         state() = default;
-        ~state() {
+        /*~state() {
             for(auto [i, t] : m_types) delete t;
         };
         
@@ -56,15 +56,14 @@ namespace SGL {
         template<typename T>
         value_type get_value_type() const {
             return value_type(sgl_type_identity<T>{}, this);
-        }
+        }*/
 
     protected:
         friend class type;
-        friend class value_type_ref;
 
     private:
-        std::unordered_map<std::type_index, std::string_view> m_type_names;
-        std::unordered_map<std::string_view, type*> m_types;
+        //std::unordered_map<std::type_index, std::string_view> m_type_names;
+        //std::unordered_map<std::string_view, type*> m_types;
 
     };
 }//namespace SGL
