@@ -6,6 +6,36 @@
 #include "type.hpp"
 
 namespace SGL {
+    namespace details {
+        struct array_impl {
+            size_t m_size = 0;//elements count
+            void* m_elements = nullptr;
+        };
+        //value_creator
+        //const_value_creator
+        //reference_creator
+        //const_reference_creator
+        template<typename T>
+        struct array_creator {
+            array_creator(std::vector<T> v) {}
+            template<size_t N>
+            array_creator(T v[N]) {}
+
+            //TODO add impl
+        };
+        
+    }//namespace details
+
+    //TODO value construct: value(const_val(12)); 
+    //make using for it
+    //val
+    //const_val
+    //ref
+    //const_ref
+    //array
+    //const_array
+    //move_val
+    //move_array
 
     class value {
     public:
@@ -50,16 +80,25 @@ namespace SGL {
         bool is_pointer() const { return m_type.m_traits.is_pointer; }
         bool is_reference() const { return m_type.m_traits.is_reference; }
 
+        
+
     protected:
         friend class state;
         friend class value_creator;
         
+        template<typename T>
+        static constexpr size_t vec_count(sgl_type_identity<T> v) { return 0; }
+        template<typename T>
+        static constexpr size_t vec_count(sgl_type_identity<std::vector<T>> v) { return vec_count(sgl_type_identity<T>{}) + 1; }
+
         //array
         template<typename T>
-        std::vector<T> get(sgl_type_identity<T[]> v) const {//const -> get by copy
+        decltype(auto) get(sgl_type_identity<std::vector<T>> v) const {//const -> get by copy
+            //make it can return std::vector<T> or std::vector<std::vector<Y>> std::vector<std::vector<std::vector<Z>>> ...
             return std::vector<T>();//TODO check this is array & T is T array element type
         }
-        template<typename T, size_t N> decltype(auto) get(sgl_type_identity<T[N]> v) const { return get(sgl_type_identity<T[]>{}); } // TODO check size?
+        template<typename T, size_t N> decltype(auto) get(sgl_type_identity<T[N]> v) const { return get(sgl_type_identity<std::vector<T>>{}); } // TODO check size?
+        template<typename T> decltype(auto) get(sgl_type_identity<T[]> v) const { return get(sgl_type_identity<std::vector<T>>{}); } // TODO check size?
         //pointer   
         template<typename T>
         T* get(sgl_type_identity<T*> v) const {//const -> pointer copy
@@ -88,7 +127,7 @@ namespace SGL {
         }
 
         
-        void* m_data = nullptr;
+        void* m_data = nullptr;//if array - ptr to array_impl, if ref|ptr - their adress. if value - pointer to value
         value_type m_type;
     };
 }//namespace SGL

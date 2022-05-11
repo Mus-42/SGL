@@ -68,6 +68,10 @@ namespace SGL {
     struct make_base_type<T[N]> {
         using type = typename make_base_type<std::remove_all_extents_t<T>>::type;
     };
+    template<typename T>
+    struct make_base_type<std::vector<T>> {
+        using type = typename make_base_type<std::remove_all_extents_t<T>>::type;
+    };
 
     template<typename T>
     using make_base_type_t = typename make_base_type<T>::type;

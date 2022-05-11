@@ -14,80 +14,82 @@
 #include <type_traits>
 
 namespace SGL {
-    class type_impl_base {
-    public:
-        virtual void default_construct(void* data) const {}
-        virtual void copy_construct(void* data, const void* from) const {}
-        virtual void move_construct(void* data, void* from) const {}
-        
-        virtual void copy_assign(void* data, const void* from) const {}
-        virtual void move_assign(void* data, void* from) const {}
+    namespace details {
+        class type_impl_base {
+        public:
+            virtual void default_construct(void* data) const {}
+            virtual void copy_construct(void* data, const void* from) const {}
+            virtual void move_construct(void* data, void* from) const {}
 
-        //TODO add custom constructors?
-        virtual void destruct(void* data) const {}
+            virtual void copy_assign(void* data, const void* from) const {}
+            virtual void move_assign(void* data, void* from) const {}
 
-        virtual ~type_impl_base() {}
-        struct {
-            bool is_default_constructible = false;
-            bool is_copy_constructible = false;
-            bool is_move_constructible = false;
+            //TODO add custom constructors?
+            virtual void destruct(void* data) const {}
 
-            bool is_copy_assignable = false;
-            bool is_move_assignable = false;
+            virtual ~type_impl_base() {}
+            struct {
+                bool is_default_constructible = false;
+                bool is_copy_constructible = false;
+                bool is_move_constructible = false;
 
-            //TODO add is_ref | is_pointer?
-        } traits;
-        size_t size;
-    };
+                bool is_copy_assignable = false;
+                bool is_move_assignable = false;
 
-    template<typename T>
-    class type_impl : public type_impl_base {
-    public:
-        constexpr type_impl() {
-            traits = {
-                std::is_default_constructible_v<T>,
-                std::is_copy_constructible_v<T>,
-                std::is_move_constructible_v<T>,
+                //TODO add is_ref | is_pointer?
+            } traits;
+            size_t size;
+        };
 
-                std::is_copy_assignable_v<T>,
-                std::is_move_assignable_v<T>
-            };
-            size = sizeof(T);
-        }
+        template<typename T>
+        class type_impl : public type_impl_base {
+        public:
+            constexpr type_impl() {
+                traits = {
+                    std::is_default_constructible_v<T>,
+                    std::is_copy_constructible_v<T>,
+                    std::is_move_constructible_v<T>,
 
-        virtual void default_construct(void* data) const override { 
-            if constexpr (std::is_default_constructible_v<T>) new (data) T(); 
-        }
-        virtual void copy_construct(void* data, const void* from) const override { 
-            if constexpr (std::is_copy_constructible_v<T>) new (data) T(*static_cast<const T*>(from)); 
-        }
-        virtual void move_construct(void* data, void* from) const override { 
-            if constexpr (std::is_move_constructible_v<T>) new (data) T(std::move(*static_cast<T*>(from))); 
-        }
+                    std::is_copy_assignable_v<T>,
+                    std::is_move_assignable_v<T>
+                };
+                size = sizeof(T);
+            }
 
-        virtual void copy_assign(void* data, const void* from) const override {
-            if constexpr (std::is_copy_assignable_v<T>) *static_cast<T*>(data) = *static_cast<const T*>(from); 
-        }
-        virtual void move_assign(void* data, void* from) const override {
-            if constexpr (std::is_move_assignable_v<T>) *static_cast<T*>(data) = std::move(*static_cast<T*>(from)); 
-        }
+            virtual void default_construct(void* data) const override { 
+                if constexpr (std::is_default_constructible_v<T>) new (data) T(); 
+            }
+            virtual void copy_construct(void* data, const void* from) const override { 
+                if constexpr (std::is_copy_constructible_v<T>) new (data) T(*static_cast<const T*>(from)); 
+            }
+            virtual void move_construct(void* data, void* from) const override { 
+                if constexpr (std::is_move_constructible_v<T>) new (data) T(std::move(*static_cast<T*>(from))); 
+            }
 
-        //TODO add custom constructors?
+            virtual void copy_assign(void* data, const void* from) const override {
+                if constexpr (std::is_copy_assignable_v<T>) *static_cast<T*>(data) = *static_cast<const T*>(from); 
+            }
+            virtual void move_assign(void* data, void* from) const override {
+                if constexpr (std::is_move_assignable_v<T>) *static_cast<T*>(data) = std::move(*static_cast<T*>(from)); 
+            }
 
-        virtual void destruct(void* data) const override {
-            static_cast<T*>(data)->~T();
-        }
+            //TODO add custom constructors?
+
+            virtual void destruct(void* data) const override {
+                static_cast<T*>(data)->~T();
+            }
 
 
-        virtual ~type_impl() {}
-    };
+            virtual ~type_impl() {}
+        };
+    }//namespace details
 
     class state;
 
     class type : public no_copy {
     public:
         template<typename T>
-        explicit type(sgl_type_identity<T> t, std::string_view type_name) : m_impl(new type_impl<T>), 
+        explicit type(sgl_type_identity<T> t, std::string_view type_name) : m_impl(new details::type_impl<T>), 
             m_type_name(type_name), m_type(typeid(T)) {
             SGL_ASSERT(is_correct_identifier(type_name), "type name is incorrect");
         }
@@ -125,7 +127,7 @@ namespace SGL {
         friend class value;
         friend class value_type;
         
-        const std::unique_ptr<type_impl_base> m_impl;
+        const std::unique_ptr<details::type_impl_base> m_impl;
         const type_info& m_type;//used in state and in check_type
         const std::string m_type_name;
 
@@ -150,74 +152,6 @@ namespace SGL {
             return reinterpret_cast<size_t>(&(static_cast<T*>(nullptr)->*member_ptr));
         }
     };
-/*
-    enum class value_type_decorator {
-        d_none,
-        d_const,
-        d_pointer,
-        d_reference,//lvalue ref, T&
-        d_rvalue_reference,//T&&
-        d_array,//T[] or T[]
-    };
-
-    class value_type {
-    public:
-        value_type() {}
-
-        value_type(const value_type& v) : m_base_type(v.m_base_type), m_size(v.m_size), m_decorators(v.m_decorators) {}
-        value_type(value_type&& v) : m_base_type(v.m_base_type), m_size(v.m_size), m_decorators(std::move(v.m_decorators)) {}
-         
-        value_type& operator=(const value_type& v) {
-            m_base_type = v.m_base_type;
-            m_size = v.m_size;
-            m_decorators = v.m_decorators;
-        }
-        value_type& operator=(value_type&& v) {
-            m_base_type = v.m_base_type;
-            m_size = v.m_size;
-            m_decorators = std::move(v.m_decorators);
-        }
-
-        template<typename T>
-        explicit value_type(sgl_type_identity<T> t) : m_size(sizeof(T)), m_base_type(&s->get_type<make_base_type_t<T>>()) {
-
-            for_each_type_decorator(t, [this](auto t){
-                using T = typename decltype(t)::type;
-                if constexpr(std::is_lvalue_reference_v<T>) m_decorators.push_back(value_type_decorator::d_reference);
-                else if constexpr(std::is_rvalue_reference_v<T>) m_decorators.push_back(value_type_decorator::d_rvalue_reference);
-                else if constexpr(std::is_array_v<T>) m_decorators.push_back(value_type_decorator::d_array);
-                else if constexpr(std::is_pointer_v<T>) m_decorators.push_back(value_type_decorator::d_pointer);
-                else if constexpr(std::is_const_v<T>) m_decorators.push_back(value_type_decorator::d_const);
-                else m_decorators.push_back(value_type_decorator::d_none);
-            });
-
-        }
-
-        std::string name_string() const {
-            if(!m_base_type) return std::string();
-            std::string str = m_base_type->m_type_name;
-            for(size_t s = m_decorators.size(), i = s-1; i < s; i--) {
-                switch (m_decorators[i]) {
-                case value_type_decorator::d_const: str += " const"; break;
-                case value_type_decorator::d_pointer: str += "*"; break;
-                case value_type_decorator::d_reference: str += '&'; break;
-                case value_type_decorator::d_rvalue_reference: str += "&&"; break;
-                case value_type_decorator::d_array: str += "[]"; break;
-                case value_type_decorator::d_none:  default: break;
-                }
-            }
-            return str;
-        }
-
-
-    protected:
-        friend class state;
-        friend class value;
-        friend class type;
-
-        std::shared_ptr<const type> m_base_type = nullptr;
-    };
-    */
    
     class value_type {
     protected:
@@ -225,20 +159,32 @@ namespace SGL {
         
         std::shared_ptr<value_type> m_type;
         std::shared_ptr<type> m_base_type;
-        size_t array_size = 0;
         struct {
             bool is_const       : 1;
             bool is_pointer     : 1;
             bool is_reference   : 1;
-            bool is_array       : 1;
+            bool is_array       : 1;//array size stored in array_impl
             bool is_void        : 1;//unitililized value also void
             bool is_final_v     : 1;//value_type = (?const) base_type (?(*|&|&&))
         } m_traits;
 
         template<typename T>
-        static auto construct() {
-
+        static value_type* construct() {//TODO get T
+            
         }
+        template<typename T>
+        static value_type* construct(sgl_type_identity<T[]>) {//TODO get T
+            
+        }
+        template<typename T, size_t N>
+        static value_type* construct(sgl_type_identity<T[N]>) {//TODO get T
+            
+        }
+        template<typename T>
+        static value_type* construct(sgl_type_identity<std::vector<T>>) {//TODO get T
+            
+        }
+        //TODO add other overloads & implement
     };
 } // namespace SGL
 
