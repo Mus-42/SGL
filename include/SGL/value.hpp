@@ -10,13 +10,43 @@ namespace SGL {
         struct array_impl {
             size_t m_size = 0;//elements count
             void* m_elements = nullptr;
+            //TODO resizeble array_impl??
         };
-        //value_creator
-        //const_value_creator
-        //reference_creator
-        //const_reference_creator
         template<typename T>
-        struct array_creator {// : public value_creator
+        struct value_creator_base {
+            value_type m_type;
+            union {
+                void* m_data;
+                const void* m_const_data;
+            };
+        };
+
+        template<typename T>
+        struct value_creator : public value_creator_base<T> {
+            value_creator(const T& v) {
+                m_data = new T(v);
+            }
+        };
+        template<typename T>
+        struct const_value_creator : public value_creator_base<const T> {
+            const_value_creator(const T& v) {
+                m_const_data = new const T(v);
+            }
+        };
+        template<typename T>
+        struct reference_creator : public value_creator_base<T&> {
+            reference_creator(T& v) {
+                m_data = &v;
+            }
+        };
+        template<typename T>
+        struct const_reference_creator : public value_creator_base<const T&> {
+            const_reference_creator(const T& v) {
+                m_const_data = &v;
+            }
+        };
+        template<typename T>
+        struct array_creator : public value_creator_base<std::vector<T>> {
             array_creator(std::vector<T> v) {}
             template<size_t N>
             array_creator(T v[N]) {}
@@ -28,11 +58,11 @@ namespace SGL {
 
     //TODO value construct: value(const_val(12)); 
     //make using for it
-    //val
-    //const_val
-    //ref
-    //const_ref
-    //array
+    template<typename T> using val = details::value_creator<T>;
+    template<typename T> using const_val = details::const_value_creator<T>;
+    template<typename T> using ref = details::reference_creator<T>;
+    template<typename T> using const_ref = details::const_reference_creator<T>;
+    //array 
     //const_array
     //move_val
     //move_array
@@ -51,6 +81,10 @@ namespace SGL {
         value& operator=(const value& v) { 
         }
 
+        template<typename T>
+        value(details::value_creator_base<T>&& v) : m_data(v.m_data), m_type(std::move(v.m_type)) {
+
+        }
 
         template<typename T>
         explicit value(sgl_type_identity<T> v, typename sgl_type_identity<T>::type val, value_type&& t) : m_type(t) {
@@ -76,7 +110,7 @@ namespace SGL {
 
 
         ~value() {
-            if(m_data) delete m_data;
+            if(m_data) delete m_data;//TODO delete only if m_type is value
         }
 
         bool is_array() const { return m_type.m_traits.is_array; }
@@ -85,9 +119,9 @@ namespace SGL {
 
         
 
-    //protected:
+    protected:
         friend class state;
-        friend class value_creator;
+        friend class value_creator_base;
         
         template<typename T>
         static constexpr size_t vec_count(sgl_type_identity<T> v) { return 0; }
@@ -107,7 +141,7 @@ namespace SGL {
         //pointer   
         template<typename T>
         T* get(sgl_type_identity<T*> v) const {//const -> pointer copy
-            return nullptr;//TODO return data?
+            return static_cast<T*>(m_data);
         }
         template<typename T> decltype(auto) get(sgl_type_identity<T* const> v) const { return get(sgl_type_identity<T*>{}); }
         template<typename T> decltype(auto) get(sgl_type_identity<T* volatile> v) const { return get(sgl_type_identity<T*>{}); }
@@ -115,24 +149,25 @@ namespace SGL {
         //reference
         template<typename T>
         T& get(sgl_type_identity<T&> v) {//ref on value -> non const
-            return *static_cast<T*>(nullptr);//TODO return data
+            return *static_cast<T*>(m_data);
         }
         template<typename T>
         const T& get(sgl_type_identity<const T&> v) const {//const ref
-            return *static_cast<T*>(nullptr);//TODO return data
+            return *static_cast<T*>(m_data);
         }
         template<typename T>
         T&& get(sgl_type_identity<T&&> v) {//move -> not const
-            return static_cast<T&&>(*static_cast<T*>(nullptr));//TODO return data
+            return static_cast<T&&>(*static_cast<T*>(m_data));
         }
         //by value 
         template<typename T>
         T get(sgl_type_identity<T> v) const {//copy this -> const
-            return T();//TODO return data
+            return *static_cast<T*>(m_data);
         }
 
         template<typename T>
         void check_type(sgl_type_identity<T> v) const {
+            //TODO check m_base_type is vector ... 
             //SGL_ASSERT(typeid(make_base_type_t<T>) == m_type.m_base_type->m_type, "invalid base type");
 
             //TODO compare value type
@@ -141,6 +176,7 @@ namespace SGL {
 
         template<typename T>
         void get_vec_recursive(std::vector<std::vector<T>>& ret, void* data) const {
+            //TODO check if m_base_type is vector<...>
             auto& d = *static_cast<details::array_impl*>(data);
             ret.resize(d.m_size);
             for(size_t i = 0; i < d.m_size; i++) get_vec_recursive(ret[i], static_cast<char*>(d.m_elements) + sizeof(details::array_impl) * i);

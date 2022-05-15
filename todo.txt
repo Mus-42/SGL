@@ -14,3 +14,8 @@ Common type for SGL::type* ?
 make lib header only?
 
 add move&copy constuctors and assignment operators for value & value type
+
+how differ:
+get<std::vector<int>>()//vector<int> is value (T = std::vector<int>)
+and
+get<std::vector<int>>() //array of int (T = int[])
