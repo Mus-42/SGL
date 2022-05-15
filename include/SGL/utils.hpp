@@ -5,6 +5,7 @@
 #include "config.hpp"
 #include <cctype>//std::isalpha, std::isalnum ...
 #include <algorithm>
+#include <vector>
 
 namespace SGL {
 

@@ -100,4 +100,36 @@ int main() {
 
     //   std::cout << s.get_value_type<std::string const*&>().name_string() << std::endl;
 
+    SGL::value val;
+
+    auto d1 = new SGL::details::array_impl;
+    d1->m_size = 4;
+    auto d2 = new SGL::details::array_impl[4];
+    d1->m_elements = d2;
+
+    int d2_0[4] = {1, 2, 3, 4}; 
+    d2[0].m_size = 4;
+    d2[0].m_elements = d2_0;
+
+    int d2_1[2] = {5, 6}; 
+    d2[1].m_size = 2;
+    d2[1].m_elements = d2_1;
+
+    int d2_2[6] = {7, 8, 9, 10, 11, 12}; 
+    d2[2].m_size = 6;
+    d2[2].m_elements = d2_2;
+
+    int d2_3[1] = {13}; 
+    d2[3].m_size = 1;
+    d2[3].m_elements = d2_3;
+
+    val.m_data = d1;
+
+    auto vec = val.get<std::vector<std::vector<int>>>();
+
+    for(auto& el : vec) {
+        for(auto v : el) std::cout << v << ' ';
+        std::cout << '\n';
+    }
+
 }

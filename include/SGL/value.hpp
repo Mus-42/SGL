@@ -16,7 +16,7 @@ namespace SGL {
         //reference_creator
         //const_reference_creator
         template<typename T>
-        struct array_creator {
+        struct array_creator {// : public value_creator
             array_creator(std::vector<T> v) {}
             template<size_t N>
             array_creator(T v[N]) {}
@@ -64,10 +64,13 @@ namespace SGL {
         
         template<typename T>
         decltype(auto) get() {
+            //TODO nullptr check
+            check_type(sgl_type_identity<T>{});
             return get(sgl_type_identity<T>{});
         }
         template<typename T>
         decltype(auto) get() const {
+            check_type(sgl_type_identity<T>{});
             return get(sgl_type_identity<T>{});
         }
 
@@ -82,7 +85,7 @@ namespace SGL {
 
         
 
-    protected:
+    //protected:
         friend class state;
         friend class value_creator;
         
@@ -95,7 +98,9 @@ namespace SGL {
         template<typename T>
         decltype(auto) get(sgl_type_identity<std::vector<T>> v) const {//const -> get by copy
             //make it can return std::vector<T> or std::vector<std::vector<Y>> std::vector<std::vector<std::vector<Z>>> ...
-            return std::vector<T>();//TODO check this is array & T is T array element type
+            std::vector<T> ret;
+            get_vec_recursive(ret, m_data);
+            return ret;//TODO check this is array & T is T array element type
         }
         template<typename T, size_t N> decltype(auto) get(sgl_type_identity<T[N]> v) const { return get(sgl_type_identity<std::vector<T>>{}); } // TODO check size?
         template<typename T> decltype(auto) get(sgl_type_identity<T[]> v) const { return get(sgl_type_identity<std::vector<T>>{}); } // TODO check size?
@@ -124,6 +129,27 @@ namespace SGL {
         template<typename T>
         T get(sgl_type_identity<T> v) const {//copy this -> const
             return T();//TODO return data
+        }
+
+        template<typename T>
+        void check_type(sgl_type_identity<T> v) const {
+            //SGL_ASSERT(typeid(make_base_type_t<T>) == m_type.m_base_type->m_type, "invalid base type");
+
+            //TODO compare value type
+        }
+
+
+        template<typename T>
+        void get_vec_recursive(std::vector<std::vector<T>>& ret, void* data) const {
+            auto& d = *static_cast<details::array_impl*>(data);
+            ret.resize(d.m_size);
+            for(size_t i = 0; i < d.m_size; i++) get_vec_recursive(ret[i], static_cast<char*>(d.m_elements) + sizeof(details::array_impl) * i);
+        }
+        template<typename T>
+        void get_vec_recursive(std::vector<T>& ret, void* data) const {
+            auto& d = *static_cast<details::array_impl*>(data);
+            auto els = static_cast<T*>(d.m_elements);
+            ret = std::vector<T>(els, els+d.m_size);
         }
 
         
