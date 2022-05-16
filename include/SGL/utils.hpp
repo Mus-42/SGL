@@ -8,7 +8,17 @@
 #include <vector>
 
 namespace SGL {
+    namespace details {   
+        template<typename T>
+        struct array_value {
+            using type = T;
+        };
+    }//namespace details
+    
+    template<typename T> using arr = details::array_value<T>;
 
+    //TODO move utils to details namespace?
+    
     class no_copy {
     public:
         no_copy() = default;
@@ -61,6 +71,7 @@ namespace SGL {
         using type = typename make_base_type<std::remove_reference_t<T>>::type;
     };
     //array
+    /*
     template<typename T>
     struct make_base_type<T[]> {
         using type = typename make_base_type<std::remove_all_extents_t<T>>::type;
@@ -68,10 +79,10 @@ namespace SGL {
     template<typename T, size_t N>
     struct make_base_type<T[N]> {
         using type = typename make_base_type<std::remove_all_extents_t<T>>::type;
-    };
+    };*/
     template<typename T>
-    struct make_base_type<std::vector<T>> {
-        using type = typename make_base_type<std::remove_all_extents_t<T>>::type;
+    struct make_base_type<arr<T>> {
+        using type = typename make_base_type<T>::type;
     };
 
     template<typename T>
@@ -121,6 +132,7 @@ namespace SGL {
         for_each_type_decorator(sgl_type_identity<T>{}, func);
     }
     //array
+    /*
     template<typename T, size_t N, typename F>
     constexpr decltype(auto) for_each_type_decorator(sgl_type_identity<T[N]> t, F func) {
         func(t);
@@ -131,6 +143,25 @@ namespace SGL {
         func(t);
         for_each_type_decorator(sgl_type_identity<T>{}, func);
     }
+    */
+    template<typename T, typename F>
+    constexpr decltype(auto) for_each_type_decorator(sgl_type_identity<arr<T>> t, F func) {
+        func(t);
+        for_each_type_decorator(sgl_type_identity<T>{}, func);
+    }
+
+    template<typename T>
+    struct get_vector_from_arr {
+        using type = T;
+        using base_type = T;
+    };
+    template<typename T>
+    struct get_vector_from_arr<arr<T>> {
+        using type = std::vector<typename get_vector_from_arr<T>::type>;
+        using base_type = typename get_vector_from_arr<T>::base_type;
+    };
+    template<typename T> using get_vector_from_arr_t = typename get_vector_from_arr<T>::type;
+    template<typename T> using get_vector_from_arr_b = typename get_vector_from_arr<T>::base_type;
 }//namespace SGL
 
 #endif//SGL_UTILS_HPP_INCLUDE_

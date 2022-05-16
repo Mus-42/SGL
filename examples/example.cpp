@@ -99,10 +99,13 @@ int main() {
     //std::cout << typeid(a[0]).name() << std::endl;
 
     //   std::cout << s.get_value_type<std::string const*&>().name_string() << std::endl;
-/*
-    auto d1 = new SGL::details::array_impl;
+    using namespace SGL;
+//*
+    value q;
+
+    auto d1 = new details::array_impl;
     d1->m_size = 4;
-    auto d2 = new SGL::details::array_impl[4];
+    auto d2 = new details::array_impl[4];
     d1->m_elements = d2;
 
     int d2_0[4] = {1, 2, 3, 4}; 
@@ -121,17 +124,16 @@ int main() {
     d2[3].m_size = 1;
     d2[3].m_elements = d2_3;
 
-    val.m_data = d1;
-*/
-/*
-    auto vec = val.get<std::vector<std::vector<int>>>();
+    q.m_data = d1;
+
+    auto vec = q.get<arr<arr<int>>>();
 
     for(auto& el : vec) {
         for(auto v : el) std::cout << v << ' ';
         std::cout << '\n';
     }
-*/
-    using namespace SGL;
+//*/
+/*
     
     value v1 = value(val<int>(12));
     value v2 = value(const_val<int>(13));
@@ -146,6 +148,6 @@ int main() {
 
     std::cout << v3.get<int>() << std::endl;
     std::cout << v4.get<int>() << std::endl;
-
+*/
     
 }

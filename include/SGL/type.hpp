@@ -170,18 +170,10 @@ namespace SGL {
 
         template<typename T>
         static value_type* construct() {//TODO get T
-            
+            static_assert(!std::is_array_v<T>);
         }
         template<typename T>
-        static value_type* construct(sgl_type_identity<T[]>) {//TODO get T
-            
-        }
-        template<typename T, size_t N>
-        static value_type* construct(sgl_type_identity<T[N]>) {//TODO get T
-            
-        }
-        template<typename T>
-        static value_type* construct(sgl_type_identity<std::vector<T>>) {//TODO get T
+        static value_type* construct(sgl_type_identity<arr<T>>) {//TODO get T
             
         }
         //TODO add other overloads & implement
