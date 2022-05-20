@@ -10,6 +10,7 @@ namespace SGL {
         struct array_impl {
             size_t m_size = 0;//elements count
             void* m_elements = nullptr;
+            bool need_free_data = false;
             //TODO resizeble array_impl??
         };
         template<typename T>
@@ -25,12 +26,14 @@ namespace SGL {
         struct value_creator : public value_creator_base<T> {
             value_creator(const T& v) {
                 m_data = new T(v);
+                need_free_data = true;
             }
         };
         template<typename T>
         struct const_value_creator : public value_creator_base<const T> {
             const_value_creator(const T& v) {
                 m_const_data = new const T(v);
+                need_free_data = true;
             }
         };
         template<typename T>
@@ -53,6 +56,7 @@ namespace SGL {
 
             //TODO add impl
         };
+        //TODO add other creators
         
     }//namespace details
 
@@ -110,7 +114,8 @@ namespace SGL {
 
 
         ~value() {
-            if(m_data) delete m_data;//TODO delete only if m_type is value
+            if(m_data && need_free_data) delete m_data;//TODO delete only if m_type is value
+            //TODO if array free all array
         }
 
         bool is_array() const { return m_type.m_traits.is_array; }
@@ -171,6 +176,7 @@ namespace SGL {
             //SGL_ASSERT(typeid(make_base_type_t<T>) == m_type.m_base_type->m_type, "invalid base type");
 
             //TODO compare value type
+            //TODO check convertable to type
         }
 
 
@@ -188,9 +194,9 @@ namespace SGL {
             ret = std::vector<T>(els, els+d.m_size);
         }
 
-        
         void* m_data = nullptr;//if array - ptr to array_impl, if ref|ptr - their adress. if value - pointer to value
         value_type m_type;
+        bool need_free_data = false;//example: references or pointers shod not freed. arrays or values must be freed
     };
 }//namespace SGL
 

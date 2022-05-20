@@ -50,11 +50,12 @@ namespace SGL {
             
             default: {
                 if(std::isalnum(str[cur])) {
-                    std::string s;
-                    while(cur < str.size() && std::isalnum(str[cur]) || str[cur] == '_') s += str[cur++];
+                    size_t beg = cur;
+                    while(cur < str.size() && std::isalnum(str[cur]) || str[cur] == '_') cur++;
+                    size_t len = cur - beg;
                     cur--;
                     token t(token::t_identifier, priotity);
-                    t.identifier_v = s;
+                    t.identifier_v = str.substr(beg, len);
                     m_tokens.back().push_back(t);
                 } else {//operator
                     token t(token::t_operator, priotity);

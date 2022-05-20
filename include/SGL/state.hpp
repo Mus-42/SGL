@@ -16,6 +16,7 @@ namespace SGL {
     class state : public no_copy {
     public:
         state() = default;
+        //TODO add impl with new type class
         /*~state() {
             for(auto [i, t] : m_types) delete t;
         };

@@ -159,7 +159,15 @@ namespace SGL {
         
         std::shared_ptr<value_type> m_type;
         std::shared_ptr<type> m_base_type;
-        struct {
+        struct m_traits_t {
+            m_traits_t() = default;
+            m_traits_t(const m_traits_t&) = default;
+            m_traits_t& operator=(const m_traits_t&) = default;
+            ~m_traits_t() = default;
+
+            template<typename T>
+            explicit m_traits_t(sgl_type_identity<T> t) {}
+            
             bool is_const       : 1;
             bool is_pointer     : 1;
             bool is_reference   : 1;
@@ -169,12 +177,18 @@ namespace SGL {
         } m_traits;
 
         template<typename T>
-        static value_type* construct() {//TODO get T
+        static value_type* construct_value_type() {//TODO get T
             static_assert(!std::is_array_v<T>);
         }
         template<typename T>
-        static value_type* construct(sgl_type_identity<arr<T>>) {//TODO get T
-            
+        static value_type* construct_value_type_impl(sgl_type_identity<T> v) {//TODO get T
+            //TODO init all type fields
+            //m_type = construct_value_type(sgl_type_identity<T> {});
+        }
+        template<typename T>
+        static value_type* construct_value_type_impl(sgl_type_identity<arr<T>> v) {//TODO get T
+            //TODO init all type fields
+            m_type = construct_value_type(sgl_type_identity<T> {});
         }
         //TODO add other overloads & implement
     };
