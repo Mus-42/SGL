@@ -150,7 +150,24 @@ int main() {
     std::cout << v4.get<int>() << std::endl;
 */
 
-    auto val_t = SGL::value_type::construct_value_type<const int&>();
-    
-    
+    auto val_t = SGL::value_type::construct_value_type<arr<const int&>* const>();
+
+    std::function<void(std::shared_ptr<SGL::value_type>)> type_print;
+    type_print = [&type_print](std::shared_ptr<SGL::value_type> v){
+        if(!v->m_traits.is_final_v) {
+            if(v->m_traits.is_array) std::cout << "arr<";
+            type_print(v->m_type);
+            if(v->m_traits.is_array) std::cout << ">";
+
+            if(v->m_traits.is_pointer) std::cout << "*";
+            if(v->m_traits.is_reference) std::cout << "&";
+            if(v->m_traits.is_const) std::cout << " const";
+        }
+        else {
+            if(v->m_traits.is_const) std::cout << "const ";
+            std::cout << 'T';
+        }
+    };
+
+    type_print(val_t);
 }

@@ -162,6 +162,18 @@ namespace SGL {
     };
     template<typename T> using get_vector_from_arr_t = typename get_vector_from_arr<T>::type;
     template<typename T> using get_vector_from_arr_b = typename get_vector_from_arr<T>::base_type;
+
+
+    template<typename T>
+    struct is_sgl_array {
+        constexpr static bool value = false;
+    };
+    template<typename T>
+    struct is_sgl_array<arr<T>> {
+        constexpr static bool value = true;
+    };
+    template<typename T>
+    constexpr bool is_sgl_array_v = is_sgl_array<T>::value;
 }//namespace SGL
 
 #endif//SGL_UTILS_HPP_INCLUDE_

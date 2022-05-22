@@ -176,7 +176,7 @@ namespace SGL {
                 is_const(std::is_const_v<T>), 
                 is_pointer(std::is_pointer_v<T>), 
                 is_reference(std::is_reference_v<T>),
-                is_array(false),
+                is_array(is_sgl_array_v<T>),
                 is_void(std::is_same_v<T, void>),
                 is_final_v(false)//set it manually
                 {}
@@ -209,7 +209,6 @@ namespace SGL {
             ret->m_type = construct_value_type_impl(sgl_type_identity<T>{});
             ret->m_traits = m_traits_t(v);
             return ret;
-            
         }
         template<typename T>
         static std::shared_ptr<value_type> construct_value_type_impl(sgl_type_identity<T*> v) {
@@ -218,13 +217,26 @@ namespace SGL {
             ret->m_traits = m_traits_t(v);
             return ret;
         }
-        template<typename T>
-        static std::shared_ptr<value_type> construct_value_type_impl(sgl_type_identity<arr<T>> v) {
+        
+        template<typename T> static std::shared_ptr<value_type> construct_value_type_impl(sgl_type_identity<T*const> v) { 
             auto ret = std::make_shared<value_type>();
-            ret->m_type = construct_value_type(sgl_type_identity<T>{});
+            ret->m_type = construct_value_type_impl(sgl_type_identity<T>{});
             ret->m_traits = m_traits_t(v);
             return ret;
         }
+        
+        //ignore volatile
+        template<typename T> static std::shared_ptr<value_type> construct_value_type_impl(sgl_type_identity<T*volatile> v) { return construct_value_type_impl(sgl_type_identity<T*>{}); }
+        template<typename T> static std::shared_ptr<value_type> construct_value_type_impl(sgl_type_identity<T*const volatile> v) { return construct_value_type_impl(sgl_type_identity<T*const>{}); }
+        
+        template<typename T>
+        static std::shared_ptr<value_type> construct_value_type_impl(sgl_type_identity<arr<T>> v) {
+            auto ret = std::make_shared<value_type>();
+            ret->m_type = construct_value_type_impl(sgl_type_identity<T>{});
+            ret->m_traits = m_traits_t(v);
+            return ret;
+        }
+
     };
 } // namespace SGL
 
