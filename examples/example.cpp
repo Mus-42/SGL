@@ -149,5 +149,8 @@ int main() {
     std::cout << v3.get<int>() << std::endl;
     std::cout << v4.get<int>() << std::endl;
 */
+
+    auto val_t = SGL::value_type::construct_value_type<const int&>();
+    
     
 }

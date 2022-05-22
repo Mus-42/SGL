@@ -89,9 +89,8 @@ namespace SGL {
     class type : public no_copy {
     public:
         template<typename T>
-        explicit type(sgl_type_identity<T> t, std::string_view type_name) : m_impl(new details::type_impl<T>), 
-            m_type_name(type_name), m_type(typeid(T)) {
-            SGL_ASSERT(is_correct_identifier(type_name), "type name is incorrect");
+        explicit type(sgl_type_identity<T> t) : m_impl(new details::type_impl<T>), m_type(typeid(T)) {
+            //SGL_ASSERT(is_correct_identifier(type_name), "type name is incorrect");
         }
         ~type() = default;
 
@@ -129,7 +128,6 @@ namespace SGL {
         
         const std::unique_ptr<details::type_impl_base> m_impl;
         const type_info& m_type;//used in state and in check_type
-        const std::string m_type_name;
 
         //std::unordered_map<std::string, std::pair<const type*, size_t>> m_members;//name, type, offset of member
 
@@ -154,11 +152,19 @@ namespace SGL {
     };
    
     class value_type {
-    protected:
+    public:
+        value_type() : m_traits(sgl_type_identity<void>{}) {}
+
+        value_type(const value_type&) = default;
+        value_type(value_type&&) = default;
+        value_type& operator=(const value_type&) = default;
+        value_type& operator=(value_type&&) = default;
+    //protected:
         friend class value;
         
         std::shared_ptr<value_type> m_type;
         std::shared_ptr<type> m_base_type;
+
         struct m_traits_t {
             m_traits_t() = default;
             m_traits_t(const m_traits_t&) = default;
@@ -166,7 +172,14 @@ namespace SGL {
             ~m_traits_t() = default;
 
             template<typename T>
-            explicit m_traits_t(sgl_type_identity<T> t) {}
+            constexpr explicit m_traits_t(sgl_type_identity<T> t) :
+                is_const(std::is_const_v<T>), 
+                is_pointer(std::is_pointer_v<T>), 
+                is_reference(std::is_reference_v<T>),
+                is_array(false),
+                is_void(std::is_same_v<T, void>),
+                is_final_v(false)//set it manually
+                {}
             
             bool is_const       : 1;
             bool is_pointer     : 1;
@@ -176,21 +189,42 @@ namespace SGL {
             bool is_final_v     : 1;//value_type = (?const) base_type (?(*|&|&&))
         } m_traits;
 
+        //TODO move it in constuctor?
         template<typename T>
-        static value_type* construct_value_type() {//TODO get T
+        static std::shared_ptr<value_type> construct_value_type() {//TODO get T
             static_assert(!std::is_array_v<T>);
+            return construct_value_type_impl(sgl_type_identity<T>{});
         }
         template<typename T>
-        static value_type* construct_value_type_impl(sgl_type_identity<T> v) {//TODO get T
-            //TODO init all type fields
-            //m_type = construct_value_type(sgl_type_identity<T> {});
+        static std::shared_ptr<value_type> construct_value_type_impl(sgl_type_identity<T> v) {
+            auto ret = std::make_shared<value_type>();
+            ret->m_traits = m_traits_t(v);
+            ret->m_traits.is_final_v = true;
+            ret->m_base_type = std::make_shared<type>(sgl_type_identity<T>{});
+            return ret;
         }
         template<typename T>
-        static value_type* construct_value_type_impl(sgl_type_identity<arr<T>> v) {//TODO get T
-            //TODO init all type fields
-            m_type = construct_value_type(sgl_type_identity<T> {});
+        static std::shared_ptr<value_type> construct_value_type_impl(sgl_type_identity<T&> v) {
+            auto ret = std::make_shared<value_type>();
+            ret->m_type = construct_value_type_impl(sgl_type_identity<T>{});
+            ret->m_traits = m_traits_t(v);
+            return ret;
+            
         }
-        //TODO add other overloads & implement
+        template<typename T>
+        static std::shared_ptr<value_type> construct_value_type_impl(sgl_type_identity<T*> v) {
+            auto ret = std::make_shared<value_type>();
+            ret->m_type = construct_value_type_impl(sgl_type_identity<T>{});
+            ret->m_traits = m_traits_t(v);
+            return ret;
+        }
+        template<typename T>
+        static std::shared_ptr<value_type> construct_value_type_impl(sgl_type_identity<arr<T>> v) {
+            auto ret = std::make_shared<value_type>();
+            ret->m_type = construct_value_type(sgl_type_identity<T>{});
+            ret->m_traits = m_traits_t(v);
+            return ret;
+        }
     };
 } // namespace SGL
 
