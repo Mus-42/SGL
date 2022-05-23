@@ -121,6 +121,13 @@ namespace SGL {
         } 
 */      
         //TODO fix members
+
+        bool operator==(const type& v) const {
+            return false;//TODO implement
+        }
+        bool operator!=(const type& v) const {
+            return !(*this == v);
+        }
     protected:
         friend class state;
         friend class value;
@@ -150,6 +157,7 @@ namespace SGL {
             return reinterpret_cast<size_t>(&(static_cast<T*>(nullptr)->*member_ptr));
         }
     };
+
    
     class value_type {
     public:
@@ -159,6 +167,24 @@ namespace SGL {
         value_type(value_type&&) = default;
         value_type& operator=(const value_type&) = default;
         value_type& operator=(value_type&&) = default;
+
+        template<typename T>
+        bool is_same_with() const {//same with T
+            return false;//TODO add impl
+        } 
+        template<typename T>
+        bool is_convertable_to() const {//convertable to T
+            return false;//TODO add impl
+        }
+
+        bool is_same_with(const value_type& t) const {//same with t
+            if(m_traits != t.m_traits) return false;
+            if(m_traits.is_final_v) return *m_base_type == *t.m_base_type;
+            else return m_type->is_same_with(*t.m_type);
+        }
+        bool is_convertable_to(const value_type& t) const {//convertable to t
+            return false;//TODO add impl
+        }
     //protected:
         friend class value;
         
@@ -187,14 +213,25 @@ namespace SGL {
             bool is_array       : 1;//array size stored in array_impl
             bool is_void        : 1;//unitililized value also void
             bool is_final_v     : 1;//value_type = (?const) base_type (?(*|&|&&))
+        
+            constexpr bool operator==(const m_traits_t& other) const {
+                return is_const     == other.is_const
+                    && is_pointer   == other.is_pointer
+                    && is_reference == other.is_reference
+                    && is_array     == other.is_array
+                    && is_void      == other.is_void
+                    && is_final_v   == other.is_final_v;
+            }
+            bool operator!=(const m_traits_t& other) const { return !(*this == other); }
         } m_traits;
 
-        //TODO move it in constuctor?
+        //TODO move it to constuctor?
         template<typename T>
         static std::shared_ptr<value_type> construct_value_type() {//TODO get T
             static_assert(!std::is_array_v<T>);
             return construct_value_type_impl(sgl_type_identity<T>{});
         }
+        //simple value
         template<typename T>
         static std::shared_ptr<value_type> construct_value_type_impl(sgl_type_identity<T> v) {
             auto ret = std::make_shared<value_type>();
@@ -203,6 +240,7 @@ namespace SGL {
             ret->m_base_type = std::make_shared<type>(sgl_type_identity<T>{});
             return ret;
         }
+        //reference
         template<typename T>
         static std::shared_ptr<value_type> construct_value_type_impl(sgl_type_identity<T&> v) {
             auto ret = std::make_shared<value_type>();
@@ -210,6 +248,7 @@ namespace SGL {
             ret->m_traits = m_traits_t(v);
             return ret;
         }
+        //pointer
         template<typename T>
         static std::shared_ptr<value_type> construct_value_type_impl(sgl_type_identity<T*> v) {
             auto ret = std::make_shared<value_type>();
@@ -217,7 +256,6 @@ namespace SGL {
             ret->m_traits = m_traits_t(v);
             return ret;
         }
-        
         template<typename T> static std::shared_ptr<value_type> construct_value_type_impl(sgl_type_identity<T*const> v) { 
             auto ret = std::make_shared<value_type>();
             ret->m_type = construct_value_type_impl(sgl_type_identity<T>{});
@@ -229,6 +267,7 @@ namespace SGL {
         template<typename T> static std::shared_ptr<value_type> construct_value_type_impl(sgl_type_identity<T*volatile> v) { return construct_value_type_impl(sgl_type_identity<T*>{}); }
         template<typename T> static std::shared_ptr<value_type> construct_value_type_impl(sgl_type_identity<T*const volatile> v) { return construct_value_type_impl(sgl_type_identity<T*const>{}); }
         
+        //array
         template<typename T>
         static std::shared_ptr<value_type> construct_value_type_impl(sgl_type_identity<arr<T>> v) {
             auto ret = std::make_shared<value_type>();

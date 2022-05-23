@@ -12,6 +12,7 @@ namespace SGL {
         template<typename T>
         struct array_value {
             using type = T;
+            static_assert(!std::is_reference_v<T>, "arr<T&>: cannot create array of references. did you mean pointers instead of references?");
         };
     }//namespace details
     
