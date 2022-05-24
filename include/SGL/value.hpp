@@ -91,7 +91,7 @@ namespace SGL {
         }
 
         template<typename T>
-        explicit value(sgl_type_identity<T> v, typename sgl_type_identity<T>::type val, value_type&& t) : m_type(t) {
+        explicit value(details::sgl_type_identity<T> v, typename details::sgl_type_identity<T>::type val, value_type&& t) : m_type(t) {
             
         }//TODO copy data?
 
@@ -103,13 +103,13 @@ namespace SGL {
         template<typename T>
         decltype(auto) get() {
             //TODO nullptr check
-            check_type(sgl_type_identity<T>{});
-            return get(sgl_type_identity<T>{});
+            check_type(details::sgl_type_identity<T>{});
+            return get(details::sgl_type_identity<T>{});
         }
         template<typename T>
         decltype(auto) get() const {
-            check_type(sgl_type_identity<T>{});
-            return get(sgl_type_identity<T>{});
+            check_type(details::sgl_type_identity<T>{});
+            return get(details::sgl_type_identity<T>{});
         }
 
 
@@ -129,49 +129,46 @@ namespace SGL {
         friend class value_creator_base;
         
         template<typename T>
-        static constexpr size_t arr_count(sgl_type_identity<T> v) { return 0; }
+        static constexpr size_t arr_count(details::sgl_type_identity<T> v) { return 0; }
         template<typename T>
-        static constexpr size_t arr_count(sgl_type_identity<arr<T>> v) { return vec_count(sgl_type_identity<T>{}) + 1; }
+        static constexpr size_t arr_count(details::sgl_type_identity<arr<T>> v) { return vec_count(details::sgl_type_identity<T>{}) + 1; }
 
         //array
         template<typename T>
-        decltype(auto) get(sgl_type_identity<arr<T>> v) const {//const -> get by copy
-            get_vector_from_arr_t<arr<T>> ret;
+        decltype(auto) get(details::sgl_type_identity<arr<T>> v) const {//const -> get by copy
+            details::get_vector_from_arr_t<arr<T>> ret;
             get_vec_recursive(ret, m_data);
             return ret;//TODO check this is array & T is T array element type
         }
-        //template<typename T, size_t N> decltype(auto) get(sgl_type_identity<T[N]> v) const { return get(sgl_type_identity<std::vector<T>>{}); } // TODO check size?
-        //template<typename T> decltype(auto) get(sgl_type_identity<T[]> v) const { return get(sgl_type_identity<std::vector<T>>{}); } // TODO check size?
-        
         //pointer   
         template<typename T>
-        T* get(sgl_type_identity<T*> v) const {//const -> pointer copy
+        T* get(details::sgl_type_identity<T*> v) const {//const -> pointer copy
             return static_cast<T*>(m_data);
         }
-        template<typename T> decltype(auto) get(sgl_type_identity<T* const> v) const { return get(sgl_type_identity<T*>{}); }
-        template<typename T> decltype(auto) get(sgl_type_identity<T* volatile> v) const { return get(sgl_type_identity<T*>{}); }
-        template<typename T> decltype(auto) get(sgl_type_identity<T* const volatile> v) const { return get(sgl_type_identity<T*>{}); }
+        template<typename T> decltype(auto) get(details::sgl_type_identity<T* const> v) const { return get(details::sgl_type_identity<T*>{}); }
+        template<typename T> decltype(auto) get(details::sgl_type_identity<T* volatile> v) const { return get(details::sgl_type_identity<T*>{}); }
+        template<typename T> decltype(auto) get(details::sgl_type_identity<T* const volatile> v) const { return get(details::sgl_type_identity<T*>{}); }
         //reference
         template<typename T>
-        T& get(sgl_type_identity<T&> v) {//ref on value -> non const
+        T& get(details::sgl_type_identity<T&> v) {//ref on value -> non const
             return *static_cast<T*>(m_data);
         }
         template<typename T>
-        const T& get(sgl_type_identity<const T&> v) const {//const ref
+        const T& get(details::sgl_type_identity<const T&> v) const {//const ref
             return *static_cast<T*>(m_data);
         }
         template<typename T>
-        T&& get(sgl_type_identity<T&&> v) {//move -> not const
+        T&& get(details::sgl_type_identity<T&&> v) {//move -> not const
             return static_cast<T&&>(*static_cast<T*>(m_data));
         }
         //by value 
         template<typename T>
-        T get(sgl_type_identity<T> v) const {//copy this -> const
+        T get(details::sgl_type_identity<T> v) const {//copy this -> const
             return *static_cast<T*>(m_data);
         }
 
         template<typename T>
-        void check_type(sgl_type_identity<T> v) const {
+        void check_type(details::sgl_type_identity<T> v) const {
             //TODO check convertable to type
         }
 

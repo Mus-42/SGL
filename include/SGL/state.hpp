@@ -13,7 +13,7 @@
 #include "type.hpp"
 
 namespace SGL {
-    class state : public no_copy {
+    class state : public details::no_copy {
     public:
         state() = default;
         //TODO add impl with new type & value_type classes
@@ -28,7 +28,7 @@ namespace SGL {
             SGL_ASSERT(m_types.find(type_name) == m_types.end(), "check for state object already contains same type");
             SGL_ASSERT(m_type_names.find(i) == m_type_names.end(), "check for state object already contains type with same name");
             
-            auto t = new type(sgl_type_identity<T>{}, type_name, this);
+            auto t = new type(details::sgl_type_identity<T>{}, type_name, this);
 
             m_types[t->m_type_name] = t;
             m_type_names[i] = t->m_type_name;

@@ -10,5 +10,9 @@ Typecasts to|from custom types
 Lib:
 state .add (type|value|function) 
 
-Common type for SGL::type* ?
+common type for SGL::value_type
 make lib header only?
+
+how shold return value for <arr<T>*>? pointer to array_impl?
+add ret_type<T>? cast_to_ret_type<T>(v)?
+ 

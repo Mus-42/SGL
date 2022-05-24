@@ -62,7 +62,7 @@ namespace SGL {
             std::string identifier_v;
         };
     };
-    class tokenizer : public no_copy {
+    class tokenizer : public details::no_copy {
     public:
         //TODO add settings such as "ignore trailing comma"?
         tokenizer(std::string_view str);//TODO add char type as template arg?
