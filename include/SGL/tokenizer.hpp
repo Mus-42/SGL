@@ -64,8 +64,8 @@ namespace SGL {
     };
     class tokenizer : public no_copy {
     public:
-        //TODO add settings such as ignore trailing comma?
-        tokenizer(std::string_view str);
+        //TODO add settings such as "ignore trailing comma"?
+        tokenizer(std::string_view str);//TODO add char type as template arg?
         ~tokenizer() = default;
     protected:
         friend class evaluator;

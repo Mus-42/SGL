@@ -3,6 +3,7 @@
 #include <array>
 #include <cctype>//std::isalpha, std::isalnum ...
 
+
 namespace SGL {
     tokenizer::tokenizer(std::string_view str) : m_tokens(1) {
         size_t cur = 0;

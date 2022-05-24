@@ -172,17 +172,12 @@ namespace SGL {
 
         template<typename T>
         void check_type(sgl_type_identity<T> v) const {
-            //TODO check m_base_type is vector ... 
-            //SGL_ASSERT(typeid(make_base_type_t<T>) == m_type.m_base_type->m_type, "invalid base type");
-
-            //TODO compare value type
             //TODO check convertable to type
         }
 
 
         template<typename T>
         void get_vec_recursive(std::vector<std::vector<T>>& ret, void* data) const {
-            //TODO check if m_base_type is vector<...>
             auto& d = *static_cast<details::array_impl*>(data);
             ret.resize(d.m_size);
             for(size_t i = 0; i < d.m_size; i++) get_vec_recursive(ret[i], static_cast<char*>(d.m_elements) + sizeof(details::array_impl) * i);

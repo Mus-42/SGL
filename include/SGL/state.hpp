@@ -16,7 +16,7 @@ namespace SGL {
     class state : public no_copy {
     public:
         state() = default;
-        //TODO add impl with new type class
+        //TODO add impl with new type & value_type classes
         /*~state() {
             for(auto [i, t] : m_types) delete t;
         };
@@ -35,36 +35,13 @@ namespace SGL {
             
             return *t;
         }
-        template<typename T, std::enable_if_t<is_base_type<T>, bool> = true>
-        type& get_type() const { 
-            //if constexpr(std::is_fundamental_v<T>)//TODO replace with constexpr val?
-            return *m_types.at(m_type_names.at(std::type_index(typeid(T)))); 
-        }
-        type& get_type(std::string_view type_name) const { 
-            return *m_types.at(type_name); 
-        }
-        template<typename T, std::enable_if_t<is_base_type<T>, bool> = true>
-        void remove_type() { 
-            auto i = std::type_index(typeid(T));
-            m_types.erase(m_type_names.at(i));
-            m_type_names.erase(i);
-        }
-        void remove_type(std::string_view type_name) { 
-            m_type_names.erase(m_types.at(type_name)->m_type);
-            m_types.erase(type_name);
-        }
-
-        template<typename T>
-        value_type get_value_type() const {
-            return value_type(sgl_type_identity<T>{}, this);
-        }*/
+        */
 
     protected:
         friend class type;
 
     private:
-        //std::unordered_map<std::type_index, std::string_view> m_type_names;
-        //std::unordered_map<std::string_view, type*> m_types;
+        //std::unordered_map<std::string_view, type*> m_types;//TODO replace with shared pointer
 
     };
 }//namespace SGL

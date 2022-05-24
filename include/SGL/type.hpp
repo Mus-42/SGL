@@ -24,7 +24,8 @@ namespace SGL {
             virtual void copy_assign(void* data, const void* from) const {}
             virtual void move_assign(void* data, void* from) const {}
 
-            //TODO add custom constructors?
+            //TODO add custom constructors? (pass it as SGL::function?)
+
             virtual void destruct(void* data) const {}
 
             virtual ~type_impl_base() {}
@@ -35,8 +36,6 @@ namespace SGL {
 
                 bool is_copy_assignable = false;
                 bool is_move_assignable = false;
-
-                //TODO add is_ref | is_pointer?
             } traits;
             size_t size;
         };
@@ -185,6 +184,10 @@ namespace SGL {
         bool is_convertable_to(const value_type& t) const {//convertable to t
             return false;//TODO add impl
         }
+
+        static value_type common_type(const value_type& a, const value_type& b) {
+            return value_type();//TODO implement
+        }
     //protected:
         friend class value;
         
@@ -213,6 +216,7 @@ namespace SGL {
             bool is_array       : 1;//array size stored in array_impl
             bool is_void        : 1;//unitililized value also void
             bool is_final_v     : 1;//value_type = (?const) base_type (?(*|&|&&))
+            bool is_temp_v      : 1;//for language-temporary values. for example: a = 1 + 2; 3 - temp_v
         
             constexpr bool operator==(const m_traits_t& other) const {
                 return is_const     == other.is_const
@@ -220,7 +224,7 @@ namespace SGL {
                     && is_reference == other.is_reference
                     && is_array     == other.is_array
                     && is_void      == other.is_void
-                    && is_final_v   == other.is_final_v;
+                    && is_final_v   == other.is_final_v;//TODO add is_temp_v to compare?
             }
             bool operator!=(const m_traits_t& other) const { return !(*this == other); }
         } m_traits;

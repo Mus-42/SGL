@@ -9,10 +9,6 @@
 #include <functional>
 
 namespace SGL {
-
-    //TODO add overloaded_function or something like this
-
-    //TODO convert Args to type*
     class value;
     class state;
     class function {
@@ -38,6 +34,8 @@ namespace SGL {
 
         std::function<value(std::initializer_list<std::reference_wrapper<value>>)> m_func;
     };
+
+    //TODO add overloaded_function or something like this
 }//namespace SGL
  
 #endif//SGL_FUNCTION_HPP_INCLUDE_
