@@ -10,12 +10,12 @@ namespace SGL {
         struct array_impl {
             size_t m_size = 0;//elements count
             void* m_elements = nullptr;
-            bool need_free_data = false;
             //TODO resizeble array_impl??
         };
         template<typename T>
-        struct value_creator_base {
+        struct [[nodiscard]] value_creator_base {
             value_type m_type;
+            bool need_free_data = false;
             union {
                 void* m_data;
                 const void* m_const_data;
@@ -24,35 +24,33 @@ namespace SGL {
 
         template<typename T>
         struct value_creator : public value_creator_base<T> {
-            value_creator(const T& v) {
+            [[nodiscard]] value_creator(const T& v) {
                 m_data = new T(v);
                 need_free_data = true;
             }
         };
         template<typename T>
         struct const_value_creator : public value_creator_base<const T> {
-            const_value_creator(const T& v) {
+            [[nodiscard]] const_value_creator(const T& v) {
                 m_const_data = new const T(v);
                 need_free_data = true;
             }
         };
         template<typename T>
         struct reference_creator : public value_creator_base<T&> {
-            reference_creator(T& v) {
+            [[nodiscard]] reference_creator(T& v) {
                 m_data = &v;
             }
         };
         template<typename T>
         struct const_reference_creator : public value_creator_base<const T&> {
-            const_reference_creator(const T& v) {
+            [[nodiscard]] const_reference_creator(const T& v) {
                 m_const_data = &v;
             }
         };
         template<typename T>
         struct array_creator : public value_creator_base<arr<T>> {
-            array_creator(const std::vector<T>& v) {}
-            template<size_t N>
-            array_creator(T v[N]) {}
+            [[nodiscard]] array_creator(const std::vector<T>& v) {}
 
             //TODO add impl
         };
@@ -101,13 +99,12 @@ namespace SGL {
         
         
         template<typename T>
-        decltype(auto) get() {
-            //TODO nullptr check
+        [[nodiscard]] decltype(auto) get() {
             check_type(details::sgl_type_identity<T>{});
             return get(details::sgl_type_identity<T>{});
         }
         template<typename T>
-        decltype(auto) get() const {
+        [[nodiscard]] decltype(auto) get() const {
             check_type(details::sgl_type_identity<T>{});
             return get(details::sgl_type_identity<T>{});
         }
@@ -118,9 +115,9 @@ namespace SGL {
             //TODO if array free all array
         }
 
-        bool is_array() const { return m_type.m_traits.is_array; }
-        bool is_pointer() const { return m_type.m_traits.is_pointer; }
-        bool is_reference() const { return m_type.m_traits.is_reference; }
+        [[nodiscard]] bool is_array() const { return m_type.m_traits.is_array; }
+        [[nodiscard]] bool is_pointer() const { return m_type.m_traits.is_pointer; }
+        [[nodiscard]] bool is_reference() const { return m_type.m_traits.is_reference; }
 
         
 

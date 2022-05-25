@@ -101,6 +101,8 @@ int main() {
     //   std::cout << s.get_value_type<std::string const*&>().name_string() << std::endl;
     using namespace SGL;
 //*
+    val<int>(12);//nodiscard check
+
     value q;
 
     auto d1 = new details::array_impl;

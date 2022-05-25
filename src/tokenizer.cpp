@@ -28,20 +28,20 @@ namespace SGL {
                 //TODO check priority == 0
             }
             case ',': case '.': {
-                token t(token::t_punct, priotity);
+                details::token t(details::token::t_punct, priotity);
                 t.punct_v = ';';
                 m_tokens.back().push_back(t);
                 m_tokens.emplace_back();
             } break;
             case '(': case '{': case '[': {
                 priotity++;
-                token t(token::t_punct, priotity);
+                details::token t(details::token::t_punct, priotity);
                 t.punct_v = str[cur];
                 m_tokens.back().push_back(t);
             } break;
             case ')': case '}': case ']': {
                 //TODO check priority > 0
-                token t(token::t_punct, priotity);
+                details::token t(details::token::t_punct, priotity);
                 priotity--;
                 t.punct_v = str[cur];
                 m_tokens.back().push_back(t);
@@ -55,11 +55,11 @@ namespace SGL {
                     while(cur < str.size() && std::isalnum(str[cur]) || str[cur] == '_') cur++;
                     size_t len = cur - beg;
                     cur--;
-                    token t(token::t_identifier, priotity);
+                    details::token t(details::token::t_identifier, priotity);
                     t.identifier_v = str.substr(beg, len);
                     m_tokens.back().push_back(t);
                 } else {//operator
-                    token t(token::t_operator, priotity);
+                    details::token t(details::token::t_operator, priotity);
                     if(cur + 2 < str.size()) {
                         static constexpr std::array<std::string_view, 3> op_3_char_wide = { "<<=", ">>=", "<=>" };
                         if(auto f = std::find(op_3_char_wide.begin(), op_3_char_wide.end(), str.substr(cur, 3)); f != op_3_char_wide.end()) {

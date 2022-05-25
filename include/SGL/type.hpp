@@ -88,7 +88,7 @@ namespace SGL {
     class type : public details::no_copy {
     public:
         template<typename T>
-        explicit type(details::sgl_type_identity<T> t) : m_impl(new details::type_impl<T>), m_type(typeid(T)) {
+        [[nodiscard]] explicit type(details::sgl_type_identity<T> t) : m_impl(new details::type_impl<T>), m_type(typeid(T)) {
             //SGL_ASSERT(is_correct_identifier(type_name), "type name is incorrect");
         }
         ~type() = default;

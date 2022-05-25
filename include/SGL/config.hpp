@@ -8,6 +8,8 @@
 #define SGL_ASSERT(v, msg) {if(!(v)) { std::cerr << "SGL assertion failed (l:" << __LINE__ << " f:" << __FUNCTION__  << ") " << (msg) << std::endl; }}
 #endif//SGL_ASSERT
 
+//TODO add parse error macro
+
 //check function types in SGL 
 #define SGL_OPTION_TYPE_CHECKS 1
 

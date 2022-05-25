@@ -14,7 +14,7 @@ namespace SGL {
     class function {
     public:
         template<typename Ret, typename... Args>
-        function(std::function<Ret(Args...)> func) : m_func(get_function_impl(func, std::index_sequence_for<Args>{})) {
+        [[nodiscard]] function(std::function<Ret(Args...)> func) : m_func(get_function_impl(func, std::index_sequence_for<Args>{})) {
         }
         value call(std::initializer_list<std::reference_wrapper<value>> v) {
             return m_func(v);
@@ -28,7 +28,7 @@ namespace SGL {
                     func((std::data(args)[N]).get().get<Args>() ...);
                     return value();            
                 }
-                else return value(func((std::data(args)[N]).get().get<Args>() ...));
+                else return value(val<Ret>(func((std::data(args)[N]).get().get<Args>() ...)));//TODO replase val with ..?
             };
         }
 
