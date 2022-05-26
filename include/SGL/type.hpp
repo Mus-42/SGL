@@ -122,7 +122,7 @@ namespace SGL {
         //TODO fix members
 
         bool operator==(const type& v) const {
-            return false;//TODO implement
+            return m_type == v.m_type;
         }
         bool operator!=(const type& v) const {
             return !(*this == v);
@@ -188,8 +188,11 @@ namespace SGL {
         static value_type common_type(const value_type& a, const value_type& b) {//a & b convertable to common_type(a, b);
             return value_type();//TODO implement
         }
+
+        //TODO add construct value? (to void* or ...?)
     //protected:
         friend class value;
+        friend class value_creator_base;
         
         std::shared_ptr<value_type> m_type;
         std::shared_ptr<type> m_base_type;
@@ -207,16 +210,17 @@ namespace SGL {
                 is_reference(std::is_reference_v<T>),
                 is_array(details::is_sgl_array_v<T>),
                 is_void(std::is_same_v<T, void>),
-                is_final_v(false)//set it manually
+                is_final_v(false), //set it manually
+                is_temp_v(false) //set it manually
                 {}
             
-            bool is_const       : 1;
-            bool is_pointer     : 1;
-            bool is_reference   : 1;
-            bool is_array       : 1;//array size stored in array_impl
-            bool is_void        : 1;//unitililized value also void
-            bool is_final_v     : 1;//value_type = (?const) base_type (?(*|&|&&))
-            bool is_temp_v      : 1;//for language-temporary values. for example: a = 1 + 2; 3 - temp_v
+            bool is_const     : 1;
+            bool is_pointer   : 1;
+            bool is_reference : 1;
+            bool is_array     : 1;//array size stored in array_impl
+            bool is_void      : 1;//unitililized value also void
+            bool is_final_v   : 1;//value_type = (?const) base_type (?(*|&|&&))
+            bool is_temp_v    : 1;//for language-temporary values. for example: a = 1 + 2; 3 - temp_v
         
             constexpr bool operator==(const m_traits_t& other) const {
                 return is_const     == other.is_const

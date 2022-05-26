@@ -5,6 +5,7 @@
 
 
 namespace SGL {
+    //TODO move it in tokenizer.hpp
     tokenizer::tokenizer(std::string_view str) : m_tokens(1) {
         size_t cur = 0;
         auto skip_spaces_and_comments = [&cur, str](){

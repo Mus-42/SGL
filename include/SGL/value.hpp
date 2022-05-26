@@ -14,7 +14,9 @@ namespace SGL {
         };
         template<typename T>
         struct [[nodiscard]] value_creator_base {
-            value_type m_type;
+            value_creator_base() : m_type(value_type::construct_value_type<T>()) {}
+
+            std::shared_ptr<value_type> m_type;
             bool need_free_data = false;
             union {
                 void* m_data;
@@ -72,29 +74,46 @@ namespace SGL {
     class value {
     public:
         value() {}
-        value(value&& v) : m_type(std::move(v.m_type)) {
-            //TODO call move | copy from value_type
+        value(value&& v) : m_type(std::move(v.m_type)), m_data(v.m_data), need_free_data(v.need_free_data) {
+            v.m_data = nullptr;
+            v.need_free_data = false;
         }
-        value(const value& v): m_type(v.m_type) {
+        value(const value& v) : m_type(v.m_type), need_free_data(v.need_free_data) {
+            //TODO copy data
         }
         value& operator=(value&& v) {
+            free_data();
+            m_type = std::move(v.m_type);
+            m_data = v.m_data;
+            need_free_data = v.need_free_data;
 
+            v.m_data = nullptr;
+            v.need_free_data = false;
         }
         value& operator=(const value& v) { 
+            free_data();
+            //TODO copy data
         }
 
         template<typename T>
-        value(details::value_creator_base<T>&& v) : m_data(v.m_data), m_type(std::move(v.m_type)) {
-
-        }
-
-        template<typename T>
-        explicit value(details::sgl_type_identity<T> v, typename details::sgl_type_identity<T>::type val, value_type&& t) : m_type(t) {
+        value(details::value_creator_base<T>&& v) : m_data(v.m_data), m_type(std::move(v.m_type)), need_free_data(v.need_free_data) {
             
-        }//TODO copy data?
+        }
 
-        template<typename T>
-        explicit value(value_type&& t) : m_type(t) {}//TODO copy data?
+        template<typename T>//create value without value_creator_...
+        explicit value(details::sgl_type_identity<T> v, typename details::sgl_type_identity<T>::type val) : m_type(value_type::construct_value_type<T>()) {
+            if constexpr(std::is_reference_v<T>) {
+                if constexpr(std::is_const_v<T>) m_const_data = &val;
+                else m_data = &val;
+            } else if constexpr(std::is_pointer_v<T>) {
+                if constexpr(std::is_const_v<T>) m_const_data = val;
+                else m_data = val;
+            } 
+            //else if constexpr(std::is_pointer_v<T>) {
+            //    if constexpr(std::is_const_v<T>) m_const_data = val;
+            //    else m_data = val;
+            //}
+        }//TODO copy data?
 
         
         
@@ -111,13 +130,12 @@ namespace SGL {
 
 
         ~value() {
-            if(m_data && need_free_data) delete m_data;//TODO delete only if m_type is value
-            //TODO if array free all array
+            free_data();
         }
 
-        [[nodiscard]] bool is_array() const { return m_type.m_traits.is_array; }
-        [[nodiscard]] bool is_pointer() const { return m_type.m_traits.is_pointer; }
-        [[nodiscard]] bool is_reference() const { return m_type.m_traits.is_reference; }
+        [[nodiscard]] bool is_array() const { return m_type->m_traits.is_array; }
+        [[nodiscard]] bool is_pointer() const { return m_type->m_traits.is_pointer; }
+        [[nodiscard]] bool is_reference() const { return m_type->m_traits.is_reference; }//TODO add other
 
         
 
@@ -183,8 +201,18 @@ namespace SGL {
             ret = std::vector<T>(els, els+d.m_size);
         }
 
-        void* m_data = nullptr;//if array - ptr to array_impl, if ref|ptr - their adress. if value - pointer to value
-        value_type m_type;
+        void free_data() {
+            if(m_data && need_free_data) {
+                delete m_data;
+                m_data = nullptr;
+            }
+            //TODO if array free all array
+        }
+        union {
+            void* m_data = nullptr;//if array - ptr to array_impl, if ref|ptr - their adress. if value - pointer to value
+            const void* m_const_data;//ugly hack
+        };
+        std::shared_ptr<value_type> m_type;
         bool need_free_data = false;//example: references or pointers shod not freed. arrays or values must be freed
     };
 }//namespace SGL

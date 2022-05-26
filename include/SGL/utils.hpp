@@ -27,9 +27,15 @@ namespace SGL {
             no_copy& operator=(no_copy&&) = default;
         };
 
-        template<typename T> struct sgl_type_identity {
+        template<typename T> 
+        struct sgl_type_identity {
             using type = T;
         };
+        template<typename... T>
+        struct sgl_type_identity<T...> {//variadic args overload
+
+        };
+
 
         constexpr bool is_alpha(unsigned char ch) {//constexpr isalpha fucntion
             return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z';

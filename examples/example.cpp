@@ -101,7 +101,13 @@ int main() {
     //   std::cout << s.get_value_type<std::string const*&>().name_string() << std::endl;
     using namespace SGL;
 //*
-    val<int>(12);//nodiscard check
+    auto m_iv = value(val<int>(12));
+    int v1 = m_iv.get<int>();
+    int& r1 = m_iv.get<int&>();
+    r1 = 124;
+    int v2 = m_iv.get<int>();
+    std::cout << v1 << ' ' << v2 << std::endl;//12 124
+
 
     value q;
 
