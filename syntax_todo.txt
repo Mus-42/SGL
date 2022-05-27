@@ -5,6 +5,8 @@ char
 string
 bool
 
+array_impl type to correct represent pointers to array?
+
 type aliases:
 int = int32
 uint = uint32
@@ -17,6 +19,16 @@ represent struct:
 struct { int i = 1; double d = 2.2; std::string s = "qq"; } val;
 
 ref & pointer types?
+
+literals:
+"str" - string
+'c' - char
+1234 - (u?)int64
+0b0101010 - (u?)int64?
+0x0AFFF9 - (u?)int64?
+42.26 or 42e26 or 42.26e142 - double
+
+
 
 constant values:
 true false nan inf nullptr
@@ -43,3 +55,5 @@ gamma ?
 ceil, floor, round, nearbyint, rint
 copysign, isfinite, isinf, isnan, isnormal
 gcd, lcm
+
+get pointer only with addressof function?

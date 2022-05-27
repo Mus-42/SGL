@@ -13,6 +13,10 @@ namespace SGL {
 
     //protected:
         value evaluate(tokenizer&& tk) {
+            /*
+                identifier can be reserved keyword, typename or user-defined name
+                operator - use operator_list.hpp enum?
+            */
             for(auto& l : tk.m_tokens) {
                 for(auto& v : l) {
                     switch (v.type) {
@@ -26,6 +30,8 @@ namespace SGL {
                 }
                 std::cout << std::endl;
             }
+
+
             return value();
         }
     };

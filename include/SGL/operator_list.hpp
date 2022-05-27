@@ -12,8 +12,8 @@ namespace SGL {
         //bitwise: a|b, a&b, a^b, ~a, a<<b, a>>b
         op_bit_or, op_bit_and, op_bit_xor, op_bit_not, op_bit_lsh, op_bit_rsh,
         //assigment:
-        op_assign, op_
-
+        op_assign//TODO finish operator list (from syntax_todo.txt)
+        
     };
 }//namespace SGL
 

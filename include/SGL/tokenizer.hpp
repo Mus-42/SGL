@@ -68,7 +68,7 @@ namespace SGL {
     class tokenizer : public details::no_copy {
     public:
         tokenizer(tokenizer&& o) : m_tokens(std::move(o.m_tokens)) {
-            
+
         }
         //TODO add settings such as "ignore trailing comma"?
         [[nodiscard]] explicit tokenizer(std::string_view str);//TODO add char type as template arg?
@@ -102,12 +102,15 @@ namespace SGL {
             switch(str[cur]) {
             case ';': {
                 //TODO check priority == 0
-            }
-            case ',': case '.': {
                 details::token t(details::token::t_punct, priotity);
                 t.punct_v = ';';
                 m_tokens.back().push_back(t);
                 m_tokens.emplace_back();
+            } break;
+            case ',': {
+                details::token t(details::token::t_punct, priotity);
+                t.punct_v = str[cur];
+                m_tokens.back().push_back(t);
             } break;
             case '(': case '{': case '[': {
                 priotity++;
@@ -123,16 +126,43 @@ namespace SGL {
                 m_tokens.back().push_back(t);
             } break;
 
-
+            case '.': {//puntc ot value (a.b or .1426)
+                if(cur + 1 >= str.size() || !std::isdigit(str[cur+1])) {
+                    details::token t(details::token::t_punct, priotity);
+                    t.punct_v = str[cur];
+                    m_tokens.back().push_back(t);
+                    break;
+                } 
+            } 
+            case '0': {
+                if(str[cur] == '0' && false) {//can be '.'           
+                    //TODO add binary & hex numbers parising here
+                    break;
+                }
+            }
+            case '1': case '2': case '3': case '4':
+            case '5': case '6': case '7': case '8': case '9': {
+                //[int].[frag]e[exp]
+                uint64_t int_part = 0;
+                //TODO add float nubers parse
+                while(cur < str.size() && std::isdigit(str[cur])) int_part = int_part*10 + str[cur]-'0', cur++;//TODO int_part overflow fix?
+                cur--;
+                
+                
+                details::token t(details::token::t_value, priotity);
+                t.value_v = value(const_val<uint64_t>(int_part));
+                m_tokens.back().push_back(t);
+            } break;
             
             default: {
-                if(std::isalnum(str[cur])) {
+                if(std::isalnum(str[cur])) {//identifier
                     size_t beg = cur;
                     while(cur < str.size() && std::isalnum(str[cur]) || str[cur] == '_') cur++;
                     size_t len = cur - beg;
                     cur--;
+                    auto identifier_str = str.substr(beg, len);
                     details::token t(details::token::t_identifier, priotity);
-                    t.identifier_v = str.substr(beg, len);
+                    t.identifier_v = identifier_str;
                     m_tokens.back().push_back(t);
                 } else {//operator
                     details::token t(details::token::t_operator, priotity);

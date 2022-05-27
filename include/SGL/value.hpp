@@ -79,7 +79,7 @@ namespace SGL {
             v.need_free_data = false;
         }
         value(const value& v) : m_type(v.m_type), need_free_data(v.need_free_data) {
-            //TODO copy data
+            //TODO implement
         }
         value& operator=(value&& v) {
             free_data();
@@ -89,10 +89,19 @@ namespace SGL {
 
             v.m_data = nullptr;
             v.need_free_data = false;
+            return *this;
         }
         value& operator=(const value& v) { 
             free_data();
-            //TODO copy data
+            m_type = v.m_type;
+            need_free_data = v.need_free_data;
+            if(is_pointer() || is_reference()) {
+                m_const_data = v.m_const_data;//copy pointer|ref
+            } else {
+                //TODO copy data
+            }
+            
+            return *this;
         }
 
         template<typename T>
