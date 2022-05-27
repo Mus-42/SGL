@@ -56,7 +56,7 @@ namespace SGL {
 
             //TODO add impl
         };
-        //TODO add other creators
+        //TODO add other value creators
         
     }//namespace details
 
@@ -73,7 +73,7 @@ namespace SGL {
 
     class value {
     public:
-        value() {}
+        value() : m_data(nullptr), m_type(value_type::construct_value_type<void>()), need_free_data(true) {}
         value(value&& v) : m_type(std::move(v.m_type)), m_data(v.m_data), need_free_data(v.need_free_data) {
             v.m_data = nullptr;
             v.need_free_data = false;
@@ -113,7 +113,7 @@ namespace SGL {
             //    if constexpr(std::is_const_v<T>) m_const_data = val;
             //    else m_data = val;
             //}
-        }//TODO copy data?
+        }
 
         
         
@@ -137,7 +137,6 @@ namespace SGL {
         [[nodiscard]] bool is_pointer() const { return m_type->m_traits.is_pointer; }
         [[nodiscard]] bool is_reference() const { return m_type->m_traits.is_reference; }//TODO add other
 
-        
 
     //protected:
         friend class state;

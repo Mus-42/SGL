@@ -5,6 +5,6 @@
 #include "config.hpp"
 
 #include "state.hpp"
-#include "tokenizer.hpp"
+#include "evaluator.hpp"
 
 #endif//SGL_SGL_HPP_INCLUDE_

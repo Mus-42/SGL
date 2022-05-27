@@ -52,7 +52,8 @@ namespace SGL {
                     std::is_copy_assignable_v<T>,
                     std::is_move_assignable_v<T>
                 };
-                size = sizeof(T);
+                if constexpr(std::is_same_v<T, void>) size = 0;
+                else size = sizeof(T);
             }
 
             virtual void default_construct(void* data) const override { 

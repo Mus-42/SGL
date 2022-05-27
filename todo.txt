@@ -14,4 +14,6 @@ common type for SGL::value_type
 
 how shold return value for <arr<T>*>? pointer to array_impl?
 add ret_type<T>? cast_to_ret_type<T>(v)?
- 
+
+add std::string_view get_type_name<T>()? (using compiler-specific macro)
+replace "//protected:" with macro in config.hpp?

@@ -67,13 +67,18 @@ namespace SGL {
     }//namespace details
     class tokenizer : public details::no_copy {
     public:
+        tokenizer(tokenizer&& o) : m_tokens(std::move(o.m_tokens)) {
+            
+        }
         //TODO add settings such as "ignore trailing comma"?
-        [[nodiscard]] tokenizer(std::string_view str);//TODO add char type as template arg?
+        [[nodiscard]] explicit tokenizer(std::string_view str);//TODO add char type as template arg?
         ~tokenizer() = default;
-    protected:
+    //protected:
         friend class evaluator;
 
-        std::vector<std::list<details::token>> m_tokens;
+        using token_list = std::list<details::token>;
+
+        std::vector<token_list> m_tokens;
     };
     
     tokenizer::tokenizer(std::string_view str) : m_tokens(1) {
