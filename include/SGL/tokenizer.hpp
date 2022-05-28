@@ -146,6 +146,7 @@ namespace SGL {
                 uint64_t int_part = 0;
                 //TODO add float nubers parse
                 while(cur < str.size() && std::isdigit(str[cur])) int_part = int_part*10 + str[cur]-'0', cur++;//TODO int_part overflow fix?
+                
                 cur--;
                 
                 

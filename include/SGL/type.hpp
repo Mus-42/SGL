@@ -94,15 +94,24 @@ namespace SGL {
         }
         ~type() = default;
 
-        template<typename T> void default_construct(T& data) const { check_type<T>(); m_impl->default_construct(&data); }
-        template<typename T> void copy_construct(T& data, const T& from) const { check_type<T>(); m_impl->copy_construct(&data, &from); }
-        template<typename T> void move_construct(T& data, T&& from) const { check_type<T>(); m_impl->move_construct(&data, &from); }
+        size_t size() const { return m_impl->size; }
+
+        template<typename T> void default_construct(T& data) const { check_type<T>(); default_construct(&data); }
+        template<typename T> void copy_construct(T& data, const T& from) const { check_type<T>(); copy_construct(&data, &from); }
+        template<typename T> void move_construct(T& data, T&& from) const { check_type<T>(); move_construct(&data, &from); }
         //TODO add custom constructors?
-        template<typename T> void destruct(T& data) const { check_type<T>(); m_impl->destruct(&data); }
+        template<typename T> void destruct(T& data) const { check_type<T>(); destruct(&data); }
+        
+        template<typename T> void copy_assign(T& data, const T& from) const { check_type<T>(); copy_assign(&data, &from); }
+        template<typename T> void move_assign(T& data, T&& from) const { check_type<T>(); move_assign(&data, &from); }
 
         
-        template<typename T> void copy_assign(T& data, const T& from) const { check_type<T>(); m_impl->copy_assign(&data, &from); }
-        template<typename T> void move_assign(T& data, T&& from) const { check_type<T>(); m_impl->move_assign(&data, &from); }
+        void default_construct(void* data) const { m_impl->default_construct(data); }
+        void copy_construct(void* data, const void* from) const { m_impl->copy_construct(data, from); }
+        void move_construct(void* data, void* from) const { m_impl->move_construct(data, from); }
+        void destruct(void* data) const { m_impl->destruct(data); }
+        void copy_assign(void* data, const void* from) const { m_impl->copy_assign(data, from); }
+        void move_assign(void* data, void* from) const { m_impl->move_assign(data, from); }
 /*
         template<typename T, typename U> type& add_member(const std::string& member_name, U T::*member_ptr) {
             check_type<T>();
@@ -141,7 +150,7 @@ namespace SGL {
         template<typename T>
         void check_type() const {
 #if defined(SGL_OPTION_TYPE_CHECKS) && SGL_OPTION_TYPE_CHECKS
-            SGL_ASSERT(m_type == typeid(T), "type specified in constructor call must me same with T");
+            SGL_ASSERT(m_impl && m_type == typeid(T), "type specified in constructor call must me same with T");
 #endif//SGL_OPTION_TYPE_CHECKS
         }
 
@@ -190,9 +199,57 @@ namespace SGL {
             return value_type();//TODO implement
         }
 
-        //TODO add construct value? (to void* or ...?)
+        //TODO add is_array() is_pointer() ...?
+
+        size_t size() const {
+            if(m_traits.is_pointer || m_traits.is_reference) return sizeof(void*);
+            else if(m_traits.is_final_v) return m_base_type->size();
+            else {
+                //TODO do something with array?
+                return 0;
+            }
+        }
+
+
+
+        //template<typename T> void default_construct(T& data) const { check_type<T>(); default_construct(&data); }
+        //template<typename T> void copy_construct(T& data, const T& from) const { check_type<T>(); copy_construct(&data, &from); }
+        //template<typename T> void move_construct(T& data, T&& from) const { check_type<T>(); move_construct(&data, &from); }
+        ////TODO add custom constructors?
+        //template<typename T> void destruct(T& data) const { check_type<T>(); destruct(&data); }
+        //template<typename T> void copy_assign(T& data, const T& from) const { check_type<T>(); copy_assign(&data, &from); }
+        //template<typename T> void move_assign(T& data, T&& from) const { check_type<T>(); move_assign(&data, &from); }
+
+        //TODO implement
+        //here data is pointer to... data
+        void default_construct(void*& data) const {
+            //if ref|pointer - nullptr
+            //if value - construct using m_type
+            //if array ... what i should do with size?
+            if(m_traits.is_pointer || m_traits.is_reference) data = nullptr;
+            else if(m_traits.is_final_v) m_base_type->default_construct(data);
+            else {
+                //TODO array
+            }
+        }
+        void copy_construct(void*& data, const void*& from) const { 
+            //copy ref|value|array
+        }
+        void move_construct(void*& data, void*& from) const {
+
+        }
+        void destruct(void*& data) const {
+
+        }
+        void copy_assign(void*& data, const void*& from) const {
+
+        }
+        void move_assign(void*& data, void*& from) const {
+
+        }
     //protected:
         friend class value;
+        friend class evaluator;
         friend class value_creator_base;
         
         std::shared_ptr<value_type> m_type;
