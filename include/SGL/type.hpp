@@ -96,14 +96,14 @@ namespace SGL {
 
         size_t size() const { return m_impl->size; }
 
-        template<typename T> void default_construct(T& data) const { check_type<T>(); default_construct(&data); }
-        template<typename T> void copy_construct(T& data, const T& from) const { check_type<T>(); copy_construct(&data, &from); }
-        template<typename T> void move_construct(T& data, T&& from) const { check_type<T>(); move_construct(&data, &from); }
-        //TODO add custom constructors?
-        template<typename T> void destruct(T& data) const { check_type<T>(); destruct(&data); }
-        
-        template<typename T> void copy_assign(T& data, const T& from) const { check_type<T>(); copy_assign(&data, &from); }
-        template<typename T> void move_assign(T& data, T&& from) const { check_type<T>(); move_assign(&data, &from); }
+        //template<typename T> void default_construct(T& data) const { check_type<T>(); default_construct(&data); }
+        //template<typename T> void copy_construct(T& data, const T& from) const { check_type<T>(); copy_construct(&data, &from); }
+        //template<typename T> void move_construct(T& data, T&& from) const { check_type<T>(); move_construct(&data, &from); }
+        ////TODO add custom constructors?
+        //template<typename T> void destruct(T& data) const { check_type<T>(); destruct(&data); }
+        //
+        //template<typename T> void copy_assign(T& data, const T& from) const { check_type<T>(); copy_assign(&data, &from); }
+        //template<typename T> void move_assign(T& data, T&& from) const { check_type<T>(); move_assign(&data, &from); }
 
         
         void default_construct(void* data) const { m_impl->default_construct(data); }
@@ -232,20 +232,46 @@ namespace SGL {
                 //TODO array
             }
         }
-        void copy_construct(void*& data, const void*& from) const { 
+        void copy_construct(void*& data, void* from) const { 
             //copy ref|value|array
+            if(m_traits.is_pointer || m_traits.is_reference) data = from;
+            else if(m_traits.is_final_v) m_base_type->copy_construct(data, from);
+            else {
+                //TODO array
+            }
         }
-        void move_construct(void*& data, void*& from) const {
-
+        void move_construct(void*& data, void* from) const {
+            //move ref|value|array
+            if(m_traits.is_pointer || m_traits.is_reference) data = from;
+            else if(m_traits.is_final_v) m_base_type->move_construct(data, from);
+            else {
+                //TODO array
+            }
         }
         void destruct(void*& data) const {
-
+            if(m_traits.is_pointer || m_traits.is_reference) {
+                //pointers must be freed manually
+            }
+            else if(m_traits.is_final_v) m_base_type->destruct(data);
+            else {
+                //TODO array
+            }
         }
-        void copy_assign(void*& data, const void*& from) const {
-
+        void copy_assign(void*& data, void* from) const {
+            //move ref|value|array
+            if(m_traits.is_pointer || m_traits.is_reference) data = from;
+            else if(m_traits.is_final_v) m_base_type->copy_assign(data, from);
+            else {
+                //TODO array
+            }
         }
-        void move_assign(void*& data, void*& from) const {
-
+        void move_assign(void*& data, void* from) const {
+            //move ref|value|array
+            if(m_traits.is_pointer || m_traits.is_reference) data = from;
+            else if(m_traits.is_final_v) m_base_type->move_assign(data, from);
+            else {
+                //TODO array
+            }
         }
     //protected:
         friend class value;

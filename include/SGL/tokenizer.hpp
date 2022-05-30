@@ -43,6 +43,16 @@ namespace SGL {
                 default: break;
                 }
             }
+            explicit token(token&& tk) : type(tk.type), priority(tk.priority) {
+                switch (type) {
+                case t_none:       break;   
+                case t_value:      new (&value_v) value(std::move(tk.value_v)); break;   
+                case t_punct:      punct_v = tk.punct_v; break;   
+                case t_operator:   operator_v = tk.operator_v; break;   
+                case t_identifier: new (&identifier_v) std::string(std::move(tk.identifier_v)); break;   
+                default: break;
+                }
+            }
             ~token() {
                 switch (type) {
                 case t_none:       break;   
@@ -104,33 +114,33 @@ namespace SGL {
                 //TODO check priority == 0
                 details::token t(details::token::t_punct, priotity);
                 t.punct_v = ';';
-                m_tokens.back().push_back(t);
+                m_tokens.back().emplace_back(std::move(t));
                 m_tokens.emplace_back();
             } break;
             case ',': {
                 details::token t(details::token::t_punct, priotity);
                 t.punct_v = str[cur];
-                m_tokens.back().push_back(t);
+                m_tokens.back().emplace_back(std::move(t));
             } break;
             case '(': case '{': case '[': {
                 priotity++;
                 details::token t(details::token::t_punct, priotity);
                 t.punct_v = str[cur];
-                m_tokens.back().push_back(t);
+                m_tokens.back().emplace_back(std::move(t));
             } break;
             case ')': case '}': case ']': {
                 //TODO check priority > 0
                 details::token t(details::token::t_punct, priotity);
                 priotity--;
                 t.punct_v = str[cur];
-                m_tokens.back().push_back(t);
+                m_tokens.back().emplace_back(std::move(t));
             } break;
 
             case '.': {//puntc ot value (a.b or .1426)
                 if(cur + 1 >= str.size() || !std::isdigit(str[cur+1])) {
                     details::token t(details::token::t_punct, priotity);
                     t.punct_v = str[cur];
-                    m_tokens.back().push_back(t);
+                    m_tokens.back().emplace_back(std::move(t));
                     break;
                 } 
             } 
@@ -146,13 +156,13 @@ namespace SGL {
                 uint64_t int_part = 0;
                 //TODO add float nubers parse
                 while(cur < str.size() && std::isdigit(str[cur])) int_part = int_part*10 + str[cur]-'0', cur++;//TODO int_part overflow fix?
-                
+
                 cur--;
                 
                 
                 details::token t(details::token::t_value, priotity);
                 t.value_v = value(const_val<uint64_t>(int_part));
-                m_tokens.back().push_back(t);
+                m_tokens.back().emplace_back(std::move(t));
             } break;
             
             default: {
@@ -164,14 +174,14 @@ namespace SGL {
                     auto identifier_str = str.substr(beg, len);
                     details::token t(details::token::t_identifier, priotity);
                     t.identifier_v = identifier_str;
-                    m_tokens.back().push_back(t);
+                    m_tokens.back().emplace_back(std::move(t));
                 } else {//operator
                     details::token t(details::token::t_operator, priotity);
                     if(cur + 2 < str.size()) {
                         static constexpr std::array<std::string_view, 3> op_3_char_wide = { "<<=", ">>=", "<=>" };
                         if(auto f = std::find(op_3_char_wide.begin(), op_3_char_wide.end(), str.substr(cur, 3)); f != op_3_char_wide.end()) {
                             t.operator_v = *f;
-                            m_tokens.back().push_back(t);
+                            m_tokens.back().emplace_back(std::move(t));
                             cur += 2;
                             break;
                         }
@@ -185,7 +195,7 @@ namespace SGL {
                         };
                         if(auto f = std::find(op_2_char_wide.begin(), op_2_char_wide.end(), str.substr(cur, 2)); f != op_2_char_wide.end()) {
                             t.operator_v = *f;
-                            m_tokens.back().push_back(t);
+                            m_tokens.back().emplace_back(std::move(t));
                             cur += 1;
                             break;
                         }
@@ -199,7 +209,7 @@ namespace SGL {
                         };
                         if(auto f = std::find(op_1_char_wide.begin(), op_1_char_wide.end(), str.substr(cur, 1)); f != op_1_char_wide.end()) {
                             t.operator_v = *f;
-                            m_tokens.back().push_back(t);
+                            m_tokens.back().emplace_back(std::move(t));
                             break;
                         }
                     }

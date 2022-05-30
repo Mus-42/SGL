@@ -74,18 +74,36 @@ namespace SGL {
     class value {
     public:
         value() : m_data(nullptr), m_type(value_type::construct_value_type<void>()), need_free_data(true) {}
-        value(value&& v) : m_type(std::move(v.m_type)), m_data(v.m_data), need_free_data(v.need_free_data) {
+        value(value&& v) : m_type(std::move(v.m_type)), need_free_data(v.need_free_data) {
+            
+            //if(m_type && v.m_data) {
+            //    if(!(is_reference() || is_pointer())) m_data = new char[m_type->size()];//TODO move to value_type? 
+            //    m_type->move_construct(m_data, v.m_data);
+            //}
+            m_data = v.m_data;
+
             v.m_data = nullptr;
             v.need_free_data = false;
         }
         value(const value& v) : m_type(v.m_type), need_free_data(v.need_free_data) {
-            //TODO implement
+            
+            if(m_type && v.m_data) {
+                //TODO do something with array
+                if(!(is_reference() || is_pointer())) m_data = new char[m_type->size()];//TODO move to value_type? 
+                m_type->copy_construct(m_data, v.m_data);
+            }
         }
         value& operator=(value&& v) {
             free_data();
             m_type = std::move(v.m_type);
-            m_data = v.m_data;
             need_free_data = v.need_free_data;
+
+
+            //if(m_type && v.m_data) {
+            //    if(!(is_reference() || is_pointer())) m_data = new char[m_type->size()];//TODO move to value_type? 
+            //    m_type->move_assign(m_data, v.m_data);
+            //}
+            m_data = v.m_data;
 
             v.m_data = nullptr;
             v.need_free_data = false;
@@ -95,10 +113,10 @@ namespace SGL {
             free_data();
             m_type = v.m_type;
             need_free_data = v.need_free_data;
-            if(is_pointer() || is_reference()) {
-                m_const_data = v.m_const_data;//copy pointer|ref
-            } else {
-                //TODO copy data
+
+            if(m_type && v.m_data) {
+                if(!(is_reference() || is_pointer())) m_data = new char[m_type->size()];//TODO move to value_type? 
+                m_type->copy_assign(m_data, v.m_data);
             }
             
             return *this;
@@ -210,11 +228,14 @@ namespace SGL {
         }
 
         void free_data() {
-            if(m_data && need_free_data) {
-                delete m_data;
-                m_data = nullptr;
+            if(m_type && m_data) {
+                m_type->destruct(m_data);
+                if(need_free_data) {
+                    delete m_data;
+                    m_data = nullptr;
+                    //TODO if array free all array
+                }
             }
-            //TODO if array free all array
         }
         union {
             void* m_data = nullptr;//if array - ptr to array_impl, if ref|ptr - their adress. if value - pointer to value

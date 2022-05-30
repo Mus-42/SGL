@@ -24,7 +24,7 @@ namespace SGL {
                     case details::token::t_none: std::cout << "[none] "; break;
                     case details::token::t_operator: std::cout << "[operator '" << v.operator_v << "'] "; break;
                     case details::token::t_punct: std::cout << "[punct '" << v.punct_v << "'] "; break;
-                    case details::token::t_value: std::cout << "[value] "; break;    
+                    case details::token::t_value: std::cout << "[value " << v.value_v.get<uint64_t>() << "] "; break;//TODO replace this get with to_string or something like this   
                     default: std::cout << "[invalid token] "; break;
                     }
                 }
