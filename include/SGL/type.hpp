@@ -137,7 +137,7 @@ namespace SGL {
         bool operator!=(const type& v) const {
             return !(*this == v);
         }
-    protected:
+    //protected:
         friend class state;
         friend class value;
         friend class value_type;

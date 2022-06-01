@@ -152,23 +152,52 @@ namespace SGL {
             }
             case '1': case '2': case '3': case '4':
             case '5': case '6': case '7': case '8': case '9': {
-                //[int].[frag]e[exp]
-                uint64_t int_part = 0;
-                //TODO add float nubers parse
-                while(cur < str.size() && std::isdigit(str[cur])) int_part = int_part*10 + str[cur]-'0', cur++;//TODO int_part overflow fix?
+                //[int].[fract]e[+|-][exp]
+                uint64_t int_part = 0, int_size = 0;
+                while(cur < str.size() && std::isdigit(str[cur])) int_part = int_part*10 + str[cur]-'0', cur++, int_size++;//TODO int_part overflow fix?
+                
+                uint64_t fract_part = 0, exp_part = 0, fract_size = 0, exp_size = 0;
+                bool has_fract = false, has_exp = false;
 
+                if(cur < str.size() && str[cur] == '.') {
+                    has_fract = true;
+                    cur++;
+                    while(cur < str.size() && std::isdigit(str[cur])) fract_part = fract_part*10 + str[cur]-'0', cur++, fract_size++;
+                }
+                if(cur < str.size() && (str[cur] == 'e' || str[cur] == 'E')) {
+                    has_exp = true;
+                    cur++;
+                    //TODO scan exp sign
+                    while(cur < str.size() && std::isdigit(str[cur])) exp_part = exp_part*10 + str[cur]-'0', cur++, exp_size++;
+                    //TODO check here exp_size > 0 && (!has_fract || fract_size > 0)
+                }
+
+                std::string_view s;//TODO store literal for number here (2.f -> "f" 12ull -> "ull")
+                
                 cur--;
-                
-                
+
+                static std::array<double, 308*2+1> pow10_table = ([](){
+                    static std::array<double, 308*2+1> ret;
+                    for(size_t i = 0; i <= 308*2; i++) ret[i] = pow(10, int(i)-308);
+                    return ret;
+                })();
                 details::token t(details::token::t_value, priotity);
-                t.value_v = value(const_val<uint64_t>(int_part));
+                if(has_fract || has_fract){
+                    double val = double(int_part);
+                    if(has_fract) val += double(fract_part) / pow10_table[fract_size+308];
+                    if(has_exp) val *= pow10_table[exp_part+308];
+                    t.value_v = value(const_val<double>(val));
+                }
+                else {
+                    t.value_v = value(const_val<uint64_t>(int_part));
+                }
                 m_tokens.back().emplace_back(std::move(t));
             } break;
             
             default: {
                 if(std::isalnum(str[cur])) {//identifier
                     size_t beg = cur;
-                    while(cur < str.size() && std::isalnum(str[cur]) || str[cur] == '_') cur++;
+                    while(cur < str.size() && (std::isalnum(str[cur]) || str[cur] == '_')) cur++;
                     size_t len = cur - beg;
                     cur--;
                     auto identifier_str = str.substr(beg, len);
