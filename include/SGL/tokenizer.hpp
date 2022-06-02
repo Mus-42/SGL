@@ -158,6 +158,7 @@ namespace SGL {
                 
                 uint64_t fract_part = 0, exp_part = 0, fract_size = 0, exp_size = 0;
                 bool has_fract = false, has_exp = false;
+                bool is_exp_positive = true;
 
                 if(cur < str.size() && str[cur] == '.') {
                     has_fract = true;
@@ -167,12 +168,17 @@ namespace SGL {
                 if(cur < str.size() && (str[cur] == 'e' || str[cur] == 'E')) {
                     has_exp = true;
                     cur++;
-                    //TODO scan exp sign
+                    if(cur < str.size() && (str[cur] == '+' || str[cur] == '-')) {
+                        is_exp_positive = str[cur] != '-';
+                        cur++;
+                    }
                     while(cur < str.size() && std::isdigit(str[cur])) exp_part = exp_part*10 + str[cur]-'0', cur++, exp_size++;
                     //TODO check here exp_size > 0 && (!has_fract || fract_size > 0)
                 }
 
-                std::string_view s;//TODO store literal for number here (2.f -> "f" 12ull -> "ull")
+                size_t lit_beg = cur;
+                while (cur < str.size() && (std::isalnum(str[cur]) || str[cur] == '_')) cur++;
+                auto type_literal = str.substr(lit_beg, cur - lit_beg);
                 
                 cur--;
 
@@ -181,11 +187,13 @@ namespace SGL {
                     for(size_t i = 0; i <= 308*2; i++) ret[i] = pow(10, int(i)-308);
                     return ret;
                 })();
+
                 details::token t(details::token::t_value, priotity);
-                if(has_fract || has_fract){
+                if(has_fract || has_fract) {//TODO choose correct type using type_literal
                     double val = double(int_part);
-                    if(has_fract) val += double(fract_part) / pow10_table[fract_size+308];
-                    if(has_exp) val *= pow10_table[exp_part+308];
+                    //division by pow10_table[fract_size+308] same as multiplication by pow10_table[308-fract_size]
+                    if(has_fract) val += double(fract_part) * pow10_table[308-fract_size];
+                    if(has_exp) val *= pow10_table[308 + (is_exp_positive ? 1 : -1) * int(exp_part)];//
                     t.value_v = value(const_val<double>(val));
                 }
                 else {
@@ -198,9 +206,8 @@ namespace SGL {
                 if(std::isalnum(str[cur])) {//identifier
                     size_t beg = cur;
                     while(cur < str.size() && (std::isalnum(str[cur]) || str[cur] == '_')) cur++;
-                    size_t len = cur - beg;
+                    auto identifier_str = str.substr(beg, cur - beg);
                     cur--;
-                    auto identifier_str = str.substr(beg, len);
                     details::token t(details::token::t_identifier, priotity);
                     t.identifier_v = identifier_str;
                     m_tokens.back().emplace_back(std::move(t));
