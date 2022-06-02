@@ -144,12 +144,42 @@ namespace SGL {
                     break;
                 } 
             } 
-            case '0': {
-                if(str[cur] == '0' && false) {//can be '.'           
-                    //TODO add binary & hex numbers parising here
+            case '0':
+                if(cur + 1 < str.size() && str[cur] == '0' && (str[cur+1] == 'x' || str[cur+1] == 'X' || str[cur+1] == 'b' || str[cur+1] == 'B')) {       
+                    cur++;
+
+                    uint64_t num = 0;
+
+                    if(str[cur] == 'x' || str[cur] == 'X') {//hex
+                        cur++;
+                        while(cur < str.size() && std::isxdigit(str[cur])) {
+                            num = num * 16 + (std::isdigit(str[cur]) ? str[cur] - '0' : 10 + (std::islower(str[cur]) ? str[cur] - 'a' : str[cur] - 'A'));
+                            cur++;
+                            //TODO overflow check
+                        }
+                        
+                    } else {//bin    
+                        cur++;
+                        while(cur < str.size() && std::isdigit(str[cur])) {
+                            num = num * 2 + str[cur] - '0';
+                            cur++;
+                            //TODO overflow check
+                            //TODO str[cur] <= '1'
+                        }
+
+                    }
+
+                    size_t lit_beg = cur;
+                    while (cur < str.size() && (std::isalnum(str[cur]) || str[cur] == '_')) cur++;
+                    auto type_literal = str.substr(lit_beg, cur - lit_beg);
+                    cur--;
+
+                    details::token t(details::token::t_value, priotity);//TODO use lit_beg to choose type
+                    t.value_v = value(const_val<uint64_t>(num));
+                    m_tokens.back().emplace_back(std::move(t));
+
                     break;
                 }
-            }
             case '1': case '2': case '3': case '4':
             case '5': case '6': case '7': case '8': case '9': {
                 //[int].[fract]e[+|-][exp]
