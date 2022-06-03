@@ -14,12 +14,13 @@ int main() {
     using namespace SGL;
 
     auto ev = evaluator();
-    auto v1 = ev.evaluate(tokenizer("int a = -100u * 10;"));
-    auto v2 = ev.evaluate(tokenizer("0xFFFF + 0b001101101"));
-    auto v3 = ev.evaluate(tokenizer("1.12 + 48ull"));
-    auto v4 = ev.evaluate(tokenizer("1.12e2"));
-    auto v5 = ev.evaluate(tokenizer("1.12e-2"));
-    auto v6 = ev.evaluate(tokenizer("1.12e+2f"));
+    ev.evaluate(tokenizer("int a = -100u * 10;"));
+    ev.evaluate(tokenizer("0xFFFF + 0b001101101"));
+    ev.evaluate(tokenizer("1.12 + 48ull"));
+    ev.evaluate(tokenizer("1.12e2"));
+    ev.evaluate(tokenizer("1.12e-2"));
+    ev.evaluate(tokenizer("1.12e+2f"));
+    ev.evaluate(tokenizer(R"("qq" + "\tall\n")"));
 
     auto val_t = SGL::value_type::construct_value_type<arr<const int&>* const>();
 

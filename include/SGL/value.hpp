@@ -26,7 +26,7 @@ namespace SGL {
 
         template<typename T>
         struct value_creator : public value_creator_base<T> {
-            [[nodiscard]] value_creator(const T& v) {
+            [[nodiscard]] value_creator(const T& v) {//TODO add overload for move
                 m_data = new T(v);
                 need_free_data = true;
             }

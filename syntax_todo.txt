@@ -28,7 +28,12 @@ literals:
 0x0AFFF9 - (u?)int64?
 42.26 or 42e26 or 42.26e142 - double
 
+suffix:
+i -> int
+u -> uint
+(i|u)(8|16|32|64)
 
+12u16 -> uint16(12)
 
 constant values:
 true false nan inf nullptr

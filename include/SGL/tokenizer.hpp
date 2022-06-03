@@ -150,6 +150,7 @@ namespace SGL {
 
                     uint64_t num = 0;
 
+                    //no octal
                     if(str[cur] == 'x' || str[cur] == 'X') {//hex
                         cur++;
                         while(cur < str.size() && std::isxdigit(str[cur])) {
@@ -164,17 +165,17 @@ namespace SGL {
                             num = num * 2 + str[cur] - '0';
                             cur++;
                             //TODO overflow check
-                            //TODO str[cur] <= '1'
+                            //TODO '0' == str[cur] || str[cur] == '1'
                         }
 
                     }
 
                     size_t lit_beg = cur;
                     while (cur < str.size() && (std::isalnum(str[cur]) || str[cur] == '_')) cur++;
-                    auto type_literal = str.substr(lit_beg, cur - lit_beg);
+                    auto type_literal = str.substr(lit_beg, cur - lit_beg);//suffix
                     cur--;
 
-                    details::token t(details::token::t_value, priotity);//TODO use lit_beg to choose type
+                    details::token t(details::token::t_value, priotity);//TODO use type_literal to choose type
                     t.value_v = value(const_val<uint64_t>(num));
                     m_tokens.back().emplace_back(std::move(t));
 
@@ -208,7 +209,7 @@ namespace SGL {
 
                 size_t lit_beg = cur;
                 while (cur < str.size() && (std::isalnum(str[cur]) || str[cur] == '_')) cur++;
-                auto type_literal = str.substr(lit_beg, cur - lit_beg);
+                auto type_literal = str.substr(lit_beg, cur - lit_beg);//suffix
                 
                 cur--;
 
@@ -232,6 +233,39 @@ namespace SGL {
                 m_tokens.back().emplace_back(std::move(t));
             } break;
             
+            case '"': case '\'': {
+                bool is_char = str[cur] == '\'';
+                char quote = str[cur];
+                cur++;
+                //TODO store unicode characters in utf-8?
+                std::string s;
+                while(cur < str.size() && (str[cur] != quote)) {
+                    if(str[cur] == '\\') {
+                        switch(str[cur + 1]) {
+                        case '\\': s+='\\'; break;
+                        case 'a': s+='\a'; break;
+                        case 'b': s+='\b'; break;
+                        case 'f': s+='\f'; break;
+                        case 'n': s+='\n'; break;
+                        case 'r': s+='\r'; break;
+                        case 't': s+='\t'; break;
+                        case 'v': s+='\v'; break;
+                        //TODO add \u (unicode) and hex|octal chars
+                        case '0': s+='\0'; break;
+                        default: //TODO invalid escape sequence
+                        break;
+                        }     
+                        cur+=2;
+                    } else s += str[cur++];
+                }
+                //TODO !is_char || s.size() == 1
+
+                
+                details::token t(details::token::t_value, priotity);
+                t.value_v = value(const_val<std::string>(std::move(s)));
+                m_tokens.back().emplace_back(std::move(t));
+            } break;
+
             default: {
                 if(std::isalnum(str[cur])) {//identifier
                     size_t beg = cur;
