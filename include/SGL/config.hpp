@@ -16,7 +16,7 @@ namespace SGL::details {
         std::cerr << "SGL tokenize error (l: " << line << ", c:" << collumn << "): " << desc << std::endl;
     }
 }//SGL::details
-#define SGL_TOKENIZE_ERROR(desc, line, collumn) {sgl_tokenize_error_impl(desc, line, collumn); }
+#define SGL_TOKENIZE_ERROR(desc, line, collumn) {SGL::details::sgl_tokenize_error_impl(desc, line, collumn); }
 #endif//SGL_TOKENIZE_ERROR
 
 //check function types in SGL 

@@ -105,6 +105,11 @@ namespace SGL {
                 else cur++;
             }
         };
+        auto tokenize_error = [&cur, str](std::string_view desc) {//calculate line & collumn
+            size_t line = 0, collumn = 0;
+            for(size_t c = 0; c <= cur && c < str.size(); c++, collumn++) if(str[c] == '\n') line++, collumn = 0;
+            SGL_TOKENIZE_ERROR(desc, line, collumn);
+        };
 
         int priotity = 0;
 
@@ -163,9 +168,9 @@ namespace SGL {
                         cur++;
                         while(cur < str.size() && std::isdigit(str[cur])) {
                             num = num * 2 + str[cur] - '0';
+                            if('0' != str[cur] && str[cur] != '1') tokenize_error("invalid binary number");
                             cur++;
                             //TODO overflow check
-                            //TODO '0' == str[cur] || str[cur] == '1'
                         }
 
                     }
@@ -204,7 +209,7 @@ namespace SGL {
                         cur++;
                     }
                     while(cur < str.size() && std::isdigit(str[cur])) exp_part = exp_part*10 + str[cur]-'0', cur++, exp_size++;
-                    //TODO check here exp_size > 0 && (!has_fract || fract_size > 0)
+                    if(exp_size == 0 || (has_fract && fract_size == 0)) tokenize_error("invalid number literal");
                 }
 
                 size_t lit_beg = cur;
@@ -252,14 +257,12 @@ namespace SGL {
                         case 'v': s+='\v'; break;
                         //TODO add \u (unicode) and hex|octal chars
                         case '0': s+='\0'; break;
-                        default: //TODO invalid escape sequence
-                        break;
+                        default: tokenize_error("invalid escape sequence"); break;
                         }     
                         cur+=2;
                     } else s += str[cur++];
                 }
-                //TODO !is_char || s.size() == 1
-
+                if(is_char && s.size() == 1) tokenize_error("invalid character literal");
                 
                 details::token t(details::token::t_value, priotity);
                 t.value_v = value(const_val<std::string>(std::move(s)));
