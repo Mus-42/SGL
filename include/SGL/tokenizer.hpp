@@ -242,7 +242,7 @@ namespace SGL {
                     cur--;
 
                     details::token t(details::token::t_value, priotity);//TODO use type_literal to choose type
-                    t.value_v = value(const_val<uint64_t>(num));
+                    t.value_v = construct_number_using_type_literal(num, 0, 0, 0, false, false, type_literal);
                     m_tokens.back().emplace_back(std::move(t));
 
                     break;
@@ -272,6 +272,8 @@ namespace SGL {
                     while(cur < str.size() && std::isdigit(str[cur])) exp_part = exp_part*10 + str[cur]-'0', cur++, exp_size++;
                     if(exp_size == 0) tokenize_error("invalid number literal");//TODO  (has_fract && fract_size == 0) if .e (for example 1.e+1) not alloved?
                 }
+
+                //TODO check int_size + exp_part + fract_part > 0
 
                 size_t lit_beg = cur;
                 while (cur < str.size() && (std::isalnum(str[cur]) || str[cur] == '_')) cur++;

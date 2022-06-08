@@ -9,9 +9,6 @@
 namespace SGL {
     class evaluator {
     public:
-        [[nodiscard]] explicit evaluator() = default;//TODO evaluator(state&) instead of default constructor?
-
-    //protected:
         value evaluate(tokenizer&& tk) {
             /*
                 identifier can be reserved keyword, typename or user-defined name
@@ -37,6 +34,14 @@ namespace SGL {
 
             return value();
         }
+
+    protected:
+        friend class state;
+
+        //[[nodiscard]] explicit evaluator() = default;//TODO evaluator(state&) instead of default constructor?
+        [[nodiscard]] explicit evaluator(const state& state) : m_state(state) {}
+
+        const state& m_state;
     };
 }//namespace SGL
 

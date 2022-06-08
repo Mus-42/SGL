@@ -13,14 +13,21 @@ int main() {
     //some test code
     using namespace SGL;
 
-    auto ev = evaluator();
+    //state().get_evaluator()//invalid 
+
+    auto st = state();
+    auto ev = st.get_evaluator();
+
     ev.evaluate(tokenizer("int a = -100u * 10;"));
-    ev.evaluate(tokenizer("0xFFFF + 0b001101101"));
+    ev.evaluate(tokenizer("0xFFFF + 0b01101101u8"));
     ev.evaluate(tokenizer("1.12 + 48u32"));
     ev.evaluate(tokenizer("1.12e2"));
     ev.evaluate(tokenizer("1.12e-2"));
     ev.evaluate(tokenizer("1.12e+2f"));
     ev.evaluate(tokenizer(R"("qq" + "\tall\n")"));
+
+    auto v = st.register_type<int>("int");
+    SGL_ASSERT(v->m_type == typeid(int), "type check");
 
     auto val_t = SGL::value_type::construct_value_type<arr<const int&>* const>();
 
