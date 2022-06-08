@@ -54,6 +54,9 @@ namespace SGL {
         struct array_creator : public value_creator_base<arr<T>> {
             [[nodiscard]] array_creator(const std::vector<T>& v) {}
 
+            template<size_t N>
+            [[nodiscard]] array_creator(T (&v)[N]) {}
+
             //TODO add impl
         };
         //TODO add other value creators

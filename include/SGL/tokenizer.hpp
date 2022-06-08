@@ -111,6 +111,67 @@ namespace SGL {
             SGL_TOKENIZE_ERROR(desc, line, collumn);
         };
 
+        /*
+            uint64_t fract_part = 0, exp_part = 0, fract_size = 0, exp_size = 0;
+                bool has_fract = false, has_exp = false;
+                bool is_exp_positive = true;
+        */
+
+        //all numbers is unsigned in parse stage
+        auto construct_number_using_type_literal = [tokenize_error](uint64_t int_part, uint64_t fract_part, uint64_t fract_size, 
+            int exp, bool has_fract, bool has_exp, std::string_view type_literal) -> value {
+
+            static std::array<double, 308*2+1> pow10_table = ([](){
+                static std::array<double, 308*2+1> ret;
+                for(size_t i = 0; i <= 308*2; i++) ret[i] = pow(10, int(i)-308);
+                return ret;
+            })();
+            
+            
+            double float_val = 0.;
+            uint64_t int_val = int_part;
+            bool is_float = false;
+
+            if(has_fract || has_fract) {
+                is_float = true;
+                float_val = double(int_part);
+                //division by pow10_table[fract_size+308] same as multiplication by pow10_table[308-fract_size]
+                if(has_fract) float_val += double(fract_part) * pow10_table[308-fract_size];
+                if(has_exp) float_val *= pow10_table[308 + exp];
+            }
+
+            if(type_literal.empty()) {
+                if(is_float) return value(const_val<builtin_types::sgl_float64_t>(static_cast<builtin_types::sgl_float64_t>(float_val)));
+                else return value(const_val<uint64_t>(int_val));
+            } else {//not empty
+                //TODO use std::hash<std::string_view> for fast literals swith?
+                if(is_float) {
+                    if(type_literal == "f" || type_literal == "f32") return value(const_val<builtin_types::sgl_float32_t>(static_cast<builtin_types::sgl_float32_t>(float_val)));
+                    if(type_literal == "f64") return value(const_val<builtin_types::sgl_float64_t>(static_cast<builtin_types::sgl_float64_t>(float_val)));
+                } else {//integer
+                    if(type_literal == "f" || type_literal == "f32") return value(const_val<builtin_types::sgl_float32_t>(static_cast<builtin_types::sgl_float32_t>(int_val)));
+                    if(type_literal == "f64") return value(const_val<builtin_types::sgl_float64_t>(static_cast<builtin_types::sgl_float64_t>(int_val)));
+
+                    if(type_literal == "i") return value(const_val<builtin_types::sgl_int_t>(static_cast<builtin_types::sgl_int_t>(int_val)));
+                    if(type_literal == "u" || type_literal == "ui") return value(const_val<builtin_types::sgl_uint_t>(static_cast<builtin_types::sgl_uint_t>(int_val)));
+
+                    if(type_literal == "i8")  return value(const_val<builtin_types::sgl_int8_t> (static_cast<builtin_types::sgl_int8_t> (int_val)));
+                    if(type_literal == "i16") return value(const_val<builtin_types::sgl_int16_t>(static_cast<builtin_types::sgl_int16_t>(int_val)));
+                    if(type_literal == "i32") return value(const_val<builtin_types::sgl_int32_t>(static_cast<builtin_types::sgl_int32_t>(int_val)));
+                    if(type_literal == "i64") return value(const_val<builtin_types::sgl_int64_t>(static_cast<builtin_types::sgl_int64_t>(int_val)));
+
+                    if(type_literal == "u8"  || type_literal == "ui8" )  return value(const_val<builtin_types::sgl_uint8_t> (static_cast<builtin_types::sgl_uint8_t> (int_val)));
+                    if(type_literal == "u16" || type_literal == "ui16") return value(const_val<builtin_types::sgl_uint16_t>(static_cast<builtin_types::sgl_uint16_t>(int_val)));
+                    if(type_literal == "u32" || type_literal == "ui32") return value(const_val<builtin_types::sgl_uint32_t>(static_cast<builtin_types::sgl_uint32_t>(int_val)));
+                    if(type_literal == "u64" || type_literal == "ui64") return value(const_val<builtin_types::sgl_uint64_t>(static_cast<builtin_types::sgl_uint64_t>(int_val)));
+                }
+            }
+
+            tokenize_error("unknown type_literal");
+
+            return value();
+        };
+
         int priotity = 0;
 
         while(skip_spaces_and_comments(), cur < str.size()) {
@@ -188,7 +249,7 @@ namespace SGL {
                 }
             case '1': case '2': case '3': case '4':
             case '5': case '6': case '7': case '8': case '9': {
-                //[int].[fract]e[+|-][exp]
+                //[int][.][fract][e[+|-]exp][literal]
                 uint64_t int_part = 0, int_size = 0;
                 while(cur < str.size() && std::isdigit(str[cur])) int_part = int_part*10 + str[cur]-'0', cur++, int_size++;//TODO int_part overflow fix?
                 
@@ -209,7 +270,7 @@ namespace SGL {
                         cur++;
                     }
                     while(cur < str.size() && std::isdigit(str[cur])) exp_part = exp_part*10 + str[cur]-'0', cur++, exp_size++;
-                    if(exp_size == 0 || (has_fract && fract_size == 0)) tokenize_error("invalid number literal");
+                    if(exp_size == 0) tokenize_error("invalid number literal");//TODO  (has_fract && fract_size == 0) if .e (for example 1.e+1) not alloved?
                 }
 
                 size_t lit_beg = cur;
@@ -218,23 +279,10 @@ namespace SGL {
                 
                 cur--;
 
-                static std::array<double, 308*2+1> pow10_table = ([](){
-                    static std::array<double, 308*2+1> ret;
-                    for(size_t i = 0; i <= 308*2; i++) ret[i] = pow(10, int(i)-308);
-                    return ret;
-                })();
-
                 details::token t(details::token::t_value, priotity);
-                if(has_fract || has_fract) {//TODO choose correct type using type_literal
-                    double val = double(int_part);
-                    //division by pow10_table[fract_size+308] same as multiplication by pow10_table[308-fract_size]
-                    if(has_fract) val += double(fract_part) * pow10_table[308-fract_size];
-                    if(has_exp) val *= pow10_table[308 + (is_exp_positive ? 1 : -1) * int(exp_part)];//
-                    t.value_v = value(const_val<double>(val));
-                }
-                else {
-                    t.value_v = value(const_val<uint64_t>(int_part));
-                }
+
+                t.value_v = construct_number_using_type_literal(int_part, fract_part, fract_size, (is_exp_positive ? 1 : -1) * int(exp_part), has_fract, has_exp, type_literal);
+
                 m_tokens.back().emplace_back(std::move(t));
             } break;
             
@@ -262,10 +310,13 @@ namespace SGL {
                         cur+=2;
                     } else s += str[cur++];
                 }
-                if(is_char && s.size() == 1) tokenize_error("invalid character literal");
+                if(is_char && s.size() != 1) tokenize_error("invalid character literal");
                 
                 details::token t(details::token::t_value, priotity);
-                t.value_v = value(const_val<std::string>(std::move(s)));
+
+                if(is_char) t.value_v = value(const_val<char>(s[0]));//TODO use other char type? char8_t? or 16 (or 32?) for unicode?
+                else t.value_v = value(const_val<std::string>(std::move(s)));
+
                 m_tokens.back().emplace_back(std::move(t));
             } break;
 

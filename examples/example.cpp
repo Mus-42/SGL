@@ -16,7 +16,7 @@ int main() {
     auto ev = evaluator();
     ev.evaluate(tokenizer("int a = -100u * 10;"));
     ev.evaluate(tokenizer("0xFFFF + 0b001101101"));
-    ev.evaluate(tokenizer("1.12 + 48ull"));
+    ev.evaluate(tokenizer("1.12 + 48u32"));
     ev.evaluate(tokenizer("1.12e2"));
     ev.evaluate(tokenizer("1.12e-2"));
     ev.evaluate(tokenizer("1.12e+2f"));

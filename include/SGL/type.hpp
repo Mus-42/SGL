@@ -14,6 +14,39 @@
 #include <type_traits>
 
 namespace SGL {
+    namespace builtin_types {
+        //integer
+        using sgl_int8_t  = std::int8_t; 
+        using sgl_int16_t = std::int16_t; 
+        using sgl_int32_t = std::int32_t; 
+        using sgl_int64_t = std::int64_t; 
+
+        using sgl_uint8_t  = std::uint8_t; 
+        using sgl_uint16_t = std::uint16_t; 
+        using sgl_uint32_t = std::uint32_t; 
+        using sgl_uint64_t = std::uint64_t; 
+
+        using sgl_int_t = sgl_int32_t;
+        using sgl_uint_t = sgl_uint32_t;
+
+        //floating point
+        using sgl_float32_t = float;
+        using sgl_float64_t = double;
+
+        using sgl_float_t = sgl_float32_t;
+        using sgl_double_t = sgl_float64_t;
+
+        static_assert(sizeof(sgl_float32_t) == 32/8 && sizeof(sgl_float64_t) == 64/8);
+
+        //boolean
+        using sgl_bool_t = bool;
+        //character
+        using sgl_char_t = char;//using char8_t?
+        //string
+        using sgl_string_t = std::basic_string<sgl_char_t>;
+    }
+
+
     namespace details {
         class type_impl_base {
         public:
