@@ -3,7 +3,10 @@
 
 #include <iostream>
 
+
 int main() {
+
+
     //TODO add example
 
     /*
@@ -12,6 +15,11 @@ int main() {
 
     //some test code
     using namespace SGL;
+
+    struct no_sum {};
+    struct has_sum {has_sum operator+(const has_sum&) { return {}; }};
+
+    std::cout << std::boolalpha << details::OperatorsExistCheck::op_sum<no_sum> << ' ' << details::OperatorsExistCheck::op_sum<has_sum> << std::endl;
 
     //state().get_evaluator()//invalid 
 
@@ -26,7 +34,7 @@ int main() {
     ev.evaluate(tokenizer("1.12e+2f"));
     ev.evaluate(tokenizer(R"("qq" + "\tall\n")"));
 
-    auto v = st.register_type<int>("int");
+    auto v = st.register_type<int>("my_int");
     SGL_ASSERT(v->m_type == typeid(int), "type check");
 
     auto val_t = SGL::value_type::construct_value_type<arr<const int&>* const>();

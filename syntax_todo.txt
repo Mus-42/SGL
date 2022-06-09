@@ -45,7 +45,7 @@ operators:
 
 ariphmetic: + -  *  /  %  ++  --  
 bitwise:    | &  ~  ^  >> <<  
-assignment: = += -= *= /= %=  |= <<= >>= ^=
+assignment: = += -= *= /= %=  ^= &= |= <<= >>=
 logic:      ! >  <  <= >= <=> != == &&  ||
 unary operators: +a  -a   *a  &a 
 member access:   a.b a->b
