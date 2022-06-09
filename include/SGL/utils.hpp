@@ -174,7 +174,7 @@ namespace SGL {
             template<typename A, typename B> NotExits operator||(A, B);
             template<typename A, typename B> NotExits operator&&(A, B);
             /*
-                can't check following operators:
+                in this way can't check following operators:
 
                 a=b a(b...) a[b] a->b (cannot be overload as non-member)
 
@@ -190,7 +190,7 @@ namespace SGL {
             template<typename A, typename B = A> constexpr bool op_adress_of   = !std::is_same_v<decltype(&std::declval<A>()), NotExits>;//&a
 
             template<typename A, typename B = A> constexpr bool op_sum = !std::is_same_v<decltype(std::declval<A>() + std::declval<B>()), NotExits>;//a+b
-            template<typename A, typename B = A> constexpr bool op_dif = !std::is_same_v<decltype(std::declval<A>() - std::declval<B>()), NotExits>;//a-b
+            template<typename A, typename B = A> constexpr bool op_sub = !std::is_same_v<decltype(std::declval<A>() - std::declval<B>()), NotExits>;//a-b
             template<typename A, typename B = A> constexpr bool op_mul = !std::is_same_v<decltype(std::declval<A>() * std::declval<B>()), NotExits>;//a*b
             template<typename A, typename B = A> constexpr bool op_div = !std::is_same_v<decltype(std::declval<A>() / std::declval<B>()), NotExits>;//a/b
             template<typename A, typename B = A> constexpr bool op_mod = !std::is_same_v<decltype(std::declval<A>() % std::declval<B>()), NotExits>;//a%b
@@ -223,6 +223,11 @@ namespace SGL {
             template<typename A, typename B = A> constexpr bool op_or  = !std::is_same_v<decltype(std::declval<A>() || std::declval<B>()), NotExits>;//a||b
             template<typename A, typename B = A> constexpr bool op_and = !std::is_same_v<decltype(std::declval<A>() && std::declval<B>()), NotExits>;//a&&b
 
+
+            template<typename T, typename index> auto has_subscript_operator_impl(int) -> decltype(std::declval<T>()[std::declval<index>()]);
+            template<typename, typename> auto has_subscript_operator_impl(...) -> NotExits;
+
+            template<typename T, typename index = size_t> constexpr static bool op_subscript = !std::is_same_v<decltype(has_subscript_operator_impl<T, index>(0)), NotExits>;//a[i]
         }//namespace OperatorsExistCheck
     }//namespace details
 
