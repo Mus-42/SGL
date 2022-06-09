@@ -165,7 +165,8 @@ namespace SGL {
 
         [[nodiscard]] bool is_array() const { return m_type->m_traits.is_array; }
         [[nodiscard]] bool is_pointer() const { return m_type->m_traits.is_pointer; }
-        [[nodiscard]] bool is_reference() const { return m_type->m_traits.is_reference; }//TODO add other
+        [[nodiscard]] bool is_reference() const { return m_type->m_traits.is_reference; }
+        [[nodiscard]] bool is_const() const { return m_type->m_traits.is_const; }//TODO add other
 
 
     //protected:

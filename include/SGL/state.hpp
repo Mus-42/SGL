@@ -12,11 +12,72 @@
 
 #include "type.hpp"
 #include "evaluator.hpp"
+#include "function.hpp"
 
 namespace SGL {
+    class function;
     class state : public details::no_copy {
     public:
         state() {
+            init();
+        }
+
+        //base type 
+
+        template<typename T, std::enable_if_t<details::is_base_type<T>, bool> = true>
+        std::shared_ptr<type> register_type(const std::string& type_name) {
+            return m_types_val[std::type_index(typeid(T))] = register_type(type_name, std::make_shared<type>(details::sgl_type_identity<T>{}));
+        }
+        std::shared_ptr<type> register_type(const std::string& type_name, std::shared_ptr<type> type_ptr) {
+            auto f = m_types.find(type_name);
+            SGL_ASSERT(f == m_types.end(), "type with same name already exists in this state")
+            m_types[type_name] = type_ptr;
+            return type_ptr;
+        }
+        std::shared_ptr<type> find_type(const std::string& type_name) const {
+            return m_types.at(type_name);
+        }
+
+        void add_function(const std::string& name, const function& f) {
+            m_functions[name].merge(f);
+        }
+        template<typename Ret, typename... Args>
+        void add_function(const std::string& name, std::function<Ret(Args...)> f) {
+            m_functions[name].add_overload(f);
+        }
+
+        template<typename Ret, typename... Args>
+        void add_function_overload(const std::string& name, std::function<Ret(Args...)> f) {
+            m_functions[name].add_overload(f);
+        }
+
+        function& get_function(const std::string& name) {
+            return m_functions.at(name);
+        }
+        const function& get_function(const std::string& name) const {
+            return m_functions.at(name);
+        }
+
+        //TODO add register_operator or something like this?
+
+        [[nodiscard]] evaluator get_evaluator() const & {
+            return evaluator(*this);
+        }
+        evaluator get_evaluator() const && = delete;//not alloved for temp state (ref invalid afrer object destruction)
+
+    protected:
+        friend class type;
+        friend class value_type;
+        friend class value;
+        friend class evaluator;
+
+    private:
+        std::unordered_map<std::string, std::shared_ptr<type>> m_types;
+        std::unordered_map<std::type_index, std::shared_ptr<type>> m_types_val;
+
+        std::unordered_map<std::string, function> m_functions;
+
+        void init() {   
             //builtin types:
 
             //integer
@@ -45,40 +106,15 @@ namespace SGL {
             register_type<builtin_types::sgl_char_t>("char");
             register_type<builtin_types::sgl_string_t>("string");
 
+            //builtin functions:
+            add_function("addressof", {{{std::function<value(std::initializer_list<std::reference_wrapper<value>>)>([](std::initializer_list<std::reference_wrapper<value>> v)->value{
+                SGL_ASSERT(v.size() == 1, "addressof != 1");
+                auto& q = v.begin()->get();
+                if(q.is_const()) return { const_val<void*>(v.begin()->get().m_data) };
+                else return { val<void*>(v.begin()->get().m_data) };
+            }), function::function_overload::all_types_t{}, 1} }});
             //TODO register operators
         }
-
-        //base type 
-        template<typename T, std::enable_if_t<details::is_base_type<T>, bool> = true>
-        std::shared_ptr<type> register_type(const std::string& type_name) {
-            return m_types_val[std::type_index(typeid(T))] = register_type(type_name, std::make_shared<type>(details::sgl_type_identity<T>{}));
-        }
-        std::shared_ptr<type> register_type(const std::string& type_name, std::shared_ptr<type> type_ptr) {
-            auto f = m_types.find(type_name);
-            SGL_ASSERT(f == m_types.end(), "type with same name already exists in this state")
-            m_types[type_name] = type_ptr;
-            return type_ptr;
-        }
-        std::shared_ptr<type> find_type(const std::string& type_name) const {
-            return m_types.at(type_name);
-        }
-
-        //TODO add register_operator or something like this?
-
-        [[nodiscard]] evaluator get_evaluator() const & {
-            return evaluator(*this);
-        }
-        evaluator get_evaluator() const && = delete;//not alloved for temp state (ref invalid afrer object destruction)
-
-    protected:
-        friend class type;
-        friend class value_type;
-        friend class value;
-        friend class evaluator;
-
-    private:
-        std::unordered_map<std::string, std::shared_ptr<type>> m_types;
-        std::unordered_map<std::type_index, std::shared_ptr<type>> m_types_val;
     };
 }//namespace SGL
 

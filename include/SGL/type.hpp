@@ -4,7 +4,6 @@
 
 #include "config.hpp"
 #include "utils.hpp"
-//#include "function.hpp"
 
 #include <cstdint>
 #include <string>
