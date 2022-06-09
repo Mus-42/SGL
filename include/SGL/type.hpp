@@ -196,7 +196,7 @@ namespace SGL {
 */
         template<typename U, typename T> 
         static constexpr size_t m_offsetof(U T::*member_ptr) {
-            return reinterpret_cast<size_t>(&(static_cast<T*>(nullptr)->*member_ptr));
+            return static_cast<size_t>(&(static_cast<T*>(nullptr)->*member_ptr));
         }
     };
 
@@ -309,6 +309,7 @@ namespace SGL {
     //protected:
         friend class value;
         friend class evaluator;
+        friend class function;
         friend class value_creator_base;
         
         std::shared_ptr<value_type> m_type;
@@ -402,6 +403,13 @@ namespace SGL {
         }
 
     };
+
+    bool operator==(const value_type& a, const value_type& b) {
+        return a.is_same_with(b);
+    }
+    bool operator!=(const value_type& a, const value_type& b) {
+        return !(a==b);
+    }
 } // namespace SGL
 
 #endif// SGL_TYPE_HPP_INCLUDE_

@@ -63,4 +63,19 @@ int main() {
     };
 
     type_print(val_t);
+
+    std::cout << std::endl;
+    auto f = function(std::function<int(int)>([](int v){
+        std::cout << "i: " << v << std::endl;
+        return v;
+    })).add_overload(std::function<void(float)>([](float v){ 
+        std::cout << "f: " << v << std::endl;
+    }));
+    auto arg1 = value(val<int>(12));
+    auto arg2 = value(val<float>(12.42f));
+    f.call({arg1});
+    f.call({arg2});
+    //, std::function<void(float)>([](float v){ 
+    //    std::cout << "f: " << v << std::endl;
+    //})
 }
