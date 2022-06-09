@@ -6,5 +6,6 @@
 
 #include "state.hpp"
 #include "evaluator.hpp"
+#include "type_name.hpp"
 
 #endif//SGL_SGL_HPP_INCLUDE_

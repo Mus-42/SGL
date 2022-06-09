@@ -30,6 +30,7 @@ namespace SGL {
                 }
                 std::cout << std::endl;
             }
+            //TODO choose operators, sort in evaluation order, evaluate
 
 
             return value();

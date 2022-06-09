@@ -3,9 +3,7 @@
 
 #include <iostream>
 
-
 int main() {
-
 
     //TODO add example
 
@@ -70,17 +68,21 @@ int main() {
             std::cout << "i: " << v << std::endl;
             return v;
         }), 
-        std::function<void(float)>([](float v){ 
+        std::function<void(double)>([](double v){ 
             std::cout << "f: " << v << std::endl;
         })
     });
     auto arg1 = value(val<int>(12));
-    auto arg2 = value(val<float>(12.42f));
+    auto arg2 = value(val<double>(12.42));
     f.call({arg1});
     f.call({arg2});
  
     std::cout << "arg1* " << st.get_function("addressof").call({arg1}).get<void*>() << std::endl;
     std::cout << "arg2* " << st.get_function("addressof").call({arg2}).get<void*>() << std::endl;
+
+    std::cout << "arg1 size " << st.get_function("sizeof").call({arg1}).get<uint64_t>() << std::endl;
+    std::cout << "arg2 size " << st.get_function("sizeof").call({arg2}).get<uint64_t>() << std::endl;
+
     //, std::function<void(float)>([](float v){ 
     //    std::cout << "f: " << v << std::endl;
     //})
