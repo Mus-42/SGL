@@ -73,7 +73,7 @@ namespace SGL {
         };
 
         template<typename T>
-        class type_impl : public type_impl_base {
+        class type_impl : public type_impl_base {//TODO add template specialization for void
         public:
             constexpr type_impl() {
                 traits = {
@@ -108,7 +108,7 @@ namespace SGL {
             //TODO add custom constructors?
 
             virtual void destruct(void* data) const override {
-                static_cast<T*>(data)->~T();
+                if constexpr(!std::is_trivially_destructible_v<T> && !std::is_same_v<T, void>) static_cast<T*>(data)->~T();
             }
 
 
@@ -175,7 +175,7 @@ namespace SGL {
         friend class value_type;
         
         const std::unique_ptr<details::type_impl_base> m_impl;
-        const type_info& m_type;//used in state and in check_type
+        const std::type_info& m_type;//used in state and in check_type
 
         //std::unordered_map<std::string, std::pair<const type*, size_t>> m_members;//name, type, offset of member
 

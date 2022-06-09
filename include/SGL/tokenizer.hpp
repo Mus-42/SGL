@@ -7,6 +7,7 @@
 #include "value.hpp"
 
 #include <cstdint>
+#include <cmath>//std::pow
 #include <vector>
 #include <array>
 #include <list>
@@ -123,7 +124,7 @@ namespace SGL {
 
             static std::array<double, 308*2+1> pow10_table = ([](){
                 static std::array<double, 308*2+1> ret;
-                for(size_t i = 0; i <= 308*2; i++) ret[i] = pow(10, int(i)-308);
+                for(size_t i = 0; i <= 308*2; i++) ret[i] = std::pow(10, int(i)-308);
                 return ret;
             })();
             

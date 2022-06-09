@@ -27,13 +27,11 @@ namespace SGL {
             no_copy& operator=(no_copy&&) = default;
         };
 
-        template<typename T> 
-        struct sgl_type_identity {
-            using type = T;
-        };
         template<typename... T>
-        struct sgl_type_identity<T...> {//variadic args overload
-
+        struct sgl_type_identity {};
+        template<typename T> 
+        struct sgl_type_identity<T> {
+            using type = T;
         };
 
 
@@ -125,6 +123,8 @@ namespace SGL {
             struct NotExits {};
             //overloads which compiler choose if operator not exist (and... it generate compile time error if function marked as deleted.)
             
+            //TODO FIX IT IN GCC (compile time error in each use case when operator not exist)
+
             //unary
             template<typename A> NotExits operator+(A);
             template<typename A> NotExits operator-(A);

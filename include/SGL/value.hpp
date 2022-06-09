@@ -27,27 +27,27 @@ namespace SGL {
         template<typename T>
         struct value_creator : public value_creator_base<T> {
             [[nodiscard]] value_creator(const T& v) {//TODO add overload for move
-                m_data = new T(v);
-                need_free_data = true;
+                this->m_data = new T(v);//`this->` required by GCC (idk why)
+                this->need_free_data = true;
             }
         };
         template<typename T>
         struct const_value_creator : public value_creator_base<const T> {
             [[nodiscard]] const_value_creator(const T& v) {
-                m_const_data = new const T(v);
-                need_free_data = true;
+                this->m_const_data = new const T(v);
+                this->need_free_data = true;
             }
         };
         template<typename T>
         struct reference_creator : public value_creator_base<T&> {
             [[nodiscard]] reference_creator(T& v) {
-                m_data = &v;
+                this->m_data = &v;
             }
         };
         template<typename T>
         struct const_reference_creator : public value_creator_base<const T&> {
             [[nodiscard]] const_reference_creator(const T& v) {
-                m_const_data = &v;
+                this->m_const_data = &v;
             }
         };
         template<typename T>
