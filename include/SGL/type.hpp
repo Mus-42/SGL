@@ -75,6 +75,7 @@ namespace SGL {
         template<typename T>
         class type_impl : public type_impl_base {
         public:
+            static_assert(details::is_base_type<T>);
             constexpr type_impl() {
                 traits = {
                     std::is_default_constructible_v<T>,
@@ -118,11 +119,11 @@ namespace SGL {
         public:
             constexpr type_impl() {}
 
-            virtual void default_construct(void* data) const override {}
-            virtual void copy_construct(void* data, const void* from) const override {}
-            virtual void move_construct(void* data, void* from) const override {}
-            virtual void copy_assign(void* data, const void* from) const override {}
-            virtual void move_assign(void* data, void* from) const override {}
+            virtual void default_construct(void*) const override {}
+            virtual void copy_construct(void*, const void*) const override {}
+            virtual void move_construct(void*, void*) const override {}
+            virtual void copy_assign(void*, const void*) const override {}
+            virtual void move_assign(void*, void*) const override {}
             
             virtual void free_ptr_of_t(void* data) const override {
                 delete static_cast<char*>(data);
@@ -137,7 +138,7 @@ namespace SGL {
     class type : public details::no_copy {
     public:
         template<typename T>
-        [[nodiscard]] explicit type(details::sgl_type_identity<T> t) : m_impl(new details::type_impl<T>), m_type(typeid(T)) {
+        [[nodiscard]] explicit type(details::sgl_type_identity<T>) : m_impl(new details::type_impl<T>), m_type(typeid(T)) {
             //SGL_ASSERT(is_correct_identifier(type_name), "type name is incorrect");
 #if defined(SGL_OPTION_STORE_TYPE_NAME) && SGL_OPTION_STORE_TYPE_NAME
             m_type_name = get_type_name<T>();
@@ -224,11 +225,13 @@ namespace SGL {
 
         template<typename T>
         bool is_same_with() const {//same with T
-            return false;//TODO add impl
+            if(m_traits != m_traits_t(details::sgl_type_identity<T>{})) return false;
+            if(m_traits.is_final_v) return m_base_type->m_type == typeid(T);
+            else return is_same_with(*construct_value_type<T>());//TODO implement
         } 
         template<typename T>
         bool is_convertable_to() const {//convertable to T
-            return false;//TODO add impl
+            return is_convertable_to(*construct_value_type<T>());//TODO add impl
         }
 
         bool is_same_with(const value_type& t) const {//same with t
@@ -236,7 +239,21 @@ namespace SGL {
             if(m_traits.is_final_v) return *m_base_type == *t.m_base_type;
             else return m_type->is_same_with(*t.m_type);
         }
+
         bool is_convertable_to(const value_type& t) const {//convertable to t
+            //TODO add pointers cast? search typecast operator in state 
+            if(m_traits.is_pointer   != t.m_traits.is_pointer || 
+               m_traits.is_array     != t.m_traits.is_array) return false;//in SGL array can't be casted to pointer
+            if(m_traits.is_pointer) return (t.m_traits.is_const || !m_traits.is_const) && m_type->is_same_with(*t.m_type);
+            if(m_traits.is_reference) {
+                if(t.m_traits.is_reference) return (t.m_traits.is_const || !m_traits.is_const) && m_type->is_same_with(*t.m_type);//ref
+                return m_type->is_convertable_to(t);//value
+            }
+            if(m_traits.is_final_v) {
+                if(t.m_traits.is_reference) return t.m_type->m_traits.is_final_v && *m_base_type == *t.m_type->m_base_type && (t.m_traits.is_const || !m_traits.is_const);
+                return *m_base_type == *t.m_base_type;//no const check -> const T can be casted to T
+            }
+            //array
             return false;//TODO add impl
         }
 
@@ -320,7 +337,7 @@ namespace SGL {
             ~m_traits_t() = default;
 
             template<typename T>
-            constexpr explicit m_traits_t(details::sgl_type_identity<T> t) :
+            constexpr explicit m_traits_t(details::sgl_type_identity<T>) :
                 is_const(std::is_const_v<T>), 
                 is_pointer(std::is_pointer_v<T>), 
                 is_reference(std::is_reference_v<T>),
@@ -351,7 +368,7 @@ namespace SGL {
 
         //TODO move it to constuctor?
         template<typename T>
-        static std::shared_ptr<value_type> construct_value_type(const std::shared_ptr<type>& base_type = std::make_shared<type>(details::sgl_type_identity<T>{})) {//TODO get T
+        static std::shared_ptr<value_type> construct_value_type(const std::shared_ptr<type>& base_type = std::make_shared<type>(details::sgl_type_identity<details::make_base_type_t<T>>{})) {//TODO get T
             static_assert(!std::is_array_v<T>);
             return construct_value_type_impl(details::sgl_type_identity<T>{}, base_type);
         }
@@ -388,10 +405,10 @@ namespace SGL {
         }
         
         //ignore volatile
-        template<typename T> static std::shared_ptr<value_type> construct_value_type_impl(details::sgl_type_identity<T*volatile> v, const std::shared_ptr<type>& base_type) { 
+        template<typename T> static std::shared_ptr<value_type> construct_value_type_impl(details::sgl_type_identity<T*volatile>, const std::shared_ptr<type>& base_type) { 
             return construct_value_type_impl(details::sgl_type_identity<T*>{}, base_type); 
         }
-        template<typename T> static std::shared_ptr<value_type> construct_value_type_impl(details::sgl_type_identity<T*const volatile> v, const std::shared_ptr<type>& base_type) { 
+        template<typename T> static std::shared_ptr<value_type> construct_value_type_impl(details::sgl_type_identity<T*const volatile>, const std::shared_ptr<type>& base_type) { 
             return construct_value_type_impl(details::sgl_type_identity<T*const>{}, base_type); 
         }
         

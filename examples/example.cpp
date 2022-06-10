@@ -66,7 +66,7 @@ int main() {
 
     std::cout << std::endl;
     auto f = function({
-        std::function<int(int)>([](int v){
+        std::function<int(const int&)>([](const int& v){
             std::cout << "i: " << v << std::endl;
             return v;
         }), 
@@ -75,7 +75,7 @@ int main() {
         })
     });
     auto arg1 = value(val<int>(12));
-    auto arg2 = value(val<double>(12.42));
+    auto arg2 = value(const_val<double>(12.42));
     f.call({arg1});
     f.call({arg2});
  
@@ -86,27 +86,27 @@ int main() {
     std::cout << "arg2 size " << st.get_function("sizeof").call({arg2}).get<uint64_t>() << std::endl;
 
     struct base {
-        base() {
-            std::cout << "base constructed\n";
-        }
-        virtual ~base() {
-            std::cout << "base destructed\n";
-        }
+        base() { std::cout << "base constructed\n"; }
+        virtual void say() const { std::cout << "im base\n"; };
+        virtual ~base() { std::cout << "base destructed\n"; }
     };
     struct derived : base {
         derived() {
             std::cout << "derived constructed\n";
         }
-        virtual ~derived() {
-            std::cout << "derived destructed\n";
-        }
+        virtual void say() const override { std::cout << "im derived\n"; };
+        virtual ~derived() { std::cout << "derived destructed\n"; }
     };
     std::cout << "CPP:\n";
     {
-        derived{};
+        derived d;
+        const base& b = d;
+        b.say();
     }
     std::cout << "SGL:\n";
     {
-        value(val<derived>{});
+        auto d = value(val<derived>{});
+        auto b = value(const_ref<base>{d.get<const derived&>()});
+        b.get<const base&>().say();
     }
 }

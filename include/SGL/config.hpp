@@ -6,7 +6,7 @@
 #define SGL_OPTION_TYPE_CHECKS              1
 #define SGL_OPTION_ENABLE_TYPE_NAME         1
 #define SGL_OPTION_STORE_TYPE_NAME          1
-#define SGL_OPTION_DISABLE_REALESE_ASSERT   1
+#define SGL_OPTION_ENABLE_ASSERT            1
 
 
 #if (!defined(SGL_OPTION_ENABLE_TYPE_NAME) || !SGL_OPTION_ENABLE_TYPE_NAME) && SGL_OPTION_STORE_TYPE_NAME 
@@ -17,7 +17,7 @@
 //assertion macro
 #ifndef SGL_ASSERT
 #include <iostream>//std::cerr
-#if defined(_DEBUG) || !SGL_OPTION_DISABLE_REALESE_ASSERT
+#if SGL_OPTION_ENABLE_ASSERT
 #define SGL_ASSERT(v, msg) {if(!(v)) { std::cerr << "SGL assertion failed (l:" << __LINE__ << " f:" << __FUNCTION__  << ") " << (msg) << std::endl; }}
 #else
 #define SGL_ASSERT(v, msg) {}

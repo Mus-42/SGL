@@ -27,7 +27,7 @@ namespace SGL {
             function_overload&operator=(function_overload&&) = default;
 
             template<typename Ret, typename... Args>
-            function_overload(std::function<Ret(Args...)> func) : m_func(get_function_impl(func, std::index_sequence_for<Args...>{})), args_types({value_type::construct_value_type<Args>()...}) {}
+            function_overload(std::function<Ret(Args...)> func) : args_types({value_type::construct_value_type<Args>()...}), m_func(get_function_impl(func, std::index_sequence_for<Args...>{})) {}
 
             template<typename Ret, typename... Args, size_t... N>
             static constexpr decltype(auto) get_function_impl(std::function<Ret(Args...)> func, std::index_sequence<N...>) {
@@ -57,7 +57,7 @@ namespace SGL {
             function_overload(std::function<value(std::initializer_list<std::reference_wrapper<value>>)> f, all_types_t all, int all_args_count = -1) : m_func(f), all_types(true), all_args_count(all_args_count) {}
             
             template<typename Ret, typename... Args>
-            function_overload(std::function<Ret(Args...)> func, std::vector<std::shared_ptr<value_type>> args) : m_func(get_function_impl(func, std::index_sequence_for<Args...>{})), args_types(args) {
+            function_overload(std::function<Ret(Args...)> func, std::vector<std::shared_ptr<value_type>> args) : args_types(args), m_func(get_function_impl(func, std::index_sequence_for<Args...>{})) {
                 SGL_ASSERT(args.size() == sizeof...(Args), "invalid args count");
             }
         };
@@ -80,17 +80,18 @@ namespace SGL {
                     bool ok = true;
                     for(size_t j = 0; j < v.size(); j++) {
                         if(*m_overloads[i].args_types[j] == *v.begin()[j].get().m_type) continue;
-                        //TODO if convertable { delta++; continue; }
+                        if(v.begin()[j].get().m_type->is_convertable_to(*m_overloads[i].args_types[j])) { delta++; continue; }
                         ok = false;
                         break;
                     }
                     if(!ok) continue;
                     indexes.push_back({i, delta});
-                } else if(m_overloads[i].all_types && (m_overloads[i].all_args_count == v.size() || m_overloads[i].all_args_count == -1)) {
+                } else if(m_overloads[i].all_types && (m_overloads[i].all_args_count == (int)v.size() || m_overloads[i].all_args_count == -1)) {
                     indexes.push_back({i, 0});
                 }
-            SGL_ASSERT(indexes.size() > 0, "cant choose function overload");
-            //TODO sort by delta
+            SGL_ASSERT(indexes.size() > 0, "can't choose function overload");
+            std::sort(indexes.begin(), indexes.end(), [](auto a, auto b){ return a.second < b.second; });
+            SGL_ASSERT(indexes.size() == 1 || indexes[0].second < indexes[1].second, "can't choose function overload: more than 1 candidate with same priority");
             return m_overloads[indexes.front().first].m_func(v);
         }
         
@@ -105,6 +106,8 @@ namespace SGL {
             std::copy(v.m_overloads.begin(), v.m_overloads.end(), m_overloads.begin() + s);
             return *this;
         }
+
+        //TODO add std::function<...> get_cpp_func()?
     protected:
         std::vector<function_overload> m_overloads;
     };
