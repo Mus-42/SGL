@@ -2,6 +2,7 @@
 #ifndef SGL_TYPE_NAME_HPP_INCLUDE_
 #define SGL_TYPE_NAME_HPP_INCLUDE_
 #include <string_view>
+#include "config.hpp"
 namespace SGL {
 #if defined(SGL_OPTION_ENABLE_TYPE_NAME) && SGL_OPTION_ENABLE_TYPE_NAME
     namespace details {     
@@ -27,7 +28,7 @@ namespace SGL {
     }//namespace details
 #endif//SGL_OPTION_ENABLE_TYPE_NAME
     template<typename T>
-    constexpr std::string_view type_name() {//Not same in all C++ implementations
+    constexpr std::string_view get_type_name() {//Not same in all C++ implementations
 #if defined(SGL_OPTION_ENABLE_TYPE_NAME) && SGL_OPTION_ENABLE_TYPE_NAME
         if constexpr(details::is_compatible_compiler) {
             auto raw = details::type_name_helper<T>();

@@ -21,10 +21,13 @@ namespace SGL {
                     case details::token::t_none: std::cout << "[none] "; break;
                     case details::token::t_operator: std::cout << "[operator '" << v.operator_v << "'] "; break;
                     case details::token::t_punct: std::cout << "[punct '" << v.punct_v << "'] "; break;
-                    case details::token::t_value: std::cout << "[value " << //wtf
-                        //(v.value_v.m_type->m_base_type->m_type == typeid(double) ?  v.value_v.get<double>() : v.value_v.get<uint64_t>()) 
-                        v.value_v.m_type->m_base_type->m_type.name()
-                        << "] "; break;//TODO replace this get with to_string or something like this   
+                    case details::token::t_value: std::cout << "[value " << 
+#if defined(SGL_OPTION_STORE_TYPE_NAME) && SGL_OPTION_STORE_TYPE_NAME
+                        v.value_v.m_type->m_base_type->m_type_name
+#else
+                        v.value_v.m_type->m_base_type->m_type.name() 
+#endif
+                        << "] "; break; 
                     default: std::cout << "[invalid token] "; break;
                     }
                 }

@@ -236,7 +236,7 @@ namespace SGL {
                 m_type->destruct(m_data);
                 if(need_free_data) {
                     //delete static_cast<char*>(m_data);
-                    //m_type->
+                    m_type->free_ptr_of_t(m_data);
                     m_data = nullptr;
                     //TODO if array free all array
                 }
@@ -247,6 +247,7 @@ namespace SGL {
             const void* m_const_data;//ugly hack
         };
         std::shared_ptr<value_type> m_type;
+        //TODO remove need_free_data? this checked in value_type::free_ptr_of_t()
         bool need_free_data = false;//example: references or pointers shod not freed. arrays or values must be freed
     };
 }//namespace SGL

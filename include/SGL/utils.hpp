@@ -7,6 +7,10 @@
 #include <algorithm>
 #include <vector>
 
+#if defined(SGL_OPTION_ENABLE_TYPE_NAME) && SGL_OPTION_ENABLE_TYPE_NAME
+#include "type_name.hpp"
+#endif//SGL_OPTION_ENABLE_TYPE_NAME
+
 namespace SGL {
     namespace details {   
         template<typename T>
