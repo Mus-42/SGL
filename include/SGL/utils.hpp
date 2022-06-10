@@ -40,17 +40,17 @@ namespace SGL {
 
 
         constexpr bool is_alpha(unsigned char ch) {//constexpr isalpha fucntion
-            return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z';
+            return ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z');
         }
         constexpr bool is_num(unsigned char ch) {//constexpr isnum fucntion
-            return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z';
+            return ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z');
         }
         constexpr bool is_alnum(unsigned char ch) {//constexpr isalnum fucntion
             return is_alpha(ch) || is_num(ch);
         }
 
         constexpr bool is_correct_identifier(std::string_view s) {
-            if(!s.size() || !is_alpha(s[0]) && s[0] != '_') return false;
+            if(!s.size() || (!is_alpha(s[0]) && s[0] != '_')) return false;
             bool ret = true;
             for(unsigned char ch : s) ret &= is_alnum(ch) || ch == '_';
             return ret;

@@ -50,15 +50,15 @@ namespace SGL {
         class type_impl_base {
         public:
             constexpr type_impl_base() : size(0) {}
-            virtual void default_construct(void* data) const {}
-            virtual void copy_construct(void* data, const void* from) const {}
-            virtual void move_construct(void* data, void* from) const {}
-            virtual void copy_assign(void* data, const void* from) const {}
-            virtual void move_assign(void* data, void* from) const {}
+            virtual void default_construct([[maybe_unused]] void* data) const {}
+            virtual void copy_construct([[maybe_unused]] void* data, [[maybe_unused]] const void* from) const {}
+            virtual void move_construct([[maybe_unused]] void* data, [[maybe_unused]] void* from) const {}
+            virtual void copy_assign([[maybe_unused]] void* data, [[maybe_unused]] const void* from) const {}
+            virtual void move_assign([[maybe_unused]] void* data, [[maybe_unused]] void* from) const {}
 
             //TODO add custom constructors? (pass it as SGL::function?)
 
-            virtual void free_ptr_of_t(void* data) const {}
+            virtual void free_ptr_of_t([[maybe_unused]] void* data) const {}
 
             virtual ~type_impl_base() {}
             struct {
@@ -257,7 +257,9 @@ namespace SGL {
             return false;//TODO add impl
         }
 
+        //TODO replace `const value_type&` with `std::shared_ptr<value_type>`?
         static value_type common_type(const value_type& a, const value_type& b) {//a & b convertable to common_type(a, b);
+            if(a.is_same_with(b)) return a;
             return value_type();//TODO implement
         }
 

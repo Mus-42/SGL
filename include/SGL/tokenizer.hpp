@@ -210,7 +210,8 @@ namespace SGL {
                     m_tokens.back().emplace_back(std::move(t));
                     break;
                 } 
-            } 
+            }
+            [[fallthrough]];
             case '0':
                 if(cur + 1 < str.size() && str[cur] == '0' && (str[cur+1] == 'x' || str[cur+1] == 'X' || str[cur+1] == 'b' || str[cur+1] == 'B')) {       
                     cur++;
@@ -248,6 +249,7 @@ namespace SGL {
 
                     break;
                 }
+            [[fallthrough]];
             case '1': case '2': case '3': case '4':
             case '5': case '6': case '7': case '8': case '9': {
                 //[int][.][fract][e[+|-]exp][literal]

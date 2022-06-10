@@ -1,21 +1,23 @@
 Features:
-More than 1 constuctor
-Support for pointer|link types
-C++ templates support
-Custom types definition
+C++ templates support?
+Custom types definition? (auto?)
 Custom operators 
-Typecasts to|from custom types
-32-bit systems support
+check 32-bit systems support
 
 Lib:
 state .add (type|value|function) 
 
 common type for SGL::value_type
 
-how shold return value for <arr<T>*>? pointer to array_impl?
-add ret_type<T>? cast_to_ret_type<T>(v)?
+how shold return value for get<arr<T>*>? pointer to array_impl?
+add ret_type<T>? cast_to_ret_type<T>(v)? (from <arr<T>> -> <vector<T>> etc.)
 implement value_type functions for array
 
 replace "//protected:" with macro in config.hpp?
 
 rename type to base_type, value_type to type?
+replece `const value_type&` in value_type functions with `shared_ptr<value_type>`?
+
+fix multiple clones of same type (get value_type ptr from state?)
+
+replace asserts like bad value cast, illegal name etc. with exceptions

@@ -26,9 +26,11 @@ namespace SGL {
 
         template<typename T, std::enable_if_t<details::is_base_type<T>, bool> = true>
         std::shared_ptr<type> register_type(const std::string& type_name) {
+            SGL_ASSERT(details::is_correct_identifier(type_name), "incorrect type name");
             return m_types_val[std::type_index(typeid(T))] = register_type(type_name, std::make_shared<type>(details::sgl_type_identity<T>{}));
         }
         std::shared_ptr<type> register_type(const std::string& type_name, std::shared_ptr<type> type_ptr) {
+            SGL_ASSERT(details::is_correct_identifier(type_name), "incorrect type name");
             auto f = m_types.find(type_name);
             SGL_ASSERT(f == m_types.end(), "type with same name already exists in this state")
             m_types[type_name] = type_ptr;
@@ -39,15 +41,18 @@ namespace SGL {
         }
 
         void add_function(const std::string& name, const function& f) {
+            SGL_ASSERT(details::is_correct_identifier(name), "incorrect function name");
             m_functions[name].merge(f);
         }
         template<typename Ret, typename... Args>
         void add_function(const std::string& name, std::function<Ret(Args...)> f) {
+            SGL_ASSERT(details::is_correct_identifier(name), "incorrect function name");
             m_functions[name].add_overload(f);
         }
 
         template<typename Ret, typename... Args>
         void add_function_overload(const std::string& name, std::function<Ret(Args...)> f) {
+            SGL_ASSERT(details::is_correct_identifier(name), "incorrect function name");
             m_functions[name].add_overload(f);
         }
 

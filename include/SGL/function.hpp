@@ -27,7 +27,7 @@ namespace SGL {
             function_overload&operator=(function_overload&&) = default;
 
             template<typename Ret, typename... Args>
-            function_overload(std::function<Ret(Args...)> func) : args_types({value_type::construct_value_type<Args>()...}), m_func(get_function_impl(func, std::index_sequence_for<Args...>{})) {}
+            function_overload(std::function<Ret(Args...)> func) : m_func(get_function_impl(func, std::index_sequence_for<Args...>{})), args_types({value_type::construct_value_type<Args>()...}) {}
 
             template<typename Ret, typename... Args, size_t... N>
             static constexpr decltype(auto) get_function_impl(std::function<Ret(Args...)> func, std::index_sequence<N...>) {
@@ -41,8 +41,8 @@ namespace SGL {
                 };
             }
 
-            std::vector<std::shared_ptr<value_type>> args_types;
             std::function<value(std::initializer_list<std::reference_wrapper<value>>)> m_func;
+            std::vector<std::shared_ptr<value_type>> args_types;
             
             bool all_types = false;
             int all_args_count = 0;
@@ -54,10 +54,10 @@ namespace SGL {
             struct all_types_t {};
             //constructors for built-in functions
             function_overload(std::function<value(std::initializer_list<std::reference_wrapper<value>>)> f, std::vector<std::shared_ptr<value_type>> args) : m_func(f), args_types(args) {}
-            function_overload(std::function<value(std::initializer_list<std::reference_wrapper<value>>)> f, all_types_t all, int all_args_count = -1) : m_func(f), all_types(true), all_args_count(all_args_count) {}
+            function_overload(std::function<value(std::initializer_list<std::reference_wrapper<value>>)> f, all_types_t, int all_args_count = -1) : m_func(f), all_types(true), all_args_count(all_args_count) {}
             
             template<typename Ret, typename... Args>
-            function_overload(std::function<Ret(Args...)> func, std::vector<std::shared_ptr<value_type>> args) : args_types(args), m_func(get_function_impl(func, std::index_sequence_for<Args...>{})) {
+            function_overload(std::function<Ret(Args...)> func, std::vector<std::shared_ptr<value_type>> args) : m_func(get_function_impl(func, std::index_sequence_for<Args...>{})), args_types(args) {
                 SGL_ASSERT(args.size() == sizeof...(Args), "invalid args count");
             }
         };

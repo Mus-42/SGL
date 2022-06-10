@@ -17,7 +17,7 @@ int main() {
     struct no_sum {};
     struct has_sum {has_sum operator+(const has_sum&) { return {}; }};
     struct has_plus {has_sum operator+() { return {}; }};
-    struct has_subscript {int operator[](size_t i) { return 10; }};
+    struct has_subscript {int operator[](size_t) { return 10; }};
 
     std::cout << std::boolalpha << details::OperatorsExistCheck::op_sum<no_sum> << ' ' << details::OperatorsExistCheck::op_sum<has_sum> << std::endl;
     std::cout << std::boolalpha << details::OperatorsExistCheck::op_unary_plus<no_sum> << ' ' << details::OperatorsExistCheck::op_unary_plus<has_plus> << std::endl;
@@ -91,9 +91,7 @@ int main() {
         virtual ~base() { std::cout << "base destructed\n"; }
     };
     struct derived : base {
-        derived() {
-            std::cout << "derived constructed\n";
-        }
+        derived() { std::cout << "derived constructed\n"; }
         virtual void say() const override { std::cout << "im derived\n"; };
         virtual ~derived() { std::cout << "derived destructed\n"; }
     };
