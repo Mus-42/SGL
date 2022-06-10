@@ -49,16 +49,18 @@ namespace SGL {
     namespace details {
         class type_impl_base {
         public:
+            constexpr type_impl_base() : size(0) {}
             virtual void default_construct(void* data) const {}
             virtual void copy_construct(void* data, const void* from) const {}
             virtual void move_construct(void* data, void* from) const {}
-
             virtual void copy_assign(void* data, const void* from) const {}
             virtual void move_assign(void* data, void* from) const {}
 
             //TODO add custom constructors? (pass it as SGL::function?)
 
             virtual void destruct(void* data) const {}
+
+            virtual void free_ptr_of_t(void* data) const {}
 
             virtual ~type_impl_base() {}
             struct {
@@ -73,7 +75,7 @@ namespace SGL {
         };
 
         template<typename T>
-        class type_impl : public type_impl_base {//TODO add template specialization for void
+        class type_impl : public type_impl_base {
         public:
             constexpr type_impl() {
                 traits = {
@@ -84,8 +86,7 @@ namespace SGL {
                     std::is_copy_assignable_v<T>,
                     std::is_move_assignable_v<T>
                 };
-                if constexpr(std::is_same_v<T, void>) size = 0;
-                else size = sizeof(T);
+                size = sizeof(T);
             }
 
             virtual void default_construct(void* data) const override { 
@@ -105,12 +106,38 @@ namespace SGL {
                 if constexpr (std::is_move_assignable_v<T>) *static_cast<T*>(data) = std::move(*static_cast<T*>(from)); 
             }
 
+            virtual void free_ptr_of_t(void* data) const override {
+                delete static_cast<T*>(data);
+            }
+
             //TODO add custom constructors?
 
             virtual void destruct(void* data) const override {
-                if constexpr(!std::is_trivially_destructible_v<T> && !std::is_same_v<T, void>) static_cast<T*>(data)->~T();
+                if constexpr(!std::is_trivially_destructible_v<T>) static_cast<T*>(data)->~T();
             }
 
+            virtual ~type_impl() {}
+        };
+        
+        template<>
+        class type_impl<void> : public type_impl_base {
+        public:
+            constexpr type_impl() {
+                traits = { false, false, false, false, false };
+                size = 0;
+            }
+
+            virtual void default_construct(void* data) const override {}
+            virtual void copy_construct(void* data, const void* from) const override {}
+            virtual void move_construct(void* data, void* from) const override {}
+            virtual void copy_assign(void* data, const void* from) const override {}
+            virtual void move_assign(void* data, void* from) const override {}
+            
+            virtual void free_ptr_of_t(void* data) const override {
+                delete static_cast<char*>(data);
+            }
+
+            virtual void destruct(void* data) const override {}
 
             virtual ~type_impl() {}
         };
@@ -141,9 +168,10 @@ namespace SGL {
         void default_construct(void* data) const { m_impl->default_construct(data); }
         void copy_construct(void* data, const void* from) const { m_impl->copy_construct(data, from); }
         void move_construct(void* data, void* from) const { m_impl->move_construct(data, from); }
-        void destruct(void* data) const { m_impl->destruct(data); }
         void copy_assign(void* data, const void* from) const { m_impl->copy_assign(data, from); }
         void move_assign(void* data, void* from) const { m_impl->move_assign(data, from); }
+        void free_ptr_of_t(void* data) const { m_impl->free_ptr_of_t(data); }
+        void destruct(void* data) const { m_impl->destruct(data); }
 /*
         template<typename T, typename U> type& add_member(const std::string& member_name, U T::*member_ptr) {
             check_type<T>();
@@ -280,15 +308,6 @@ namespace SGL {
                 //TODO array
             }
         }
-        void destruct(void*& data) const {
-            if(m_traits.is_pointer || m_traits.is_reference) {
-                //pointers must be freed manually
-            }
-            else if(m_traits.is_final_v) m_base_type->destruct(data);
-            else {
-                //TODO array
-            }
-        }
         void copy_assign(void*& data, void* from) const {
             //move ref|value|array
             if(m_traits.is_pointer || m_traits.is_reference) data = from;
@@ -305,6 +324,19 @@ namespace SGL {
                 //TODO array
             }
         }
+        void free_ptr_of_t(void* data) const {
+            if(m_traits.is_final_v) m_base_type->free_ptr_of_t(data);
+        }
+        void destruct(void*& data) const {
+            if(m_traits.is_pointer || m_traits.is_reference) {
+                //pointers must be freed manually
+            }
+            else if(m_traits.is_final_v) m_base_type->destruct(data);
+            else {
+                //TODO array
+            }
+        }
+
     //protected:
         friend class value;
         friend class evaluator;
