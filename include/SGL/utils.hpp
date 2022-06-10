@@ -124,55 +124,17 @@ namespace SGL {
             //overloads which compiler choose if operator not exist (and... it generate compile time error if function marked as deleted.)
             
             //TODO FIX IT IN GCC (compile time error in each use case when operator not exist)
+            #define SGL_HAS_UNARY_OPERATOR_EMPTY_OPERATOR
+            #define SGL_CREATE_HAS_UNARY_OPERATOR_IMPL(name, pref, post)\
+            template<typename A> auto has_##name##_operator_impl(int) -> decltype(pref std::declval<A>() post);\
+            template<typename> auto has_##name##_operator_impl(...) -> NotExits;\
+            template<typename A> constexpr static bool op_##name = !std::is_same_v<decltype(has_##name##_operator_impl<A>(0)), NotExits>;
 
-            //unary
-            template<typename A> NotExits operator+(A);
-            template<typename A> NotExits operator-(A);
-            template<typename A> NotExits operator~(A);
-            template<typename A> NotExits operator!(A);
-            template<typename A> NotExits operator*(A);
-            template<typename A> NotExits operator&(A);
+            #define SGL_CREATE_HAS_OPERATOR_IMPL(name, operator)\
+            template<typename A, typename B> auto has_##name##_operator_impl(int) -> decltype(std::declval<A>() operator std::declval<B>());\
+            template<typename, typename> auto has_##name##_operator_impl(...) -> NotExits;\
+            template<typename A, typename B = A> constexpr static bool op_##name = !std::is_same_v<decltype(has_##name##_operator_impl<A, B>(0)), NotExits>;
 
-            template<typename A> NotExits operator++(A);//prefix
-            template<typename A> NotExits operator--(A);//prefix
-
-            template<typename A> NotExits operator++(A, int);//postfix
-            template<typename A> NotExits operator--(A, int);//postfix
-            
-            //binary
-            template<typename A, typename B> NotExits operator+(A, B);
-            template<typename A, typename B> NotExits operator-(A, B);
-            template<typename A, typename B> NotExits operator*(A, B);
-            template<typename A, typename B> NotExits operator/(A, B);
-            template<typename A, typename B> NotExits operator%(A, B);
-
-            template<typename A, typename B> NotExits operator+=(A, B);
-            template<typename A, typename B> NotExits operator-=(A, B);
-            template<typename A, typename B> NotExits operator*=(A, B);
-            template<typename A, typename B> NotExits operator/=(A, B);
-            template<typename A, typename B> NotExits operator%=(A, B);
-
-            template<typename A, typename B> NotExits operator|(A, B);
-            template<typename A, typename B> NotExits operator&(A, B);
-            template<typename A, typename B> NotExits operator^(A, B);
-            template<typename A, typename B> NotExits operator<<(A, B);
-            template<typename A, typename B> NotExits operator>>(A, B);
-
-            template<typename A, typename B> NotExits operator|=(A, B);
-            template<typename A, typename B> NotExits operator&=(A, B);
-            template<typename A, typename B> NotExits operator^=(A, B);
-            template<typename A, typename B> NotExits operator<<=(A, B);
-            template<typename A, typename B> NotExits operator>>=(A, B);
-
-            template<typename A, typename B> NotExits operator==(A, B);
-            template<typename A, typename B> NotExits operator!=(A, B);
-            template<typename A, typename B> NotExits operator>(A, B);
-            template<typename A, typename B> NotExits operator<(A, B);
-            template<typename A, typename B> NotExits operator>=(A, B);
-            template<typename A, typename B> NotExits operator<=(A, B);
-
-            template<typename A, typename B> NotExits operator||(A, B);
-            template<typename A, typename B> NotExits operator&&(A, B);
             /*
                 in this way can't check following operators:
 
@@ -181,52 +143,57 @@ namespace SGL {
                 a<=>b (library writen in C++17)
                 a.b a?b:c  (non overloadable)
             */
+
+            SGL_CREATE_HAS_UNARY_OPERATOR_IMPL(unary_plus , +, SGL_HAS_UNARY_OPERATOR_EMPTY_OPERATOR)//+a
+            SGL_CREATE_HAS_UNARY_OPERATOR_IMPL(unary_minus, -, SGL_HAS_UNARY_OPERATOR_EMPTY_OPERATOR)//-a
+            SGL_CREATE_HAS_UNARY_OPERATOR_IMPL(bitwise_not, ~, SGL_HAS_UNARY_OPERATOR_EMPTY_OPERATOR)//~a
+            SGL_CREATE_HAS_UNARY_OPERATOR_IMPL(not        , !, SGL_HAS_UNARY_OPERATOR_EMPTY_OPERATOR)//!a
+            SGL_CREATE_HAS_UNARY_OPERATOR_IMPL(deref      , *, SGL_HAS_UNARY_OPERATOR_EMPTY_OPERATOR)//*a
+            SGL_CREATE_HAS_UNARY_OPERATOR_IMPL(adress_of  , &, SGL_HAS_UNARY_OPERATOR_EMPTY_OPERATOR)//&a
+
+            SGL_CREATE_HAS_UNARY_OPERATOR_IMPL(prefix_incr, ++, SGL_HAS_UNARY_OPERATOR_EMPTY_OPERATOR)//++a
+            SGL_CREATE_HAS_UNARY_OPERATOR_IMPL(prefix_decr, --, SGL_HAS_UNARY_OPERATOR_EMPTY_OPERATOR)//--a
+            SGL_CREATE_HAS_UNARY_OPERATOR_IMPL(postfix_incr, SGL_HAS_UNARY_OPERATOR_EMPTY_OPERATOR, ++)//a++
+            SGL_CREATE_HAS_UNARY_OPERATOR_IMPL(postfix_decr, SGL_HAS_UNARY_OPERATOR_EMPTY_OPERATOR, --)//a--
+
+            //binary
+            SGL_CREATE_HAS_OPERATOR_IMPL(sum, +)//a+b
+            SGL_CREATE_HAS_OPERATOR_IMPL(sub, -)//a-b
+            SGL_CREATE_HAS_OPERATOR_IMPL(mul, *)//a*b
+            SGL_CREATE_HAS_OPERATOR_IMPL(div, /)//a/b
+            SGL_CREATE_HAS_OPERATOR_IMPL(mod, %)//a%b
+
+            SGL_CREATE_HAS_OPERATOR_IMPL(sum_assign, +=)//a+=b
+            SGL_CREATE_HAS_OPERATOR_IMPL(sub_assign, -=)//a-=b
+            SGL_CREATE_HAS_OPERATOR_IMPL(mul_assign, *=)//a*=b
+            SGL_CREATE_HAS_OPERATOR_IMPL(div_assign, /=)//a/=b
+            SGL_CREATE_HAS_OPERATOR_IMPL(mod_assign, %=)//a%=b
+
+            SGL_CREATE_HAS_OPERATOR_IMPL(bitwise_or , | )//a|b
+            SGL_CREATE_HAS_OPERATOR_IMPL(bitwise_and, & )//a&b
+            SGL_CREATE_HAS_OPERATOR_IMPL(bitwise_xor, ^ )//a^b
+            SGL_CREATE_HAS_OPERATOR_IMPL(bitwise_lsh, <<)//a<<b
+            SGL_CREATE_HAS_OPERATOR_IMPL(bitwise_rsh, >>)//a>>b
+
+            SGL_CREATE_HAS_OPERATOR_IMPL(bitwise_or_assign , |= )//a|=b
+            SGL_CREATE_HAS_OPERATOR_IMPL(bitwise_and_assign, &= )//a&=b
+            SGL_CREATE_HAS_OPERATOR_IMPL(bitwise_xor_assign, ^= )//a^=b
+            SGL_CREATE_HAS_OPERATOR_IMPL(bitwise_lsh_assign, <<=)//a<<=b
+            SGL_CREATE_HAS_OPERATOR_IMPL(bitwise_rsh_assign, >>=)//a>>=b
+
+            SGL_CREATE_HAS_OPERATOR_IMPL(equal      , ==)//a==b
+            SGL_CREATE_HAS_OPERATOR_IMPL(not_equal  , !=)//a!=b
+            SGL_CREATE_HAS_OPERATOR_IMPL(less       , > )//a>b
+            SGL_CREATE_HAS_OPERATOR_IMPL(greater    , < )//a<b
+            SGL_CREATE_HAS_OPERATOR_IMPL(not_less   , >=)//a>=b
+            SGL_CREATE_HAS_OPERATOR_IMPL(not_greater, <=)//a<=b
             
-            template<typename A, typename B = A> constexpr bool op_unary_plus  = !std::is_same_v<decltype(+std::declval<A>()), NotExits>;//+a
-            template<typename A, typename B = A> constexpr bool op_unary_minus = !std::is_same_v<decltype(-std::declval<A>()), NotExits>;//-a
-            template<typename A, typename B = A> constexpr bool op_bitwise_not = !std::is_same_v<decltype(~std::declval<A>()), NotExits>;//~a
-            template<typename A, typename B = A> constexpr bool op_not         = !std::is_same_v<decltype(!std::declval<A>()), NotExits>;//!a
-            template<typename A, typename B = A> constexpr bool op_deref       = !std::is_same_v<decltype(*std::declval<A>()), NotExits>;//*a
-            template<typename A, typename B = A> constexpr bool op_adress_of   = !std::is_same_v<decltype(&std::declval<A>()), NotExits>;//&a
-
-            template<typename A, typename B = A> constexpr bool op_sum = !std::is_same_v<decltype(std::declval<A>() + std::declval<B>()), NotExits>;//a+b
-            template<typename A, typename B = A> constexpr bool op_sub = !std::is_same_v<decltype(std::declval<A>() - std::declval<B>()), NotExits>;//a-b
-            template<typename A, typename B = A> constexpr bool op_mul = !std::is_same_v<decltype(std::declval<A>() * std::declval<B>()), NotExits>;//a*b
-            template<typename A, typename B = A> constexpr bool op_div = !std::is_same_v<decltype(std::declval<A>() / std::declval<B>()), NotExits>;//a/b
-            template<typename A, typename B = A> constexpr bool op_mod = !std::is_same_v<decltype(std::declval<A>() % std::declval<B>()), NotExits>;//a%b
-
-            template<typename A, typename B = A> constexpr bool op_sum_assign = !std::is_same_v<decltype(std::declval<A>() += std::declval<B>()), NotExits>;//a+=b
-            template<typename A, typename B = A> constexpr bool op_dif_assign = !std::is_same_v<decltype(std::declval<A>() -= std::declval<B>()), NotExits>;//a-=b
-            template<typename A, typename B = A> constexpr bool op_mul_assign = !std::is_same_v<decltype(std::declval<A>() *= std::declval<B>()), NotExits>;//a*=b
-            template<typename A, typename B = A> constexpr bool op_div_assign = !std::is_same_v<decltype(std::declval<A>() /= std::declval<B>()), NotExits>;//a/=b
-            template<typename A, typename B = A> constexpr bool op_mod_assign = !std::is_same_v<decltype(std::declval<A>() %= std::declval<B>()), NotExits>;//a%=b
-
-            template<typename A, typename B = A> constexpr bool op_bitwise_or  = !std::is_same_v<decltype(std::declval<A>() | std::declval<B>()), NotExits>;//a|b
-            template<typename A, typename B = A> constexpr bool op_bitwise_and = !std::is_same_v<decltype(std::declval<A>() & std::declval<B>()), NotExits>;//a&b
-            template<typename A, typename B = A> constexpr bool op_bitwise_xor = !std::is_same_v<decltype(std::declval<A>() ^ std::declval<B>()), NotExits>;//a^b
-            template<typename A, typename B = A> constexpr bool op_bitwise_lsh = !std::is_same_v<decltype(std::declval<A>() << std::declval<B>()), NotExits>;//a<<b
-            template<typename A, typename B = A> constexpr bool op_bitwise_rsh = !std::is_same_v<decltype(std::declval<A>() >> std::declval<B>()), NotExits>;//a>>b
-
-            template<typename A, typename B = A> constexpr bool op_bitwise_or_assing  = !std::is_same_v<decltype(std::declval<A>() |= std::declval<B>()), NotExits>;//a|=b
-            template<typename A, typename B = A> constexpr bool op_bitwise_and_assing = !std::is_same_v<decltype(std::declval<A>() &= std::declval<B>()), NotExits>;//a&=b
-            template<typename A, typename B = A> constexpr bool op_bitwise_xor_assing = !std::is_same_v<decltype(std::declval<A>() ^= std::declval<B>()), NotExits>;//a^=b
-            template<typename A, typename B = A> constexpr bool op_bitwise_lsh_assing = !std::is_same_v<decltype(std::declval<A>() <<= std::declval<B>()), NotExits>;//a<<=b
-            template<typename A, typename B = A> constexpr bool op_bitwise_rsh_assing = !std::is_same_v<decltype(std::declval<A>() >>= std::declval<B>()), NotExits>;//a>>=b
-
-            template<typename A, typename B = A> constexpr bool op_equal =        !std::is_same_v<decltype(std::declval<A>() == std::declval<B>()), NotExits>;//a==b
-            template<typename A, typename B = A> constexpr bool op_not_equal =    !std::is_same_v<decltype(std::declval<A>() != std::declval<B>()), NotExits>;//a!=b
-            template<typename A, typename B = A> constexpr bool op_less =         !std::is_same_v<decltype(std::declval<A>() < std::declval<B>()), NotExits>; //a<b
-            template<typename A, typename B = A> constexpr bool op_greater =      !std::is_same_v<decltype(std::declval<A>() > std::declval<B>()), NotExits>; //a>b
-            template<typename A, typename B = A> constexpr bool op_not_less =     !std::is_same_v<decltype(std::declval<A>() >= std::declval<B>()), NotExits>;//a>=b
-            template<typename A, typename B = A> constexpr bool op_not_greater =  !std::is_same_v<decltype(std::declval<A>() <= std::declval<B>()), NotExits>;//a<=b
-
-            template<typename A, typename B = A> constexpr bool op_or  = !std::is_same_v<decltype(std::declval<A>() || std::declval<B>()), NotExits>;//a||b
-            template<typename A, typename B = A> constexpr bool op_and = !std::is_same_v<decltype(std::declval<A>() && std::declval<B>()), NotExits>;//a&&b
-
-
+            SGL_CREATE_HAS_OPERATOR_IMPL(or , ||)//a||b
+            SGL_CREATE_HAS_OPERATOR_IMPL(and, &&)//a&&b
+            
             template<typename T, typename index> auto has_subscript_operator_impl(int) -> decltype(std::declval<T>()[std::declval<index>()]);
             template<typename, typename> auto has_subscript_operator_impl(...) -> NotExits;
-
+    
             template<typename T, typename index = size_t> constexpr static bool op_subscript = !std::is_same_v<decltype(has_subscript_operator_impl<T, index>(0)), NotExits>;//a[i]
         }//namespace OperatorsExistCheck
     }//namespace details

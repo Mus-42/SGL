@@ -235,7 +235,7 @@ namespace SGL {
             if(m_type && m_data) {
                 m_type->destruct(m_data);
                 if(need_free_data) {
-                    delete m_data;
+                    delete static_cast<char*>(m_data);//TODO add free_pointer_of_t in type?
                     m_data = nullptr;
                     //TODO if array free all array
                 }
