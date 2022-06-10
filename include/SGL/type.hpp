@@ -58,8 +58,6 @@ namespace SGL {
 
             //TODO add custom constructors? (pass it as SGL::function?)
 
-            virtual void destruct(void* data) const {}
-
             virtual void free_ptr_of_t(void* data) const {}
 
             virtual ~type_impl_base() {}
@@ -112,20 +110,13 @@ namespace SGL {
 
             //TODO add custom constructors?
 
-            virtual void destruct(void* data) const override {
-                if constexpr(!std::is_trivially_destructible_v<T>) static_cast<T*>(data)->~T();
-            }
-
             virtual ~type_impl() {}
         };
         
         template<>
         class type_impl<void> : public type_impl_base {
         public:
-            constexpr type_impl() {
-                traits = { false, false, false, false, false };
-                size = 0;
-            }
+            constexpr type_impl() {}
 
             virtual void default_construct(void* data) const override {}
             virtual void copy_construct(void* data, const void* from) const override {}
@@ -136,8 +127,6 @@ namespace SGL {
             virtual void free_ptr_of_t(void* data) const override {
                 delete static_cast<char*>(data);
             }
-
-            virtual void destruct(void* data) const override {}
 
             virtual ~type_impl() {}
         };
@@ -158,23 +147,12 @@ namespace SGL {
 
         size_t size() const { return m_impl->size; }
 
-        //template<typename T> void default_construct(T& data) const { check_type<T>(); default_construct(&data); }
-        //template<typename T> void copy_construct(T& data, const T& from) const { check_type<T>(); copy_construct(&data, &from); }
-        //template<typename T> void move_construct(T& data, T&& from) const { check_type<T>(); move_construct(&data, &from); }
-        ////TODO add custom constructors?
-        //template<typename T> void destruct(T& data) const { check_type<T>(); destruct(&data); }
-        //
-        //template<typename T> void copy_assign(T& data, const T& from) const { check_type<T>(); copy_assign(&data, &from); }
-        //template<typename T> void move_assign(T& data, T&& from) const { check_type<T>(); move_assign(&data, &from); }
-
-        
         void default_construct(void* data) const { m_impl->default_construct(data); }
         void copy_construct(void* data, const void* from) const { m_impl->copy_construct(data, from); }
         void move_construct(void* data, void* from) const { m_impl->move_construct(data, from); }
         void copy_assign(void* data, const void* from) const { m_impl->copy_assign(data, from); }
         void move_assign(void* data, void* from) const { m_impl->move_assign(data, from); }
         void free_ptr_of_t(void* data) const { m_impl->free_ptr_of_t(data); }
-        void destruct(void* data) const { m_impl->destruct(data); }
 /*
         template<typename T, typename U> type& add_member(const std::string& member_name, U T::*member_ptr) {
             check_type<T>();
@@ -277,18 +255,6 @@ namespace SGL {
             }
         }
 
-
-
-        //template<typename T> void default_construct(T& data) const { check_type<T>(); default_construct(&data); }
-        //template<typename T> void copy_construct(T& data, const T& from) const { check_type<T>(); copy_construct(&data, &from); }
-        //template<typename T> void move_construct(T& data, T&& from) const { check_type<T>(); move_construct(&data, &from); }
-        ////TODO add custom constructors?
-        //template<typename T> void destruct(T& data) const { check_type<T>(); destruct(&data); }
-        //template<typename T> void copy_assign(T& data, const T& from) const { check_type<T>(); copy_assign(&data, &from); }
-        //template<typename T> void move_assign(T& data, T&& from) const { check_type<T>(); move_assign(&data, &from); }
-
-        //TODO implement
-        //here data is pointer to... data
         void default_construct(void*& data) const {
             //if ref|pointer - nullptr
             //if value - construct using m_type
@@ -331,17 +297,11 @@ namespace SGL {
                 //TODO array
             }
         }
-        void free_ptr_of_t(void* data) const {
+        void free_ptr_of_t(void*& data) const {
+            if(!data) return;
             if(m_traits.is_final_v) m_base_type->free_ptr_of_t(data);
-        }
-        void destruct(void*& data) const {
-            if(m_traits.is_pointer || m_traits.is_reference) {
-                //pointers must be freed manually
-            }
-            else if(m_traits.is_final_v) m_base_type->destruct(data);
-            else {
-                //TODO array
-            }
+            //TODO free array
+            data = nullptr;
         }
 
     //protected:
@@ -391,51 +351,55 @@ namespace SGL {
 
         //TODO move it to constuctor?
         template<typename T>
-        static std::shared_ptr<value_type> construct_value_type() {//TODO get T
+        static std::shared_ptr<value_type> construct_value_type(const std::shared_ptr<type>& base_type = std::make_shared<type>(details::sgl_type_identity<T>{})) {//TODO get T
             static_assert(!std::is_array_v<T>);
-            return construct_value_type_impl(details::sgl_type_identity<T>{});
+            return construct_value_type_impl(details::sgl_type_identity<T>{}, base_type);
         }
         //simple value
         template<typename T>
-        static std::shared_ptr<value_type> construct_value_type_impl(details::sgl_type_identity<T> v) {
+        static std::shared_ptr<value_type> construct_value_type_impl(details::sgl_type_identity<T> v, const std::shared_ptr<type>& base_type) {
             auto ret = std::make_shared<value_type>();
             ret->m_traits = m_traits_t(v);
             ret->m_traits.is_final_v = true;
-            ret->m_base_type = std::make_shared<type>(details::sgl_type_identity<T>{});
+            ret->m_base_type = base_type;;
             return ret;
         }
         //reference
         template<typename T>
-        static std::shared_ptr<value_type> construct_value_type_impl(details::sgl_type_identity<T&> v) {
+        static std::shared_ptr<value_type> construct_value_type_impl(details::sgl_type_identity<T&> v, const std::shared_ptr<type>& base_type) {
             auto ret = std::make_shared<value_type>();
-            ret->m_type = construct_value_type_impl(details::sgl_type_identity<T>{});
+            ret->m_type = construct_value_type_impl(details::sgl_type_identity<T>{}, base_type);
             ret->m_traits = m_traits_t(v);
             return ret;
         }
         //pointer
         template<typename T>
-        static std::shared_ptr<value_type> construct_value_type_impl(details::sgl_type_identity<T*> v) {
+        static std::shared_ptr<value_type> construct_value_type_impl(details::sgl_type_identity<T*> v, const std::shared_ptr<type>& base_type) {
             auto ret = std::make_shared<value_type>();
-            ret->m_type = construct_value_type_impl(details::sgl_type_identity<T>{});
+            ret->m_type = construct_value_type_impl(details::sgl_type_identity<T>{}, base_type);
             ret->m_traits = m_traits_t(v);
             return ret;
         }
-        template<typename T> static std::shared_ptr<value_type> construct_value_type_impl(details::sgl_type_identity<T*const> v) { 
+        template<typename T> static std::shared_ptr<value_type> construct_value_type_impl(details::sgl_type_identity<T*const> v, const std::shared_ptr<type>& base_type) { 
             auto ret = std::make_shared<value_type>();
-            ret->m_type = construct_value_type_impl(details::sgl_type_identity<T>{});
+            ret->m_type = construct_value_type_impl(details::sgl_type_identity<T>{}, base_type);
             ret->m_traits = m_traits_t(v);
             return ret;
         }
         
         //ignore volatile
-        template<typename T> static std::shared_ptr<value_type> construct_value_type_impl(details::sgl_type_identity<T*volatile> v) { return construct_value_type_impl(details::sgl_type_identity<T*>{}); }
-        template<typename T> static std::shared_ptr<value_type> construct_value_type_impl(details::sgl_type_identity<T*const volatile> v) { return construct_value_type_impl(details::sgl_type_identity<T*const>{}); }
+        template<typename T> static std::shared_ptr<value_type> construct_value_type_impl(details::sgl_type_identity<T*volatile> v, const std::shared_ptr<type>& base_type) { 
+            return construct_value_type_impl(details::sgl_type_identity<T*>{}, base_type); 
+        }
+        template<typename T> static std::shared_ptr<value_type> construct_value_type_impl(details::sgl_type_identity<T*const volatile> v, const std::shared_ptr<type>& base_type) { 
+            return construct_value_type_impl(details::sgl_type_identity<T*const>{}, base_type); 
+        }
         
         //array
         template<typename T>
-        static std::shared_ptr<value_type> construct_value_type_impl(details::sgl_type_identity<arr<T>> v) {
+        static std::shared_ptr<value_type> construct_value_type_impl(details::sgl_type_identity<arr<T>> v, const std::shared_ptr<type>& base_type) {
             auto ret = std::make_shared<value_type>();
-            ret->m_type = construct_value_type_impl(details::sgl_type_identity<T>{});
+            ret->m_type = construct_value_type_impl(details::sgl_type_identity<T>{}, base_type);
             ret->m_traits = m_traits_t(v);
             return ret;
         }

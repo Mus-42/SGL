@@ -50,13 +50,18 @@ namespace SGL {
         void add_function_overload(const std::string& name, std::function<Ret(Args...)> f) {
             m_functions[name].add_overload(f);
         }
-        
-        [[nodiscard]] std::shared_ptr<type> get_base_type(const std::string& name) {
+
+        [[nodiscard]] std::shared_ptr<type> get_base_type(const std::string& name) const {
             return m_types.at(name);
         }
         template<typename T, std::enable_if_t<details::is_base_type<T>, bool> = true>
-        [[nodiscard]] std::shared_ptr<type> get_base_type() {
+        [[nodiscard]] std::shared_ptr<type> get_base_type() const {
             return m_types_val.at(std::type_index(typeid(T)));
+        }
+        
+        template<typename T>
+        [[nodiscard]] std::shared_ptr<value_type> get_type() const {
+            return value_type::construct_value_type<T>(m_types_val.at(std::type_index(typeid(details::make_base_type_t<T>))));
         }
 
         function& get_function(const std::string& name) {
@@ -87,7 +92,7 @@ namespace SGL {
 
         void init() {   
             //builtin types:
-
+            register_type<void>("void");
             //integer
             register_type<builtin_types::sgl_int8_t >("int8" );
             register_type<builtin_types::sgl_int16_t>("int16");
@@ -117,16 +122,16 @@ namespace SGL {
             //TODO type for type (result of typeof)?
 
             //builtin functions:
-            add_function("addressof", {{{std::function<value(std::initializer_list<std::reference_wrapper<value>>)>([](std::initializer_list<std::reference_wrapper<value>> v)->value{
+            add_function("addressof", {{{std::function<value(std::initializer_list<std::reference_wrapper<value>>)>([this](std::initializer_list<std::reference_wrapper<value>> v)->value{
                 SGL_ASSERT(v.size() == 1, "addressof args count != 1");
                 auto& q = v.begin()->get();
-                if(q.is_const()) return { const_val<void*>(q.m_data) };
-                else return { val<void*>(q.m_data) };
+                if(q.is_const()) return { const_val<void*>(get_type<void*>(), q.m_data) };
+                else return { const_val<void*>(get_type<void*>(), q.m_data) };
             }), function::function_overload::all_types_t{}, 1} }});
-            add_function("sizeof", {{{std::function<value(std::initializer_list<std::reference_wrapper<value>>)>([](std::initializer_list<std::reference_wrapper<value>> v)->value{
+            add_function("sizeof", {{{std::function<value(std::initializer_list<std::reference_wrapper<value>>)>([this](std::initializer_list<std::reference_wrapper<value>> v)->value{
                 SGL_ASSERT(v.size() == 1, "sizeof args count != 1");
                 auto& q = v.begin()->get();
-                return { const_val<builtin_types::sgl_uint64_t>(q.m_type->size()) };
+                return { const_val<builtin_types::sgl_uint64_t>(get_type<builtin_types::sgl_uint64_t>(), q.m_type->size()) };
             }), function::function_overload::all_types_t{}, 1} }});
 
             //TODO register operators

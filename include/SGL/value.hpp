@@ -15,6 +15,7 @@ namespace SGL {
         template<typename T>
         struct [[nodiscard]] value_creator_base {
             value_creator_base() : m_type(value_type::construct_value_type<T>()) {}
+            explicit value_creator_base(std::shared_ptr<value_type> type) : m_type(type) {}
 
             std::shared_ptr<value_type> m_type;
             bool need_free_data = false;
@@ -26,15 +27,27 @@ namespace SGL {
 
         template<typename T>
         struct value_creator : public value_creator_base<T> {
-            [[nodiscard]] value_creator(const T& v) {//TODO add overload for move
-                this->m_data = new T(v);//`this->` required by GCC (idk why)
+            template<typename... Args>
+            [[nodiscard]] value_creator(Args... args) {
+                this->m_data = new T(args...);//`this->` required by GCC (idk why)
+                this->need_free_data = true;
+            }
+            template<typename... Args>
+            [[nodiscard]] explicit value_creator(std::shared_ptr<value_type> type, Args... args) : value_creator_base<T>(type) {
+                this->m_data = new T(args...);
                 this->need_free_data = true;
             }
         };
         template<typename T>
         struct const_value_creator : public value_creator_base<const T> {
-            [[nodiscard]] const_value_creator(const T& v) {
-                this->m_const_data = new const T(v);
+            template<typename... Args>
+            [[nodiscard]] const_value_creator(Args... args) {
+                this->m_const_data = new const T(args...);
+                this->need_free_data = true;
+            }
+            template<typename... Args>
+            [[nodiscard]] explicit const_value_creator(std::shared_ptr<value_type> type, Args... args) : value_creator_base<const T>(type) {
+                this->m_const_data = new const T(args...);
                 this->need_free_data = true;
             }
         };
@@ -233,13 +246,7 @@ namespace SGL {
 
         void free_data() {
             if(m_type && m_data) {
-                m_type->destruct(m_data);
-                if(need_free_data) {
-                    //delete static_cast<char*>(m_data);
-                    m_type->free_ptr_of_t(m_data);
-                    m_data = nullptr;
-                    //TODO if array free all array
-                }
+                m_type->free_ptr_of_t(m_data);
             }
         }
         union {

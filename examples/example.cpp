@@ -43,7 +43,7 @@ int main() {
     auto v = st.register_type<int>("my_int");
     SGL_ASSERT(v->m_type == typeid(int), "type check");
 
-    auto val_t = SGL::value_type::construct_value_type<arr<const int&>* const>();
+    auto val_t = SGL::value_type::construct_value_type<arr<const int>* const>();
 
     std::function<void(std::shared_ptr<SGL::value_type>)> type_print;
     type_print = [&type_print](std::shared_ptr<SGL::value_type> v){
@@ -85,7 +85,28 @@ int main() {
     std::cout << "arg1 size " << st.get_function("sizeof").call({arg1}).get<uint64_t>() << std::endl;
     std::cout << "arg2 size " << st.get_function("sizeof").call({arg2}).get<uint64_t>() << std::endl;
 
-    //, std::function<void(float)>([](float v){ 
-    //    std::cout << "f: " << v << std::endl;
-    //})
+    struct base {
+        base() {
+            std::cout << "base constructed\n";
+        }
+        virtual ~base() {
+            std::cout << "base destructed\n";
+        }
+    };
+    struct derived : base {
+        derived() {
+            std::cout << "derived constructed\n";
+        }
+        virtual ~derived() {
+            std::cout << "derived destructed\n";
+        }
+    };
+    std::cout << "CPP:\n";
+    {
+        derived{};
+    }
+    std::cout << "SGL:\n";
+    {
+        value(val<derived>{});
+    }
 }

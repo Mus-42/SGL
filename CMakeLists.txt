@@ -9,7 +9,7 @@ target_include_directories(SGL INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include/)
 #    CXX_EXTENSIONS NO
 #)
 
-option(sgl_build_examples "build examples" NO)
+option(sgl_build_examples "build examples" ON)
 
 if(sgl_build_examples) 
     add_subdirectory(examples)
