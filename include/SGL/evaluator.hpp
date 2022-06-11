@@ -26,7 +26,7 @@ namespace SGL {
                         v.value_v.m_type->m_base_type->m_type_name
 #else
                         v.value_v.m_type->m_base_type->m_type.name() 
-#endif
+#endif//SGL_OPTION_STORE_TYPE_NAME
                         << "] "; break; 
                     default: std::cout << "[invalid token] "; break;
                     }
