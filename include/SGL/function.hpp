@@ -15,9 +15,9 @@ namespace SGL {
 
     class function {
     protected:
-        friend class type;
-        friend class value;
         friend class state;
+        friend class value;
+        friend class operator_list;
 
         struct function_overload {
             function_overload() = default;
@@ -48,8 +48,10 @@ namespace SGL {
             int all_args_count = 0;
         protected:
             friend class function;
+
             friend class state;
             friend class value;
+            friend class operator_list;
 
             struct all_types_t {};
             //constructors for built-in functions
@@ -109,6 +111,10 @@ namespace SGL {
 
         //TODO add std::function<...> get_cpp_func()?
     protected:
+        function& add_overload(const function_overload& func) {
+            m_overloads.push_back(func);
+            return *this;
+        }
         std::vector<function_overload> m_overloads;
     };
 

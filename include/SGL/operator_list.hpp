@@ -3,10 +3,13 @@
 #define SGL_OPERATOR_LIST_HPP_INCLUDE_
 
 #include "config.hpp"
+#include "function.hpp"
+
+#include <array>
 #include <cstdint>
 
 namespace SGL {
-    enum class operator_list : uint8_t {//TODO rename to operator_name or something like this
+    enum class operator_type : uint8_t {
         op_none = 0,
         //unary: +a, -a, ++a, --a, a++, a--
         op_unary_plus, op_unary_minus, op_prefix_incr, op_prefix_decr, op_postfix_incr, op_postfix_decr,
@@ -26,10 +29,36 @@ namespace SGL {
         op_adress_of, op_deref,
         //TODO add other
 
+        
+        op_typecast,
 
         __op_count
     };
-    constexpr size_t operators_count = static_cast<size_t>(operator_list::__op_count);
+    constexpr size_t operators_count = static_cast<size_t>(operator_type::__op_count);
+
+    //TODO add operator priority list
+
+    class operator_list {
+    public:
+        value call_operator(operator_type op, std::initializer_list<std::reference_wrapper<value>> args) const {
+            return m_operators[static_cast<size_t>(op)].call(args);
+        };
+        template<operator_type op, typename Ret, typename... Args> 
+        void add_operator(std::function<Ret(Args...)> op_func) {
+            constexpr size_t op_index = static_cast<size_t>(op);
+            static_assert(op_index < operators_count, "invalid operator index");
+            m_operators[op_index].add_overload(op_func);
+        }
+    protected:
+        template<operator_type op> 
+        void add_operator(const function::function_overload& op_func) {
+            constexpr size_t op_index = static_cast<size_t>(op);
+            static_assert(op_index < operators_count, "invalid operator index");
+            m_operators[op_index].add_overload(op_func);
+        }
+        friend class state;
+        std::array<function, operators_count> m_operators;
+    };
 }//namespace SGL
 
 #endif//SGL_OPERATOR_LIST_HPP_INCLUDE_

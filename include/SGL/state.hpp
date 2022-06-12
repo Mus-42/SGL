@@ -12,7 +12,7 @@
 
 #include "type.hpp"
 #include "evaluator.hpp"
-#include "function.hpp"
+#include "operator_list.hpp"
 
 namespace SGL {
     class function;
@@ -83,17 +83,41 @@ namespace SGL {
         }
         evaluator get_evaluator() const && = delete;//not alloved for temp state (ref invalid afrer object destruction)
 
-    protected:
+        
+    //protected:
         friend class type;
         friend class value_type;
         friend class value;
         friend class evaluator;
 
-    private:
+        template<typename... Types> 
+        void add_typecast_between_types() {
+            (add_typecast_between_types_impl(details::sgl_type_identity<Types>{}, details::sgl_type_identity<Types...>{}), ...);
+        }
+        template<typename From, typename... To> 
+        void add_typecast_between_types_impl(details::sgl_type_identity<From>, details::sgl_type_identity<To...>) {
+            (add_typecast_types_impl(details::sgl_type_identity<From>{}, details::sgl_type_identity<To>{}), ...);
+        }
+        
+        template<typename T> 
+        void add_typecast_types_impl(details::sgl_type_identity<T>, details::sgl_type_identity<T>) {}//discard same type
+        
+        template<typename From, typename To> 
+        void add_typecast_types_impl(details::sgl_type_identity<From>, details::sgl_type_identity<To>) {
+            //TODO change signature to To(const From&) ?
+            m_operator_list.add_operator<operator_type::op_typecast>(std::function<To(From)>([](From v)->To{ 
+                std::cout << "typecats <" << get_type_name<From>() << "> to <" << get_type_name<To>() << '>' << std::endl;
+                return static_cast<To>(v);
+            }));
+        }
         std::unordered_map<std::string, std::shared_ptr<type>> m_types;
         std::unordered_map<std::type_index, std::shared_ptr<type>> m_types_val;
 
         std::unordered_map<std::string, function> m_functions;
+
+        operator_list m_operator_list;
+
+        //TODO add registred constructors?
 
         void init() {   
             //builtin types:

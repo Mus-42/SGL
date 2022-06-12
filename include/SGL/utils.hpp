@@ -31,6 +31,7 @@ namespace SGL {
             no_copy& operator=(no_copy&&) = default;
         };
 
+
         template<typename... T>
         struct sgl_type_identity {};
         template<typename T> 
@@ -38,6 +39,11 @@ namespace SGL {
             using type = T;
         };
 
+        template<typename... T>
+        sgl_type_identity<T...> make_type_identity() { return {}; } 
+
+        template<typename... T1, typename... T2>
+        sgl_type_identity<T1..., T2...> concat_type_identity(sgl_type_identity<T1...>, sgl_type_identity<T2...>) { return {}; }
 
         constexpr bool is_alpha(unsigned char ch) {//constexpr isalpha fucntion
             return ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z');

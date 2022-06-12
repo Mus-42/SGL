@@ -14,34 +14,34 @@ int main() {
     //some test code
     using namespace SGL;
 
-    struct no_sum {};
-    struct has_sum {has_sum operator+(const has_sum&) { return {}; }};
-    struct has_plus {has_sum operator+() { return {}; }};
-    struct has_subscript {int operator[](size_t) { return 10; }};
-
-    std::cout << std::boolalpha << details::OperatorsExistCheck::op_sum<no_sum> << ' ' << details::OperatorsExistCheck::op_sum<has_sum> << std::endl;
-    std::cout << std::boolalpha << details::OperatorsExistCheck::op_unary_plus<no_sum> << ' ' << details::OperatorsExistCheck::op_unary_plus<has_plus> << std::endl;
-    std::cout << std::boolalpha << details::OperatorsExistCheck::op_subscript<no_sum> << ' ' << details::OperatorsExistCheck::op_subscript<has_subscript> << std::endl;
-    
-    static_assert(details::OperatorsExistCheck::op_subscript<has_subscript>);
-    static_assert(details::OperatorsExistCheck::op_subscript<std::array<int, 10>>);
-    static_assert(!details::OperatorsExistCheck::op_subscript<has_sum>);
-
     //state().get_evaluator()//invalid 
 
     auto st = state();
     auto ev = st.get_evaluator();
 
-    ev.evaluate(tokenizer("int a = -100u * 10;"));
-    ev.evaluate(tokenizer("0xFFFF + 0b01101101u8"));
-    ev.evaluate(tokenizer("1.12 + 48u32"));
-    ev.evaluate(tokenizer("1.12e2"));
-    ev.evaluate(tokenizer("1.12e-2"));
-    ev.evaluate(tokenizer("1.12e+2f"));
-    ev.evaluate(tokenizer(R"("qq" + "\tall\n")"));
+    //ev.evaluate(tokenizer("int a = -100u * 10;"));
+    //ev.evaluate(tokenizer("0xFFFF + 0b01101101u8"));
+    //ev.evaluate(tokenizer("1.12 + 48u32"));
+    //ev.evaluate(tokenizer("1.12e2"));
+    //ev.evaluate(tokenizer("1.12e-2"));
+    //ev.evaluate(tokenizer("1.12e+2f"));
+    //ev.evaluate(tokenizer(R"("qq" + "\tall\n")"));
+    //ev.evaluate(tokenizer("auto v = {1, 4.26, \"mimsus\"};"));
 
     auto v = st.register_type<int>("my_int");
     SGL_ASSERT(v->m_type == typeid(int), "type check");
+
+    st.add_typecast_between_types<int, float, double>();
+    {
+        auto arg1 = value(val<int>(12));
+        auto arg2 = value(const_val<double>(12.42));
+
+        auto result = st.m_operator_list.call_operator(operator_type::op_typecast, {arg1});
+        //how it must coose correct operator (In wich type it must cast value)?
+        //TODO make typecast not-operator function? (as constructor) 
+
+        std::cout << result.get<float>() << std::endl;
+    }
 /*
     auto val_t = SGL::value_type::construct_value_type<arr<const int>* const>();
 
@@ -63,7 +63,8 @@ int main() {
     };
 
     type_print(val_t);
-*/
+//*/
+/*
     std::cout << std::endl;
     auto f = function({
         std::function<int(const int&)>([](const int& v){
@@ -117,4 +118,5 @@ int main() {
         auto b = value(const_ref<base>{d2.get<const derived&>()});
         b.get<const base&>().say();
     }
+    //*/
 }
