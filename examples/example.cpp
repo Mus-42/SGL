@@ -42,7 +42,7 @@ int main() {
 
     auto v = st.register_type<int>("my_int");
     SGL_ASSERT(v->m_type == typeid(int), "type check");
-
+/*
     auto val_t = SGL::value_type::construct_value_type<arr<const int>* const>();
 
     std::function<void(std::shared_ptr<SGL::value_type>)> type_print;
@@ -63,7 +63,7 @@ int main() {
     };
 
     type_print(val_t);
-
+*/
     std::cout << std::endl;
     auto f = function({
         std::function<int(const int&)>([](const int& v){
@@ -86,25 +86,35 @@ int main() {
     std::cout << "arg2 size " << st.get_function("sizeof").call({arg2}).get<uint64_t>() << std::endl;
 
     struct base {
-        base() { std::cout << "base constructed\n"; }
-        virtual void say() const { std::cout << "im base\n"; };
-        virtual ~base() { std::cout << "base destructed\n"; }
+        base() { std::cout << "base constructed" << std::endl; }
+        base& operator=(const base&) { std::cout << "base copied" << std::endl; return *this; }
+        virtual void say() const { std::cout << "im base" << std::endl; };
+        virtual ~base() { std::cout << "base destructed" << std::endl; }
     };
     struct derived : base {
-        derived() { std::cout << "derived constructed\n"; }
-        virtual void say() const override { std::cout << "im derived\n"; };
-        virtual ~derived() { std::cout << "derived destructed\n"; }
+        derived() { std::cout << "derived constructed" << std::endl; }
+        derived& operator=(const derived&) { std::cout << "derived copied" << std::endl; return *this; }
+        virtual void say() const override { std::cout << "im derived" << std::endl; };
+        virtual ~derived() { std::cout << "derived destructed" << std::endl; }
     };
-    std::cout << "CPP:\n";
+    std::cout << "CPP:" << std::endl;
     {
-        derived d;
-        const base& b = d;
+        derived d1;
+        derived d2;
+        d2 = d1;
+        d2.say();
+        auto d3 = d1;
+        const base& b = d2;
         b.say();
     }
-    std::cout << "SGL:\n";
+    std::cout << "SGL:" << std::endl;
     {
-        auto d = value(val<derived>{});
-        auto b = value(const_ref<base>{d.get<const derived&>()});
+        auto d1 = value(val<derived>{});
+        auto d2 = value(val<derived>{});
+        d2 = d1;
+        d2.get<const derived&>().say();
+        auto d3 = d1;
+        auto b = value(const_ref<base>{d2.get<const derived&>()});
         b.get<const base&>().say();
     }
 }

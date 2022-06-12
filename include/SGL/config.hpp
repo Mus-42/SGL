@@ -17,7 +17,7 @@
 //assertion macro
 #ifndef SGL_ASSERT
 #include <iostream>//std::cerr
-#if SGL_OPTION_ENABLE_ASSERT
+#if SGL_OPTION_ENABLE_ASSERT//TODO throw exception when assertion failed (after log?)?
 #define SGL_ASSERT(v, msg) {if(!(v)) { std::cerr << "SGL assertion failed (l:" << __LINE__ << " f:" << __FUNCTION__  << ") " << (msg) << std::endl; }}
 #else
 #define SGL_ASSERT(v, msg) {}
@@ -32,7 +32,7 @@ namespace SGL::details {
         std::cerr << "SGL tokenize error (l: " << line << ", c:" << collumn << "): " << desc << std::endl;
     }
 }//SGL::details
-#define SGL_TOKENIZE_ERROR(desc, line, collumn) {SGL::details::sgl_tokenize_error_impl(desc, line, collumn); }
+#define SGL_TOKENIZE_ERROR(desc, line, collumn) {SGL::details::sgl_tokenize_error_impl(desc, line, collumn); }//TODO replace with exceptions
 #endif//SGL_TOKENIZE_ERROR
 
 

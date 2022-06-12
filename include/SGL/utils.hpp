@@ -43,7 +43,7 @@ namespace SGL {
             return ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z');
         }
         constexpr bool is_num(unsigned char ch) {//constexpr isnum fucntion
-            return ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z');
+            return '0' <= ch && ch <= '9';
         }
         constexpr bool is_alnum(unsigned char ch) {//constexpr isalnum fucntion
             return is_alpha(ch) || is_num(ch);

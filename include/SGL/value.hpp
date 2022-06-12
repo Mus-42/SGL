@@ -110,10 +110,10 @@ namespace SGL {
             }
         }
         value& operator=(value&& v) {
+            if(this == &v) return *this;
             free_data();
             m_type = std::move(v.m_type);
             need_free_data = v.need_free_data;
-
 
             //if(m_type && v.m_data) {
             //    if(!(is_reference() || is_pointer())) m_data = new char[m_type->size()];//TODO move to value_type? 
@@ -126,13 +126,17 @@ namespace SGL {
             return *this;
         }
         value& operator=(const value& v) { 
+            if(this == &v) return *this;
+            if(*m_type == *v.m_type) {
+                m_type->copy_assign(m_data, v.m_data);
+                return *this;
+            }
             free_data();
             m_type = v.m_type;
             need_free_data = v.need_free_data;
-
             if(m_type && v.m_data) {
                 if(!(is_reference() || is_pointer())) m_data = new char[m_type->size()];//TODO move to value_type? 
-                m_type->copy_assign(m_data, v.m_data);
+                m_type->copy_construct(m_data, v.m_data);
             }
             
             return *this;

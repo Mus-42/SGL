@@ -50,15 +50,17 @@ namespace SGL {
         class type_impl_base {
         public:
             constexpr type_impl_base() : size(0) {}
-            virtual void default_construct([[maybe_unused]] void* data) const {}
-            virtual void copy_construct([[maybe_unused]] void* data, [[maybe_unused]] const void* from) const {}
-            virtual void move_construct([[maybe_unused]] void* data, [[maybe_unused]] void* from) const {}
-            virtual void copy_assign([[maybe_unused]] void* data, [[maybe_unused]] const void* from) const {}
-            virtual void move_assign([[maybe_unused]] void* data, [[maybe_unused]] void* from) const {}
+            virtual void default_construct([[maybe_unused]] void* data) const = 0;
+            virtual void copy_construct([[maybe_unused]] void* data, [[maybe_unused]] const void* from) const = 0;
+            virtual void move_construct([[maybe_unused]] void* data, [[maybe_unused]] void* from) const = 0;
+            virtual void copy_assign([[maybe_unused]] void* data, [[maybe_unused]] const void* from) const = 0;
+            virtual void move_assign([[maybe_unused]] void* data, [[maybe_unused]] void* from) const = 0;
 
             //TODO add custom constructors? (pass it as SGL::function?)
 
-            virtual void free_ptr_of_t([[maybe_unused]] void* data) const {}
+            //TODO add create_ptr_of_t? (and array version?)
+            virtual void free_ptr_of_t([[maybe_unused]] void* data) const = 0;
+            //TODO add free_array_ptr_of_t? 
 
             virtual ~type_impl_base() {}
             struct {

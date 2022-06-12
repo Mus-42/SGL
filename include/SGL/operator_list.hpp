@@ -6,7 +6,7 @@
 #include <cstdint>
 
 namespace SGL {
-    enum class operator_list : uint8_t {
+    enum class operator_list : uint8_t {//TODO rename to operator_name or something like this
         op_none = 0,
         //unary: +a, -a, ++a, --a, a++, a--
         op_unary_plus, op_unary_minus, op_prefix_incr, op_prefix_decr, op_postfix_incr, op_postfix_decr,
@@ -25,9 +25,11 @@ namespace SGL {
         //pointer: &a, *a
         op_adress_of, op_deref,
         //TODO add other
+
+
         __op_count
     };
-    constexpr size_t op_list_operator_count = static_cast<size_t>(operator_list::__op_count);
+    constexpr size_t operators_count = static_cast<size_t>(operator_list::__op_count);
 }//namespace SGL
 
 #endif//SGL_OPERATOR_LIST_HPP_INCLUDE_
