@@ -19,14 +19,14 @@ int main() {
     auto st = state();
     auto ev = st.get_evaluator();
 
-    //ev.evaluate(tokenizer("int a = -100u * 10;"));
-    //ev.evaluate(tokenizer("0xFFFF + 0b01101101u8"));
-    //ev.evaluate(tokenizer("1.12 + 48u32"));
-    //ev.evaluate(tokenizer("1.12e2"));
-    //ev.evaluate(tokenizer("1.12e-2"));
-    //ev.evaluate(tokenizer("1.12e+2f"));
-    //ev.evaluate(tokenizer(R"("qq" + "\tall\n")"));
-    //ev.evaluate(tokenizer("auto v = {1, 4.26, \"mimsus\"};"));
+    ev.evaluate(tokenizer("int a = -100u * 10;"));
+    ev.evaluate(tokenizer("0xFFFF + 0b01101101u8"));
+    ev.evaluate(tokenizer("1.12 + 48u32"));
+    ev.evaluate(tokenizer("1.12e2"));
+    ev.evaluate(tokenizer("1.12e-2"));
+    ev.evaluate(tokenizer("1.12e+2f"));
+    ev.evaluate(tokenizer(R"("qq" + "\tall\n")"));
+    ev.evaluate(tokenizer("auto v = {1, 4.26, \"mimsus\"};"));
 
     auto v = st.register_type<int>("my_int");
     SGL_ASSERT(v->m_type == typeid(int), "type check");

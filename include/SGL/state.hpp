@@ -96,16 +96,16 @@ namespace SGL {
         }
         template<typename From, typename... To> 
         void add_typecast_between_types_impl(details::sgl_type_identity<From>, details::sgl_type_identity<To...>) {
-            (add_typecast_types_impl(details::sgl_type_identity<From>{}, details::sgl_type_identity<To>{}), ...);
+            (add_typecast_between_impl(details::sgl_type_identity<From>{}, details::sgl_type_identity<To>{}), ...);
         }
         
         template<typename T> 
-        void add_typecast_types_impl(details::sgl_type_identity<T>, details::sgl_type_identity<T>) {}//discard same type
+        void add_typecast_between_impl(details::sgl_type_identity<T>, details::sgl_type_identity<T>) {}//discard same type
         
         template<typename From, typename To> 
-        void add_typecast_types_impl(details::sgl_type_identity<From>, details::sgl_type_identity<To>) {
+        void add_typecast_between_impl(details::sgl_type_identity<From>, details::sgl_type_identity<To>) requires(requires (From v) { static_cast<To>(v); }) {
             //TODO change signature to To(const From&) ?
-            m_operator_list.add_operator<operator_type::op_typecast>(std::function<To(From)>([](From v)->To{ 
+            m_operator_list.add_operator<operator_type::op_typecast>(std::function<To(const From&)>([](const From& v)->To{ 
                 std::cout << "typecats <" << get_type_name<From>() << "> to <" << get_type_name<To>() << '>' << std::endl;
                 return static_cast<To>(v);
             }));

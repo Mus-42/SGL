@@ -9,6 +9,7 @@
 #include <string>
 #include <memory>//smart pointers
 #include <unordered_map>
+#include <sstream>//type::to_string()
 
 #include <type_traits>
 
@@ -60,6 +61,7 @@ namespace SGL {
 
             //TODO add create_ptr_of_t? (and array version?)
             virtual void free_ptr_of_t([[maybe_unused]] void* data) const = 0;
+            virtual std::string to_string([[maybe_unused]] const void* data) const = 0;
             //TODO add free_array_ptr_of_t? 
 
             virtual ~type_impl_base() {}
@@ -111,6 +113,24 @@ namespace SGL {
                 delete static_cast<T*>(data);
             }
 
+            virtual std::string to_string(const void* data) const override {
+                const T& v = *static_cast<const T*>(data);
+                if constexpr(requires(const T& v) {
+                    { std::to_string(v) } -> std::convertible_to<std::string>;
+                }) return std::to_string(v);//cast char as integer type
+                else if constexpr(requires(const T& v) {
+                    { v.to_string() } -> std::convertible_to<std::string>;
+                }) {
+                    return v.to_string();
+                } else if constexpr(requires(const T& v, std::ostream out) {
+                    out << v;
+                }) {
+                    std::ostringstream s;
+                    s << v;
+                    return s.str();
+                } else return "[value of type " + get_type_name<T>() + "]"; 
+            }
+
             //TODO add custom constructors?
 
             virtual ~type_impl() {}
@@ -129,6 +149,10 @@ namespace SGL {
             
             virtual void free_ptr_of_t(void* data) const override {
                 delete static_cast<char*>(data);
+            }
+            
+            virtual std::string to_string(const void*) const override {
+                return "[void]";    
             }
 
             virtual ~type_impl() {}
@@ -156,6 +180,8 @@ namespace SGL {
         void copy_assign(void* data, const void* from) const { m_impl->copy_assign(data, from); }
         void move_assign(void* data, void* from) const { m_impl->move_assign(data, from); }
         void free_ptr_of_t(void* data) const { m_impl->free_ptr_of_t(data); }
+
+        std::string to_string(const void* data) const { return m_impl->to_string(data); }
 /*
         template<typename T, typename U> type& add_member(const std::string& member_name, U T::*member_ptr) {
             check_type<T>();
@@ -323,6 +349,11 @@ namespace SGL {
             if(m_traits.is_final_v) m_base_type->free_ptr_of_t(data);
             //TODO free array
             data = nullptr;
+        }
+
+        std::string to_string(const void* data) const {
+            if(m_traits.is_final_v || (m_traits.is_reference && m_type->m_traits.is_final_v)) return m_base_type->to_string(data);
+            else return {};//TODO add value of type ... here?
         }
 
     //protected:
