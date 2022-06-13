@@ -31,6 +31,7 @@ int main() {
     auto v = st.register_type<int>("my_int");
     SGL_ASSERT(v->m_type == typeid(int), "type check");
 
+
     st.add_typecast_between_types<int, float, double>();
     {
         auto arg1 = value(val<int>(12));
@@ -120,3 +121,18 @@ int main() {
     }
     //*/
 }
+
+struct addable1 {};
+addable1 operator+(const addable1& a, const addable1& b) { return {}; }
+struct addable2 {};
+namespace addable2_operator_sum {
+    addable2 operator+(const addable2& a, const addable2& b) { return {}; }
+}
+struct unaddable1 {};
+struct unaddable2 {};
+unaddable2 operator+(const unaddable2& a, const unaddable2& b) = delete;
+
+static_assert(SGL::details::has_op_sum<addable1>);
+static_assert(!SGL::details::has_op_sum<addable2>);
+static_assert(!SGL::details::has_op_sum<unaddable1>);
+static_assert(!SGL::details::has_op_sum<unaddable2>);
