@@ -141,7 +141,6 @@ namespace SGL {
     public:
         template<typename T>
         [[nodiscard]] explicit type(details::sgl_type_identity<T>) : m_impl(new details::type_impl<T>), m_type(typeid(T)) {
-            //SGL_ASSERT(is_correct_identifier(type_name), "type name is incorrect");
 #if defined(SGL_OPTION_STORE_TYPE_NAME) && SGL_OPTION_STORE_TYPE_NAME
             m_type_name = get_type_name<T>();
 #endif//SGL_OPTION_STORE_TYPE_NAME
@@ -193,14 +192,14 @@ namespace SGL {
 #endif//SGL_OPTION_STORE_TYPE_NAME
 
         //std::unordered_map<std::string, std::pair<const type*, size_t>> m_members;//name, type, offset of member
-
+/*
         template<typename T>
-        void check_type() const {
+        void check_type() const {//TODO remove it
 #if defined(SGL_OPTION_TYPE_CHECKS) && SGL_OPTION_TYPE_CHECKS
             SGL_ASSERT(m_impl && m_type == typeid(T), "type specified in constructor call must me same with T");
 #endif//SGL_OPTION_TYPE_CHECKS
         }
-
+*/
 
         //TODO not-template constructor. (for *.sgl deifned types). cannot cast value to C++ type. but can cast members?
 /*

@@ -32,7 +32,7 @@ namespace SGL {
             template<typename Ret, typename... Args, size_t... N>
             static constexpr decltype(auto) get_function_impl(std::function<Ret(Args...)> func, std::index_sequence<N...>) {
                 return [func](std::initializer_list<std::reference_wrapper<value>> args) -> value {
-                    SGL_ASSERT(sizeof...(Args) == args.size(), "invalid args count");
+                    if(sizeof...(Args) != args.size()) throw std::runtime_error("sgl function_overload: invalid args count");
                     if constexpr(std::is_same_v<Ret, void>) {
                         func((std::data(args)[N]).get().get<Args>() ...);
                         return value();            
@@ -60,7 +60,7 @@ namespace SGL {
             
             template<typename Ret, typename... Args>
             function_overload(std::function<Ret(Args...)> func, std::vector<std::shared_ptr<value_type>> args) : m_func(get_function_impl(func, std::index_sequence_for<Args...>{})), args_types(args) {
-                SGL_ASSERT(args.size() == sizeof...(Args), "invalid args count");
+                if(sizeof...(Args) != args.size()) throw std::runtime_error("sgl function_overload: invalid args count");
             }
         };
     public:
@@ -91,9 +91,9 @@ namespace SGL {
                 } else if(m_overloads[i].all_types && (m_overloads[i].all_args_count == (int)v.size() || m_overloads[i].all_args_count == -1)) {
                     indexes.push_back({i, 0});
                 }
-            SGL_ASSERT(indexes.size() > 0, "can't choose function overload");
+            if(indexes.size() == 0) throw std::runtime_error("can't choose function overload");
             std::sort(indexes.begin(), indexes.end(), [](auto a, auto b){ return a.second < b.second; });
-            SGL_ASSERT(indexes.size() == 1 || indexes[0].second < indexes[1].second, "can't choose function overload: more than 1 candidate with same priority");
+            if(indexes.size() != 1 && indexes[0].second == indexes[1].second) throw std::runtime_error("can't choose function overload: more than 1 candidate with same priority");
             return m_overloads[indexes.front().first].m_func(v);
         }
         

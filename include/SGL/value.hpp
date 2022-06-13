@@ -4,9 +4,15 @@
 
 #include "config.hpp"
 #include "type.hpp"
+#include <stdexcept>//std::runtime_error
 
 namespace SGL {
     namespace details {
+        class invalid_value_cast : public std::runtime_error {
+        public:
+            invalid_value_cast(const std::string& w) : std::runtime_error(w) {}
+        };
+
         struct array_impl {
             size_t m_size = 0;//elements count
             void* m_elements = nullptr;
@@ -73,7 +79,6 @@ namespace SGL {
             //TODO add impl
         };
         //TODO add other value creators
-        
     }//namespace details
 
     //TODO value construct: value(const_val(12)); 
@@ -232,7 +237,8 @@ namespace SGL {
 
         template<typename T>
         void check_type(details::sgl_type_identity<T>) const {
-            SGL_ASSERT(m_type->is_convertable_to<T>(), "this value not convertable to T");
+            //TODO add type_name to exception info?
+            if(!m_type->is_convertable_to<T>()) throw details::invalid_value_cast("value not convertable to T");
         }
 
 

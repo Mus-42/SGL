@@ -26,13 +26,13 @@ namespace SGL {
 
         template<typename T, std::enable_if_t<details::is_base_type<T>, bool> = true>
         std::shared_ptr<type> register_type(const std::string& type_name) {
-            SGL_ASSERT(details::is_correct_identifier(type_name), "incorrect type name");
+            if(!details::is_correct_identifier(type_name)) throw std::invalid_argument("incorrect type name: " + type_name);
             return m_types_val[std::type_index(typeid(T))] = register_type(type_name, std::make_shared<type>(details::sgl_type_identity<T>{}));
         }
         std::shared_ptr<type> register_type(const std::string& type_name, std::shared_ptr<type> type_ptr) {
-            SGL_ASSERT(details::is_correct_identifier(type_name), "incorrect type name");
+            if(!details::is_correct_identifier(type_name)) throw std::invalid_argument("incorrect type name: " + type_name);
             auto f = m_types.find(type_name);
-            SGL_ASSERT(f == m_types.end(), "type with same name already exists in this state")
+            if(f != m_types.end()) throw std::runtime_error("type with same name already exists in this state");
             m_types[type_name] = type_ptr;
             return type_ptr;
         }
@@ -41,18 +41,18 @@ namespace SGL {
         }
 
         void add_function(const std::string& name, const function& f) {
-            SGL_ASSERT(details::is_correct_identifier(name), "incorrect function name");
+            if(!details::is_correct_identifier(name)) throw std::invalid_argument("incorrect function name: " + name);
             m_functions[name].merge(f);
         }
         template<typename Ret, typename... Args>
         void add_function(const std::string& name, std::function<Ret(Args...)> f) {
-            SGL_ASSERT(details::is_correct_identifier(name), "incorrect function name");
+            if(!details::is_correct_identifier(name)) throw std::invalid_argument("incorrect function name: " + name);
             m_functions[name].add_overload(f);
         }
 
         template<typename Ret, typename... Args>
         void add_function_overload(const std::string& name, std::function<Ret(Args...)> f) {
-            SGL_ASSERT(details::is_correct_identifier(name), "incorrect function name");
+            if(!details::is_correct_identifier(name)) throw std::invalid_argument("incorrect function name: " + name);
             m_functions[name].add_overload(f);
         }
 
@@ -152,13 +152,13 @@ namespace SGL {
 
             //builtin functions:
             add_function("addressof", {{{std::function<value(std::initializer_list<std::reference_wrapper<value>>)>([this](std::initializer_list<std::reference_wrapper<value>> v)->value{
-                SGL_ASSERT(v.size() == 1, "addressof args count != 1");
+                if(v.size() != 1) throw std::runtime_error("addressof args count != 1");
                 auto& q = v.begin()->get();
                 if(q.is_const()) return { const_val<void*>(get_type<void*>(), q.m_data) };
                 else return { const_val<void*>(get_type<void*>(), q.m_data) };
             }), function::function_overload::all_types_t{}, 1} }});
             add_function("sizeof", {{{std::function<value(std::initializer_list<std::reference_wrapper<value>>)>([this](std::initializer_list<std::reference_wrapper<value>> v)->value{
-                SGL_ASSERT(v.size() == 1, "sizeof args count != 1");
+                if(v.size() != 1) throw std::runtime_error("sizeof args count != 1");
                 auto& q = v.begin()->get();
                 return { const_val<builtin_types::sgl_uint64_t>(get_type<builtin_types::sgl_uint64_t>(), q.m_type->size()) };
             }), function::function_overload::all_types_t{}, 1} }});
