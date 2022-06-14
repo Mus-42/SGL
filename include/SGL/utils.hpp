@@ -129,83 +129,50 @@ namespace SGL {
         constexpr bool is_sgl_array_v = is_sgl_array<T>::value;
 
 
-        namespace OperatorsExistCheck {
-            struct NotExits {};
-            //overloads which compiler choose if operator not exist (and... it generate compile time error if function marked as deleted.)
-            
-            //TODO FIX IT IN GCC (compile time error in each use case when operator not exist)
-            #define SGL_HAS_UNARY_OPERATOR_EMPTY_OPERATOR
-            #define SGL_CREATE_HAS_UNARY_OPERATOR_IMPL(name, pref, post)\
-            template<typename A> auto has_##name##_operator_impl(int) -> decltype(pref std::declval<A>() post);\
-            template<typename> auto has_##name##_operator_impl(...) -> NotExits;\
-            template<typename A> constexpr static bool op_##name = !std::is_same_v<decltype(has_##name##_operator_impl<A>(0)), NotExits>;
-
-            #define SGL_CREATE_HAS_OPERATOR_IMPL(name, operator)\
-            template<typename A, typename B> auto has_##name##_operator_impl(int) -> decltype(std::declval<A>() operator std::declval<B>());\
-            template<typename, typename> auto has_##name##_operator_impl(...) -> NotExits;\
-            template<typename A, typename B = A> constexpr static bool op_##name = !std::is_same_v<decltype(has_##name##_operator_impl<A, B>(0)), NotExits>;
-
-            /*
-                in this way can't check following operators:
-
-                a=b a(b...) a[b] a->b (cannot be overload as non-member)
-
-                a<=>b (library writen in C++17)
-                a.b a?b:c  (non overloadable)
-            */
-
-            SGL_CREATE_HAS_UNARY_OPERATOR_IMPL(unary_plus , +, SGL_HAS_UNARY_OPERATOR_EMPTY_OPERATOR)//+a
-            SGL_CREATE_HAS_UNARY_OPERATOR_IMPL(unary_minus, -, SGL_HAS_UNARY_OPERATOR_EMPTY_OPERATOR)//-a
-            SGL_CREATE_HAS_UNARY_OPERATOR_IMPL(bitwise_not, ~, SGL_HAS_UNARY_OPERATOR_EMPTY_OPERATOR)//~a
-            SGL_CREATE_HAS_UNARY_OPERATOR_IMPL(not        , !, SGL_HAS_UNARY_OPERATOR_EMPTY_OPERATOR)//!a
-            SGL_CREATE_HAS_UNARY_OPERATOR_IMPL(deref      , *, SGL_HAS_UNARY_OPERATOR_EMPTY_OPERATOR)//*a
-            SGL_CREATE_HAS_UNARY_OPERATOR_IMPL(adress_of  , &, SGL_HAS_UNARY_OPERATOR_EMPTY_OPERATOR)//&a
-
-            SGL_CREATE_HAS_UNARY_OPERATOR_IMPL(prefix_incr, ++, SGL_HAS_UNARY_OPERATOR_EMPTY_OPERATOR)//++a
-            SGL_CREATE_HAS_UNARY_OPERATOR_IMPL(prefix_decr, --, SGL_HAS_UNARY_OPERATOR_EMPTY_OPERATOR)//--a
-            SGL_CREATE_HAS_UNARY_OPERATOR_IMPL(postfix_incr, SGL_HAS_UNARY_OPERATOR_EMPTY_OPERATOR, ++)//a++
-            SGL_CREATE_HAS_UNARY_OPERATOR_IMPL(postfix_decr, SGL_HAS_UNARY_OPERATOR_EMPTY_OPERATOR, --)//a--
-
-            //binary
-            SGL_CREATE_HAS_OPERATOR_IMPL(sum, +)//a+b
-            SGL_CREATE_HAS_OPERATOR_IMPL(sub, -)//a-b
-            SGL_CREATE_HAS_OPERATOR_IMPL(mul, *)//a*b
-            SGL_CREATE_HAS_OPERATOR_IMPL(div, /)//a/b
-            SGL_CREATE_HAS_OPERATOR_IMPL(mod, %)//a%b
-
-            SGL_CREATE_HAS_OPERATOR_IMPL(sum_assign, +=)//a+=b
-            SGL_CREATE_HAS_OPERATOR_IMPL(sub_assign, -=)//a-=b
-            SGL_CREATE_HAS_OPERATOR_IMPL(mul_assign, *=)//a*=b
-            SGL_CREATE_HAS_OPERATOR_IMPL(div_assign, /=)//a/=b
-            SGL_CREATE_HAS_OPERATOR_IMPL(mod_assign, %=)//a%=b
-
-            SGL_CREATE_HAS_OPERATOR_IMPL(bitwise_or , | )//a|b
-            SGL_CREATE_HAS_OPERATOR_IMPL(bitwise_and, & )//a&b
-            SGL_CREATE_HAS_OPERATOR_IMPL(bitwise_xor, ^ )//a^b
-            SGL_CREATE_HAS_OPERATOR_IMPL(bitwise_lsh, <<)//a<<b
-            SGL_CREATE_HAS_OPERATOR_IMPL(bitwise_rsh, >>)//a>>b
-
-            SGL_CREATE_HAS_OPERATOR_IMPL(bitwise_or_assign , |= )//a|=b
-            SGL_CREATE_HAS_OPERATOR_IMPL(bitwise_and_assign, &= )//a&=b
-            SGL_CREATE_HAS_OPERATOR_IMPL(bitwise_xor_assign, ^= )//a^=b
-            SGL_CREATE_HAS_OPERATOR_IMPL(bitwise_lsh_assign, <<=)//a<<=b
-            SGL_CREATE_HAS_OPERATOR_IMPL(bitwise_rsh_assign, >>=)//a>>=b
-
-            SGL_CREATE_HAS_OPERATOR_IMPL(equal      , ==)//a==b
-            SGL_CREATE_HAS_OPERATOR_IMPL(not_equal  , !=)//a!=b
-            SGL_CREATE_HAS_OPERATOR_IMPL(less       , > )//a>b
-            SGL_CREATE_HAS_OPERATOR_IMPL(greater    , < )//a<b
-            SGL_CREATE_HAS_OPERATOR_IMPL(not_less   , >=)//a>=b
-            SGL_CREATE_HAS_OPERATOR_IMPL(not_greater, <=)//a<=b
-            
-            SGL_CREATE_HAS_OPERATOR_IMPL(or , ||)//a||b
-            SGL_CREATE_HAS_OPERATOR_IMPL(and, &&)//a&&b
-            
-            template<typename T, typename index> auto has_subscript_operator_impl(int) -> decltype(std::declval<T>()[std::declval<index>()]);
-            template<typename, typename> auto has_subscript_operator_impl(...) -> NotExits;
-    
-            template<typename T, typename index = size_t> constexpr static bool op_subscript = !std::is_same_v<decltype(has_subscript_operator_impl<T, index>(0)), NotExits>;//a[i]
-        }//namespace OperatorsExistCheck
+        //TODO add a<=>b, a?b:c, a->b
+        //TODO fix T=void
+        //unary 
+        template<typename T> constexpr bool has_op_unary_plus   = requires(T v) { + v; };//+a
+        template<typename T> constexpr bool has_op_unary_minus  = requires(T v) { - v; };//-a
+        template<typename T> constexpr bool has_op_bitwise_not  = requires(T v) { ~ v; };//~a
+        template<typename T> constexpr bool has_op_not          = requires(T v) { ! v; };//!a
+        template<typename T> constexpr bool has_op_deref        = requires(T v) { * v; };//*a
+        template<typename T> constexpr bool has_op_adress_of    = requires(T v) { & v; };//&a
+        template<typename T> constexpr bool has_op_prefix_incr  = requires(T v) { ++v; };//++a
+        template<typename T> constexpr bool has_op_prefix_decr  = requires(T v) { --v; };//--a
+        template<typename T> constexpr bool has_op_postfix_incr = requires(T v) { v++; };//a++
+        template<typename T> constexpr bool has_op_postfix_decr = requires(T v) { v--; };//a--
+        //binary
+        template<typename A, typename B = A> constexpr bool has_op_sum                = requires(A a, B b) { a +   b; };//a+b
+        template<typename A, typename B = A> constexpr bool has_op_sub                = requires(A a, B b) { a -   b; };//a-b
+        template<typename A, typename B = A> constexpr bool has_op_mul                = requires(A a, B b) { a *   b; };//a*b
+        template<typename A, typename B = A> constexpr bool has_op_div                = requires(A a, B b) { a /   b; };//a/b
+        template<typename A, typename B = A> constexpr bool has_op_mod                = requires(A a, B b) { a %   b; };//a%b
+        template<typename A, typename B = A> constexpr bool has_op_sum_assign         = requires(A a, B b) { a +=  b; };//a+=b
+        template<typename A, typename B = A> constexpr bool has_op_sub_assign         = requires(A a, B b) { a -=  b; };//a-=b
+        template<typename A, typename B = A> constexpr bool has_op_mul_assign         = requires(A a, B b) { a *=  b; };//a*=b
+        template<typename A, typename B = A> constexpr bool has_op_div_assign         = requires(A a, B b) { a /=  b; };//a/=b
+        template<typename A, typename B = A> constexpr bool has_op_mod_assign         = requires(A a, B b) { a %=  b; };//a%=b
+        template<typename A, typename B = A> constexpr bool has_op_bitwise_or         = requires(A a, B b) { a |   b; };//a|b
+        template<typename A, typename B = A> constexpr bool has_op_bitwise_and        = requires(A a, B b) { a &   b; };//a&b
+        template<typename A, typename B = A> constexpr bool has_op_bitwise_xor        = requires(A a, B b) { a ^   b; };//a^b
+        template<typename A, typename B = A> constexpr bool has_op_bitwise_lsh        = requires(A a, B b) { a <<  b; };//a<<b
+        template<typename A, typename B = A> constexpr bool has_op_bitwise_rsh        = requires(A a, B b) { a >>  b; };//a>>b
+        template<typename A, typename B = A> constexpr bool has_op_bitwise_or_assign  = requires(A a, B b) { a |=  b; };//a|=b
+        template<typename A, typename B = A> constexpr bool has_op_bitwise_and_assign = requires(A a, B b) { a &=  b; };//a&=b
+        template<typename A, typename B = A> constexpr bool has_op_bitwise_xor_assign = requires(A a, B b) { a ^=  b; };//a^=b
+        template<typename A, typename B = A> constexpr bool has_op_bitwise_lsh_assign = requires(A a, B b) { a <<= b; };//a<<=b
+        template<typename A, typename B = A> constexpr bool has_op_bitwise_rsh_assign = requires(A a, B b) { a >>= b; };//a>>=b
+        template<typename A, typename B = A> constexpr bool has_op_equal              = requires(A a, B b) { a ==  b; };//a==b
+        template<typename A, typename B = A> constexpr bool has_op_not_equal          = requires(A a, B b) { a !=  b; };//a!=b
+        template<typename A, typename B = A> constexpr bool has_op_less               = requires(A a, B b) { a >   b; };//a>b
+        template<typename A, typename B = A> constexpr bool has_op_greater            = requires(A a, B b) { a <   b; };//a<b
+        template<typename A, typename B = A> constexpr bool has_op_not_less           = requires(A a, B b) { a >=  b; };//a>=b
+        template<typename A, typename B = A> constexpr bool has_op_not_greater        = requires(A a, B b) { a <=  b; };//a<=b
+        template<typename A, typename B = A> constexpr bool has_op_or                 = requires(A a, B b) { a ||  b; };//a||b
+        template<typename A, typename B = A> constexpr bool has_op_and                = requires(A a, B b) { a &&  b; };//a&&b
+        
+        template<typename T, typename index = size_t> constexpr bool has_op_subscript = requires(T v, index i) { v[i]; };//a[i]
     }//namespace details
 
     template<typename T> using arr = details::array_value<T>;

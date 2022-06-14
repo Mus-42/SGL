@@ -49,7 +49,7 @@ namespace SGL {
         }
         template<typename T>
         void add_default_operators_for_type() {
-            if constexpr(details::OperatorsExistCheck::op_unary_plus<T>) add_operator<operator_type::op_unary_plus>(get_unary_operator_func<T, operator_type::op_unary_plus>());
+            //if constexpr(details::has_op_unary_plus<T>) add_operator<operator_type::op_unary_plus>(get_unary_operator_func<T, operator_type::op_unary_plus>());
             //TODO: in C++20 branch if constexpr(details::)
         }
     protected:

@@ -191,7 +191,7 @@ namespace SGL {
         [[nodiscard]] bool is_const() const { return m_type->m_traits.is_const; }
         [[nodiscard]] bool is_void() const { return m_type->m_traits.is_void; }//TODO add other
 
-
+        std::string to_string() const { return m_type->to_string(m_const_data); }
     //protected:
         friend class state;
         friend class value_creator_base;
