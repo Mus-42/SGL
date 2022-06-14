@@ -27,6 +27,7 @@ namespace SGL {
         template<typename T, std::enable_if_t<details::is_base_type<T>, bool> = true>
         std::shared_ptr<type> register_type(const std::string& type_name) {
             if(!details::is_correct_identifier(type_name)) throw std::invalid_argument("incorrect type name: " + type_name);
+            m_operator_list.add_default_operators_for_type<T>();
             return m_types_val[std::type_index(typeid(T))] = register_type(type_name, std::make_shared<type>(details::sgl_type_identity<T>{}));
         }
         std::shared_ptr<type> register_type(const std::string& type_name, std::shared_ptr<type> type_ptr) {
@@ -105,10 +106,11 @@ namespace SGL {
         template<typename From, typename To> 
         void add_typecast_types_impl(details::sgl_type_identity<From>, details::sgl_type_identity<To>) {
             //TODO change signature to To(const From&) ?
-            m_operator_list.add_operator<operator_type::op_typecast>(std::function<To(From)>([](From v)->To{ 
-                std::cout << "typecats <" << get_type_name<From>() << "> to <" << get_type_name<To>() << '>' << std::endl;
-                return static_cast<To>(v);
-            }));
+            //m_operator_list.add_operator<operator_type::op_typecast>(std::function<To(From)>([](From v)->To{ 
+            //    std::cout << "typecats <" << get_type_name<From>() << "> to <" << get_type_name<To>() << '>' << std::endl;
+            //    return static_cast<To>(v);
+            //}));
+            //TODO add typecast to constructors list
         }
         std::unordered_map<std::string, std::shared_ptr<type>> m_types;
         std::unordered_map<std::type_index, std::shared_ptr<type>> m_types_val;

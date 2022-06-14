@@ -4,6 +4,7 @@
 
 #include "config.hpp"
 #include "function.hpp"
+#include "utils.hpp"
 
 #include <array>
 #include <cstdint>
@@ -29,9 +30,6 @@ namespace SGL {
         op_adress_of, op_deref,
         //TODO add other
 
-        
-        op_typecast,
-
         __op_count
     };
     constexpr size_t operators_count = static_cast<size_t>(operator_type::__op_count);
@@ -49,7 +47,22 @@ namespace SGL {
             static_assert(op_index < operators_count, "invalid operator index");
             m_operators[op_index].add_overload(op_func);
         }
+        template<typename T>
+        void add_default_operators_for_type() {
+            if constexpr(details::OperatorsExistCheck::op_unary_plus<T>) add_operator<operator_type::op_unary_plus>(get_unary_operator_func<T, operator_type::op_unary_plus>());
+            //TODO: in C++20 branch if constexpr(details::)
+        }
     protected:
+        template<typename T, operator_type op>
+        auto get_unary_operator_func() {
+   
+            if constexpr(operator_type::op_unary_plus  == op) return std::function<decltype(+std::declval<const T&>())(const T&)>([](const T& v) { return +v; });
+            if constexpr(operator_type::op_unary_minus == op) return std::function<decltype(-std::declval<const T&>())(const T&)>([](const T& v) { return -v; });
+            
+        }
+
+
+
         template<operator_type op> 
         void add_operator(const function::function_overload& op_func) {
             constexpr size_t op_index = static_cast<size_t>(op);

@@ -16,6 +16,17 @@ int main() {
 
     //state().get_evaluator()//invalid 
 
+    try {
+        auto v = value(val<std::string>("some text"));
+        std::cout << "get<std::string>() " << v.get<std::string>() << std::endl;
+        std::cout << "get<const std::string&>() " << v.get<const std::string&>() << std::endl;
+        //std::cout << "to_string()" << v.to_string() << std::endl;
+        std::cout << "get<int>() " << v.get<int>() << std::endl;
+    } 
+    catch(const std::exception& ex) {
+        std::cout << ex.what() << std::endl;
+    }
+
     auto st = state();
     auto ev = st.get_evaluator();
 
@@ -36,11 +47,11 @@ int main() {
         auto arg1 = value(val<int>(12));
         auto arg2 = value(const_val<double>(12.42));
 
-        auto result = st.m_operator_list.call_operator(operator_type::op_typecast, {arg1});
+        //auto result = st.m_operator_list.call_operator(operator_type::op_typecast, {arg1});
         //how it must coose correct operator (In wich type it must cast value)?
         //TODO make typecast not-operator function? (as constructor) 
 
-        std::cout << result.get<float>() << std::endl;
+        //std::cout << result.get<float>() << std::endl;
     }
 /*
     auto val_t = SGL::value_type::construct_value_type<arr<const int>* const>();
@@ -85,7 +96,7 @@ int main() {
 
     std::cout << "arg1 size " << st.get_function("sizeof").call({arg1}).get<uint64_t>() << std::endl;
     std::cout << "arg2 size " << st.get_function("sizeof").call({arg2}).get<uint64_t>() << std::endl;
-
+    //*/
     struct base {
         base() { std::cout << "base constructed" << std::endl; }
         base& operator=(const base&) { std::cout << "base copied" << std::endl; return *this; }
