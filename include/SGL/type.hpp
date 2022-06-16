@@ -12,6 +12,7 @@
 #include <sstream>//type::to_string()
 
 #include <type_traits>
+#include <string_view>
 
 namespace SGL {
     namespace builtin_types {
@@ -423,6 +424,13 @@ namespace SGL {
             ret->m_traits = m_traits_t(v);
             return ret;
         }
+        template<typename T>
+        static std::shared_ptr<value_type> construct_value_type_impl(details::sgl_type_identity<const T&> v, const std::shared_ptr<type>& base_type) {
+            auto ret = std::make_shared<value_type>();
+            ret->m_type = construct_value_type_impl(details::sgl_type_identity<T>{}, base_type);
+            ret->m_traits = m_traits_t(v);
+            return ret;
+        }
         //pointer
         template<typename T>
         static std::shared_ptr<value_type> construct_value_type_impl(details::sgl_type_identity<T*> v, const std::shared_ptr<type>& base_type) {
@@ -455,6 +463,27 @@ namespace SGL {
             return ret;
         }
 
+        
+        std::string type_to_str() const {
+            std::string ret;
+            type_to_str_impl(ret, this);
+            return ret;   
+        }
+        void type_to_str_impl(std::string& ret, const SGL::value_type* v) const {
+            if(!v->m_traits.is_final_v) {
+                if(v->m_traits.is_array) ret += "arr<";
+                type_to_str_impl(ret, v->m_type.get());
+                if(v->m_traits.is_array) ret += ">";
+
+                if(v->m_traits.is_pointer) ret += "*";
+                if(v->m_traits.is_reference) ret += "&";
+                if(v->m_traits.is_const) ret += " const";
+            }
+            else {
+                if(v->m_traits.is_const) ret += "const ";
+                ret += 'T';
+            }
+        }
     };
 
     bool operator==(const value_type& a, const value_type& b) {

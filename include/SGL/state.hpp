@@ -67,6 +67,7 @@ namespace SGL {
         
         template<typename T>
         [[nodiscard]] std::shared_ptr<value_type> get_type() const {
+            //TODO add type if it not exist?
             return value_type::construct_value_type<T>(m_types_val.at(std::type_index(typeid(details::make_base_type_t<T>))));
         }
 
@@ -91,6 +92,15 @@ namespace SGL {
         friend class value;
         friend class evaluator;
 
+        std::unordered_map<std::string, std::shared_ptr<type>> m_types;
+        std::unordered_map<std::type_index, std::shared_ptr<type>> m_types_val;
+
+        std::unordered_map<std::string, function> m_functions;
+        std::unordered_map<std::string, function> m_constructors;//and operators (syntax same: T(args))//TODO move to functions? (same syntax)
+        operator_list m_operator_list;
+
+/*
+        //TODO implement 
         template<typename... Types> 
         void add_typecast_between_types() {
             (add_typecast_between_types_impl(details::sgl_type_identity<Types>{}, details::sgl_type_identity<Types...>{}), ...);
@@ -102,25 +112,24 @@ namespace SGL {
         
         template<typename T> 
         void add_typecast_between_impl(details::sgl_type_identity<T>, details::sgl_type_identity<T>) {}//discard same type
-        
+*/      
         template<typename From, typename To> 
-        void add_typecast_between_impl(details::sgl_type_identity<From>, details::sgl_type_identity<To>) {
-            //TODO change signature to To(const From&) ?
-            //m_operator_list.add_operator<operator_type::op_typecast>(std::function<To(const From&)>([](const From& v)->To{ 
-            //    std::cout << "typecats <" << get_type_name<From>() << "> to <" << get_type_name<To>() << '>' << std::endl;
-            //    return static_cast<To>(v);
-            //}));
+        void add_typecast_between_impl(const std::string& type_name) {//Typecast for base types
+            m_constructors[type_name].add_overload(std::function<To(const From&)>([](const From& v) -> To {
+                return static_cast<To>(v);
+            }));
         }
-        std::unordered_map<std::string, std::shared_ptr<type>> m_types;
-        std::unordered_map<std::type_index, std::shared_ptr<type>> m_types_val;
+        template<typename T, typename... Args> 
+        void add_constructor_impl(const std::string& type_name) {
+            m_constructors[type_name].add_overload(std::function<T(Args&&...)>([](Args&&... args) -> T {
+                return T(std::forward<Args>(args)...);
+            }));
+        }
 
-        std::unordered_map<std::string, function> m_functions;
-
-        operator_list m_operator_list;
 
         //TODO add registred constructors?
 
-        void init() {   
+        void init() {
             //builtin types:
             register_type<void>("void");
             //integer

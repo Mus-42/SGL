@@ -30,6 +30,8 @@ int main() {
     auto st = state();
     auto ev = st.get_evaluator();
 
+    std::cout << st.get_type<const arr<int*>*&>()->type_to_str() << std::endl;;
+
     ev.evaluate(tokenizer("int a = -100u * 10;"));
     ev.evaluate(tokenizer("0xFFFF + 0b01101101u8"));
     ev.evaluate(tokenizer("1.12 + 48u32"));
@@ -43,10 +45,15 @@ int main() {
     SGL_ASSERT(v->m_type == typeid(int), "type check");
 
 
-    st.add_typecast_between_types<int, float, double>();
+    //st.add_typecast_between_types<int, float, double>();
+    st.add_typecast_between_impl<int, float>("to_float");//int to float. float(int(v))
+    st.add_typecast_between_impl<double, float>("to_float");
     {
         auto arg1 = value(val<int>(12));
         auto arg2 = value(const_val<double>(12.42));
+
+        std::cout << "to_float(int)   : " << st.m_constructors["to_float"].call({arg1}).to_string() << std::endl;
+        std::cout << "to_float(double): " << st.m_constructors["to_float"].call({arg2}).to_string() << std::endl;
 
         //auto result = st.m_operator_list.call_operator(operator_type::op_typecast, {arg1});
         //how it must coose correct operator (In wich type it must cast value)?
@@ -134,14 +141,14 @@ int main() {
 }
 
 struct addable1 {};
-addable1 operator+(const addable1& a, const addable1& b) { return {}; }
+addable1 operator+(const addable1&, const addable1&) { return {}; }
 struct addable2 {};
 namespace addable2_operator_sum {
-    addable2 operator+(const addable2& a, const addable2& b) { return {}; }
+    addable2 operator+(const addable2&, const addable2&) { return {}; }
 }
 struct unaddable1 {};
 struct unaddable2 {};
-unaddable2 operator+(const unaddable2& a, const unaddable2& b) = delete;
+unaddable2 operator+(const unaddable2&, const unaddable2&) = delete;
 
 static_assert(SGL::details::has_op_sum<addable1>);
 static_assert(!SGL::details::has_op_sum<addable2>);

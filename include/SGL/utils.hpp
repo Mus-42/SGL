@@ -93,12 +93,21 @@ namespace SGL {
             using type = typename make_base_type<std::remove_reference_t<T>>::type;
         };
         template<typename T>
-        struct make_base_type<details::array_value<T>> {
+        struct make_base_type<array_value<T>> {
+            using type = typename make_base_type<T>::type;
+        };
+        template<typename T>
+        struct make_base_type<const array_value<T>> {
             using type = typename make_base_type<T>::type;
         };
 
         template<typename T>
         using make_base_type_t = typename make_base_type<T>::type;
+
+        static_assert(std::is_same_v<make_base_type_t<array_value<int*const&>>, int>);
+        static_assert(std::is_same_v<make_base_type_t<array_value<int*const&>&>, int>);
+        static_assert(std::is_same_v<make_base_type_t<const array_value<int*const&>&>, int>);
+        static_assert(std::is_same_v<make_base_type_t<const array_value<const array_value<int*const&>*>*const&>, int>);//TODO fix it
 
         template<typename T>
         constexpr bool is_base_type = std::is_same_v<T, make_base_type_t<T>>;
@@ -109,7 +118,7 @@ namespace SGL {
             using base_type = T;
         };
         template<typename T>
-        struct get_vector_from_arr<details::array_value<T>> {
+        struct get_vector_from_arr<array_value<T>> {
             using type = std::vector<typename get_vector_from_arr<T>::type>;
             using base_type = typename get_vector_from_arr<T>::base_type;
         };
