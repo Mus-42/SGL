@@ -12,13 +12,13 @@ namespace SGL {
             return __FUNCSIG__;
 #elif defined(__GNUC__)//GCC or Clang
 #if !__clang__ && __GNUC__ < 8
-            return "to old GCC compiler";//can't be constexpr
+            return "T [to old GCC compiler]";//can't be constexpr
 #else
             return __PRETTY_FUNCTION__;
 #endif//GCC_VERSION
-#else//TODO add other compilers
-            return "uncompatible compiler";
-#endif
+#else//TODO add other compilers?
+            return "T [uncompatible compiler]";
+#endif//comiler switch
         }
         constexpr auto void_sv = type_name_helper<void>();
         constexpr bool is_compatible_compiler = void_sv.find("void") < void_sv.size();
@@ -35,7 +35,7 @@ namespace SGL {
             return raw.substr(details::beg_offset, raw.find(details::find_substr) - details::beg_offset);
         } else return details::type_name_helper<T>();
 #else
-        return "type name option disabled. check config.hpp for details";
+        return "T [type name option disabled. check config.hpp for details]";
 #endif//SGL_OPTION_ENABLE_TYPE_NAME
     } 
 }//namespace SGL

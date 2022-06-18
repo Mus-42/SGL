@@ -39,6 +39,10 @@ namespace SGL {
             using type = T;
         };
 
+        
+        template<auto... v>
+        struct sgl_value_identity {};
+
         template<typename... T>
         sgl_type_identity<T...> make_type_identity() { return {}; } 
 

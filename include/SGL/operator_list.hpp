@@ -47,6 +47,8 @@ namespace SGL {
             static_assert(op_index < operators_count, "invalid operator index");
             m_operators[op_index].add_overload(op_func);
         }
+
+        //TODO replace with add operators between <A, B=A>
         template<typename T>
         void add_default_operators_for_type() {
             //if constexpr(details::has_op_unary_plus<T>) add_operator<operator_type::op_unary_plus>(get_unary_operator_func<T, operator_type::op_unary_plus>());

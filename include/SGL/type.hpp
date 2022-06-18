@@ -125,7 +125,7 @@ namespace SGL {
                     return v.to_string();
                 } else if constexpr(requires(const T& v, std::ostream out) {
                     out << v;
-                }) {
+                }) {//TODO how it must cast floating point numbers to string? (fixed precision?)
                     std::ostringstream s;
                     s << v;
                     return s.str();

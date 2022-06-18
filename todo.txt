@@ -21,3 +21,5 @@ replece `const value_type&` in value_type functions with `shared_ptr<value_type>
 fix multiple clones of same type (get value_type ptr from state?)
 
 replace asserts like bad value cast, illegal name etc. with exceptions
+
+fast function overload search (now it O(nlog(n)))

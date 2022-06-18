@@ -126,6 +126,26 @@ namespace SGL {
             }));
         }
 
+        template<typename... Types> 
+        void add_operator_permutations() {
+            constexpr size_t types_count = sizeof...(Types);
+            auto caller = []<size_t... i1>(std::index_sequence<i1...> s){
+                auto between_i_seq = []<size_t i2, size_t... j2>(details::sgl_value_identity<i2>, std::index_sequence<j2...>) {
+                    auto between_i_j = []<size_t i, size_t j>(details::sgl_value_identity<i>, details::sgl_value_identity<j>) {
+                        if constexpr(i == j) return;
+                        using A = std::remove_reference_t<std::tuple_element_t<i, std::tuple<Types...>>>;//strange usage of std::tuple
+                        using B = std::remove_reference_t<std::tuple_element_t<j, std::tuple<Types...>>>;
+                        if constexpr(std::is_same_v<A, B>) return;
+                        //TODO  m_operator_list.add ... <A, B>();
+                        
+                        std::cout << "add_operator_permutations: " << get_type_name<A>() << ' ' << get_type_name<B>() << std::endl;
+                    };
+                    (between_i_j(details::sgl_value_identity<i2>{}, details::sgl_value_identity<j2>{}), ...);
+                };
+                (between_i_seq(details::sgl_value_identity<i1>{}, s), ...);
+            };
+            caller(std::make_index_sequence<types_count>{});
+        }
 
         //TODO add registred constructors?
 
@@ -164,7 +184,7 @@ namespace SGL {
             add_function("addressof", {{{std::function<value(std::initializer_list<std::reference_wrapper<value>>)>([this](std::initializer_list<std::reference_wrapper<value>> v)->value{
                 if(v.size() != 1) throw std::runtime_error("addressof args count != 1");
                 auto& q = v.begin()->get();
-                if(q.is_const()) return { const_val<void*>(get_type<void*>(), q.m_data) };
+                if(q.is_const()) return { const_val<void*>(get_type<const void*>(), q.m_data) };
                 else return { const_val<void*>(get_type<void*>(), q.m_data) };
             }), function::function_overload::all_types_t{}, 1} }});
             add_function("sizeof", {{{std::function<value(std::initializer_list<std::reference_wrapper<value>>)>([this](std::initializer_list<std::reference_wrapper<value>> v)->value{
@@ -174,6 +194,11 @@ namespace SGL {
             }), function::function_overload::all_types_t{}, 1} }});
 
             //TODO register operators
+
+            //TODO for builtin types add all possible operator permutation
+            //such as 1. + 1.f and 1.f + 1.
+
+            add_operator_permutations<int, float, bool>();//test
         }
     };
 }//namespace SGL
