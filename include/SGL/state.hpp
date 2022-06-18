@@ -127,18 +127,17 @@ namespace SGL {
         }
 
         template<typename... Types> 
-        void add_operator_permutations() {
+        void add_binary_operator_permutations() {
             constexpr size_t types_count = sizeof...(Types);
-            auto caller = []<size_t... i1>(std::index_sequence<i1...> s){
-                auto between_i_seq = []<size_t i2, size_t... j2>(details::sgl_value_identity<i2>, std::index_sequence<j2...>) {
-                    auto between_i_j = []<size_t i, size_t j>(details::sgl_value_identity<i>, details::sgl_value_identity<j>) {
+            auto caller = [this]<size_t... i1>(std::index_sequence<i1...> s){
+                auto between_i_seq = [this]<size_t i2, size_t... j2>(details::sgl_value_identity<i2>, std::index_sequence<j2...>) {
+                    auto between_i_j = [this]<size_t i, size_t j>(details::sgl_value_identity<i>, details::sgl_value_identity<j>) {
                         if constexpr(i == j) return;
                         using A = std::remove_reference_t<std::tuple_element_t<i, std::tuple<Types...>>>;//strange usage of std::tuple
                         using B = std::remove_reference_t<std::tuple_element_t<j, std::tuple<Types...>>>;
                         if constexpr(std::is_same_v<A, B>) return;
-                        //TODO  m_operator_list.add ... <A, B>();
-                        
-                        std::cout << "add_operator_permutations: " << get_type_name<A>() << ' ' << get_type_name<B>() << std::endl;
+
+                        m_operator_list.add_default_binary_operators_between_types<A, B>();
                     };
                     (between_i_j(details::sgl_value_identity<i2>{}, details::sgl_value_identity<j2>{}), ...);
                 };
@@ -198,7 +197,7 @@ namespace SGL {
             //TODO for builtin types add all possible operator permutation
             //such as 1. + 1.f and 1.f + 1.
 
-            add_operator_permutations<int, float, bool>();//test
+            add_binary_operator_permutations<int, float, bool>();//test
         }
     };
 }//namespace SGL

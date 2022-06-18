@@ -117,6 +117,9 @@ namespace SGL {
         constexpr bool is_base_type = std::is_same_v<T, make_base_type_t<T>>;
 
         template<typename T>
+        concept req_base_type = is_base_type<T>;
+
+        template<typename T>
         struct get_vector_from_arr {
             using type = T;
             using base_type = T;
@@ -147,7 +150,7 @@ namespace SGL {
         //unary 
         template<typename T> constexpr bool has_op_unary_plus   = requires(T v) { + v; };//+a
         template<typename T> constexpr bool has_op_unary_minus  = requires(T v) { - v; };//-a
-        template<typename T> constexpr bool has_op_bitwise_not  = requires(T v) { ~ v; };//~a
+        template<typename T> constexpr bool has_op_bit_not      = requires(T v) { ~ v; };//~a
         template<typename T> constexpr bool has_op_not          = requires(T v) { ! v; };//!a
         template<typename T> constexpr bool has_op_deref        = requires(T v) { * v; };//*a
         template<typename T> constexpr bool has_op_adress_of    = requires(T v) { & v; };//&a
@@ -156,34 +159,34 @@ namespace SGL {
         template<typename T> constexpr bool has_op_postfix_incr = requires(T v) { v++; };//a++
         template<typename T> constexpr bool has_op_postfix_decr = requires(T v) { v--; };//a--
         //binary
-        template<typename A, typename B = A> constexpr bool has_op_sum                = requires(A a, B b) { a +   b; };//a+b
-        template<typename A, typename B = A> constexpr bool has_op_sub                = requires(A a, B b) { a -   b; };//a-b
-        template<typename A, typename B = A> constexpr bool has_op_mul                = requires(A a, B b) { a *   b; };//a*b
-        template<typename A, typename B = A> constexpr bool has_op_div                = requires(A a, B b) { a /   b; };//a/b
-        template<typename A, typename B = A> constexpr bool has_op_mod                = requires(A a, B b) { a %   b; };//a%b
-        template<typename A, typename B = A> constexpr bool has_op_sum_assign         = requires(A a, B b) { a +=  b; };//a+=b
-        template<typename A, typename B = A> constexpr bool has_op_sub_assign         = requires(A a, B b) { a -=  b; };//a-=b
-        template<typename A, typename B = A> constexpr bool has_op_mul_assign         = requires(A a, B b) { a *=  b; };//a*=b
-        template<typename A, typename B = A> constexpr bool has_op_div_assign         = requires(A a, B b) { a /=  b; };//a/=b
-        template<typename A, typename B = A> constexpr bool has_op_mod_assign         = requires(A a, B b) { a %=  b; };//a%=b
-        template<typename A, typename B = A> constexpr bool has_op_bitwise_or         = requires(A a, B b) { a |   b; };//a|b
-        template<typename A, typename B = A> constexpr bool has_op_bitwise_and        = requires(A a, B b) { a &   b; };//a&b
-        template<typename A, typename B = A> constexpr bool has_op_bitwise_xor        = requires(A a, B b) { a ^   b; };//a^b
-        template<typename A, typename B = A> constexpr bool has_op_bitwise_lsh        = requires(A a, B b) { a <<  b; };//a<<b
-        template<typename A, typename B = A> constexpr bool has_op_bitwise_rsh        = requires(A a, B b) { a >>  b; };//a>>b
-        template<typename A, typename B = A> constexpr bool has_op_bitwise_or_assign  = requires(A a, B b) { a |=  b; };//a|=b
-        template<typename A, typename B = A> constexpr bool has_op_bitwise_and_assign = requires(A a, B b) { a &=  b; };//a&=b
-        template<typename A, typename B = A> constexpr bool has_op_bitwise_xor_assign = requires(A a, B b) { a ^=  b; };//a^=b
-        template<typename A, typename B = A> constexpr bool has_op_bitwise_lsh_assign = requires(A a, B b) { a <<= b; };//a<<=b
-        template<typename A, typename B = A> constexpr bool has_op_bitwise_rsh_assign = requires(A a, B b) { a >>= b; };//a>>=b
-        template<typename A, typename B = A> constexpr bool has_op_equal              = requires(A a, B b) { a ==  b; };//a==b
-        template<typename A, typename B = A> constexpr bool has_op_not_equal          = requires(A a, B b) { a !=  b; };//a!=b
-        template<typename A, typename B = A> constexpr bool has_op_less               = requires(A a, B b) { a >   b; };//a>b
-        template<typename A, typename B = A> constexpr bool has_op_greater            = requires(A a, B b) { a <   b; };//a<b
-        template<typename A, typename B = A> constexpr bool has_op_not_less           = requires(A a, B b) { a >=  b; };//a>=b
-        template<typename A, typename B = A> constexpr bool has_op_not_greater        = requires(A a, B b) { a <=  b; };//a<=b
-        template<typename A, typename B = A> constexpr bool has_op_or                 = requires(A a, B b) { a ||  b; };//a||b
-        template<typename A, typename B = A> constexpr bool has_op_and                = requires(A a, B b) { a &&  b; };//a&&b
+        template<typename A, typename B = A> constexpr bool has_op_sum            = requires(A a, B b) { a +   b; };//a+b
+        template<typename A, typename B = A> constexpr bool has_op_sub            = requires(A a, B b) { a -   b; };//a-b
+        template<typename A, typename B = A> constexpr bool has_op_mul            = requires(A a, B b) { a *   b; };//a*b
+        template<typename A, typename B = A> constexpr bool has_op_div            = requires(A a, B b) { a /   b; };//a/b
+        template<typename A, typename B = A> constexpr bool has_op_mod            = requires(A a, B b) { a %   b; };//a%b
+        template<typename A, typename B = A> constexpr bool has_op_sum_assign     = requires(A a, B b) { a +=  b; };//a+=b
+        template<typename A, typename B = A> constexpr bool has_op_sub_assign     = requires(A a, B b) { a -=  b; };//a-=b
+        template<typename A, typename B = A> constexpr bool has_op_mul_assign     = requires(A a, B b) { a *=  b; };//a*=b
+        template<typename A, typename B = A> constexpr bool has_op_div_assign     = requires(A a, B b) { a /=  b; };//a/=b
+        template<typename A, typename B = A> constexpr bool has_op_mod_assign     = requires(A a, B b) { a %=  b; };//a%=b
+        template<typename A, typename B = A> constexpr bool has_op_bit_or         = requires(A a, B b) { a |   b; };//a|b
+        template<typename A, typename B = A> constexpr bool has_op_bit_and        = requires(A a, B b) { a &   b; };//a&b
+        template<typename A, typename B = A> constexpr bool has_op_bit_xor        = requires(A a, B b) { a ^   b; };//a^b
+        template<typename A, typename B = A> constexpr bool has_op_bit_lsh        = requires(A a, B b) { a <<  b; };//a<<b
+        template<typename A, typename B = A> constexpr bool has_op_bit_rsh        = requires(A a, B b) { a >>  b; };//a>>b
+        template<typename A, typename B = A> constexpr bool has_op_bit_or_assign  = requires(A a, B b) { a |=  b; };//a|=b
+        template<typename A, typename B = A> constexpr bool has_op_bit_and_assign = requires(A a, B b) { a &=  b; };//a&=b
+        template<typename A, typename B = A> constexpr bool has_op_bit_xor_assign = requires(A a, B b) { a ^=  b; };//a^=b
+        template<typename A, typename B = A> constexpr bool has_op_bit_lsh_assign = requires(A a, B b) { a <<= b; };//a<<=b
+        template<typename A, typename B = A> constexpr bool has_op_bit_rsh_assign = requires(A a, B b) { a >>= b; };//a>>=b
+        template<typename A, typename B = A> constexpr bool has_op_equal          = requires(A a, B b) { a ==  b; };//a==b
+        template<typename A, typename B = A> constexpr bool has_op_not_equal      = requires(A a, B b) { a !=  b; };//a!=b
+        template<typename A, typename B = A> constexpr bool has_op_less           = requires(A a, B b) { a >   b; };//a>b
+        template<typename A, typename B = A> constexpr bool has_op_greater        = requires(A a, B b) { a <   b; };//a<b
+        template<typename A, typename B = A> constexpr bool has_op_not_less       = requires(A a, B b) { a >=  b; };//a>=b
+        template<typename A, typename B = A> constexpr bool has_op_not_greater    = requires(A a, B b) { a <=  b; };//a<=b
+        template<typename A, typename B = A> constexpr bool has_op_or             = requires(A a, B b) { a ||  b; };//a||b
+        template<typename A, typename B = A> constexpr bool has_op_and            = requires(A a, B b) { a &&  b; };//a&&b
         
         template<typename T, typename index = size_t> constexpr bool has_op_subscript = requires(T v, index i) { v[i]; };//a[i]
     }//namespace details
