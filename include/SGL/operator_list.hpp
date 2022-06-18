@@ -50,12 +50,20 @@ namespace SGL {
 
         //TODO replace with add operators between <A, B=A>
         template<typename T> 
-        void add_default_operators_for_type() requires(details::req_base_type<T>) {
+        void add_default_operators_for_type() requires details::req_base_type<T> {
             add_default_unary_operators_for_type<T>();
             add_default_binary_operators_between_types<T>();
         }
+
+//disable warnings for bool operators:
+#ifdef SGL_COMPILER_MSVC
+#pragma warning(push)
+#pragma warning(disable:4804)
+#endif//SGL_COMPILER_MSVC
+//TODO disable warnings for GCC & Clang?
+
         template<typename T>
-        void add_default_unary_operators_for_type() requires(details::req_base_type<T>) {
+        void add_default_unary_operators_for_type() requires details::req_base_type<T> {
             if constexpr(!std::is_same_v<T, void>) {
                 using T_t = std::add_lvalue_reference_t<std::add_const_t<T>>;
 
@@ -73,7 +81,7 @@ namespace SGL {
         }
 
         template<typename A, typename B = A>
-        void add_default_binary_operators_between_types() requires(details::req_base_type<A> && details::req_base_type<B>) {
+        void add_default_binary_operators_between_types() requires details::req_base_type<A> && details::req_base_type<B> {
             if constexpr(!std::is_same_v<A, void> && !std::is_same_v<B, void>) {
                 using A_t = std::add_lvalue_reference_t<std::add_const_t<A>>;
                 using B_t = std::add_lvalue_reference_t<std::add_const_t<B>>;
@@ -108,6 +116,12 @@ namespace SGL {
                 if constexpr(details::has_op_and           <A_t, B_t>) add_operator<operator_type::op_and           >(std::function<decltype(std::declval<A_t>() &&  std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a &&  b; }));
             }
         }
+
+//enable warnings for bool operators:
+#ifdef SGL_COMPILER_MSVC
+#pragma warning(pop)
+#endif//SGL_COMPILER_MSVC
+
     protected:
         template<operator_type op> 
         void add_operator(const function::function_overload& op_func) {

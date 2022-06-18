@@ -36,4 +36,17 @@ namespace SGL::details {
 #endif//SGL_TOKENIZE_ERROR
 
 
+
+#if defined(_MSC_VER)//MSVC
+#define SGL_COMPILER_MSVC    1
+#elif defined(__GNUC__)//GCC or Clang
+#if defined(__clang__)
+#define SGL_COMPILER_CLANG   1
+#else
+#define SGL_COMPILER_GCC     1
+#endif//__clang__
+#else
+#define SGL_COMPILER_UNKNOWN 1
+#endif
+
 #endif

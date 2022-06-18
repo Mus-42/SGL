@@ -45,6 +45,8 @@ int main() {
     SGL_ASSERT(v->m_type == typeid(int), "type check");
 
 
+    auto t = st.get_type<const int&>();
+
     //st.add_typecast_between_types<int, float, double>();
     st.add_typecast_between_impl<int, float>("to_float");//int to float. float(int(v))
     st.add_typecast_between_impl<double, float>("to_float");

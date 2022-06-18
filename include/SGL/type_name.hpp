@@ -8,14 +8,16 @@ namespace SGL {
     namespace details {     
         template<typename T>
         constexpr std::string_view type_name_helper() {
-#if defined(_MSC_VER)//MSVC
+#if defined(SGL_COMPILER_MSVC)//MSVC
             return __FUNCSIG__;
-#elif defined(__GNUC__)//GCC or Clang
-#if !__clang__ && __GNUC__ < 8
+#elif defined(SGL_COMPILER_GCC)
+#if __GNUC__ < 8
             return "T [to old GCC compiler]";//can't be constexpr
 #else
             return __PRETTY_FUNCTION__;
 #endif//GCC_VERSION
+#elif defined(SGL_COMPILER_CLANG)
+            return __PRETTY_FUNCTION__;
 #else//TODO add other compilers?
             return "T [uncompatible compiler]";
 #endif//comiler switch

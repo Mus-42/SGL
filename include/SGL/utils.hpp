@@ -60,9 +60,9 @@ namespace SGL {
         }
 
         constexpr bool is_correct_identifier(std::string_view s) {
-            if(!s.size() || (!is_alpha(s[0]) && s[0] != '_')) return false;
+            if(s.size() == 0 || (!is_alpha(static_cast<unsigned char>(s[0])) && s[0] != '_')) return false;
             bool ret = true;
-            for(unsigned char ch : s) ret &= is_alnum(ch) || ch == '_';
+            for(char ch : s) ret &= is_alnum(static_cast<unsigned char>(ch)) || ch == '_';
             return ret;
         }
 

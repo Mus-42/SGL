@@ -24,11 +24,11 @@ namespace SGL {
             explicit value_creator_base(std::shared_ptr<value_type> type) : m_type(type) {}
 
             std::shared_ptr<value_type> m_type;
-            bool need_free_data = false;
             union {
                 void* m_data;
                 const void* m_const_data;
             };
+            bool need_free_data = false;
         };
 
         template<typename T>

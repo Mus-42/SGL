@@ -154,23 +154,25 @@ namespace SGL {
             //integer
             register_type<builtin_types::sgl_int8_t >("int8" );
             register_type<builtin_types::sgl_int16_t>("int16");
-            register_type<builtin_types::sgl_int32_t>("int32");
+            auto t_int32 = register_type<builtin_types::sgl_int32_t>("int32");
             register_type<builtin_types::sgl_int64_t>("int64");
 
             register_type<builtin_types::sgl_uint8_t >("uint8" );
             register_type<builtin_types::sgl_uint16_t>("uint16");
-            register_type<builtin_types::sgl_uint32_t>("uint32");
+            auto t_uint32 = register_type<builtin_types::sgl_uint32_t>("uint32");
             register_type<builtin_types::sgl_uint64_t>("uint64");
 
-            register_type<builtin_types::sgl_int_t>("int");
-            register_type<builtin_types::sgl_uint_t>("uint");
+            register_type("int" , t_int32);
+            register_type("uint", t_uint32);
             
             //floating point
-            register_type<builtin_types::sgl_float32_t>("float32");
-            register_type<builtin_types::sgl_float64_t>("float64");
+            auto t_float32 = register_type<builtin_types::sgl_float32_t>("float32");
+            auto t_float64 = register_type<builtin_types::sgl_float64_t>("float64");
 
-            register_type<builtin_types::sgl_float_t>("float");
-            register_type<builtin_types::sgl_double_t>("double");
+            //TODO other way to add type alias
+
+            register_type("float" , t_float32);
+            register_type("double", t_float64);
 
             //other
             register_type<builtin_types::sgl_bool_t>("bool");
@@ -197,7 +199,7 @@ namespace SGL {
             //TODO for builtin types add all possible operator permutation
             //such as 1. + 1.f and 1.f + 1.
 
-            add_binary_operator_permutations<int, float, bool>();//test
+            //add_binary_operator_permutations<int, float, bool>();//TODO how fix "to large obj file" 
         }
     };
 }//namespace SGL

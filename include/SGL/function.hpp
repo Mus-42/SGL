@@ -44,8 +44,8 @@ namespace SGL {
             std::function<value(std::initializer_list<std::reference_wrapper<value>>)> m_func;
             std::vector<std::shared_ptr<value_type>> args_types;
             
-            bool all_types = false;
             int all_args_count = 0;
+            bool all_types = false;
         protected:
             friend class function;
 
