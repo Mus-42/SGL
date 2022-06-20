@@ -45,23 +45,28 @@ int main() {
     SGL_ASSERT(v->m_type == typeid(int), "type check");
 
 
-    auto t = st.get_type<const int&>();
-
     //st.add_typecast_between_types<int, float, double>();
     st.add_typecast_between_impl<int, float>("to_float");//int to float. float(int(v))
     st.add_typecast_between_impl<double, float>("to_float");
-    {
+    try {
         auto arg1 = value(val<int>(12));
         auto arg2 = value(const_val<double>(12.42));
 
+        for(auto op = operator_type::op_sum; op <= operator_type::op_mod; op = static_cast<operator_type>(static_cast<uint8_t>(op) + 1)) 
+            std::cout << "operator " << static_cast<int>(op) << ": " << st.m_operator_list.call_operator(op, {arg1, arg2}).to_string() << std::endl;
+
         std::cout << "to_float(int)   : " << st.m_constructors["to_float"].call({arg1}).to_string() << std::endl;
         std::cout << "to_float(double): " << st.m_constructors["to_float"].call({arg2}).to_string() << std::endl;
+
 
         //auto result = st.m_operator_list.call_operator(operator_type::op_typecast, {arg1});
         //how it must coose correct operator (In wich type it must cast value)?
         //TODO make typecast not-operator function? (as constructor) 
 
         //std::cout << result.get<float>() << std::endl;
+    }
+    catch(const std::exception& ex) {
+        std::cout << ex.what() << std::endl;
     }
 /*
     auto val_t = SGL::value_type::construct_value_type<arr<const int>* const>();

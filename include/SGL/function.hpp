@@ -27,10 +27,12 @@ namespace SGL {
             function_overload&operator=(function_overload&&) = default;
 
             template<typename Ret, typename... Args>
-            function_overload(std::function<Ret(Args...)> func) : m_func(get_function_impl(func, std::index_sequence_for<Args...>{})), args_types({value_type::construct_value_type<Args>()...}) {}
+            function_overload(std::function<Ret(Args...)> func) : m_func(get_function_impl(details::sgl_function_identity<Ret(Args...)>{}, func, std::index_sequence_for<Args...>{})), args_types({value_type::construct_value_type<Args>()...}) {}
+            template<typename Ret, typename... Args>
+            function_overload(Ret(*func)(Args...)) : m_func(get_function_impl(details::sgl_function_identity<Ret(Args...)>{}, func, std::index_sequence_for<Args...>{})), args_types({value_type::construct_value_type<Args>()...}) {}
 
-            template<typename Ret, typename... Args, size_t... N>
-            static constexpr decltype(auto) get_function_impl(std::function<Ret(Args...)> func, std::index_sequence<N...>) {
+            template<typename Func, typename Ret, typename... Args, size_t... N>
+            static constexpr decltype(auto) get_function_impl(details::sgl_function_identity<Ret(Args...)>, Func func, std::index_sequence<N...>) {
                 return [func](std::initializer_list<std::reference_wrapper<value>> args) -> value {
                     if(sizeof...(Args) != args.size()) throw std::runtime_error("sgl function_overload: invalid args count");
                     if constexpr(std::is_same_v<Ret, void>) {
@@ -41,6 +43,7 @@ namespace SGL {
                 };
             }
 
+            using m_func_t = value(*)(std::initializer_list<std::reference_wrapper<value>>);
             std::function<value(std::initializer_list<std::reference_wrapper<value>>)> m_func;
             std::vector<std::shared_ptr<value_type>> args_types;
             
@@ -55,13 +58,13 @@ namespace SGL {
 
             struct all_types_t {};
             //constructors for built-in functions
-            function_overload(std::function<value(std::initializer_list<std::reference_wrapper<value>>)> f, std::vector<std::shared_ptr<value_type>> args) : m_func(f), args_types(args) {}
-            function_overload(std::function<value(std::initializer_list<std::reference_wrapper<value>>)> f, all_types_t, int all_args_count = -1) : m_func(f), all_types(true), all_args_count(all_args_count) {}
+            function_overload(m_func_t f, std::vector<std::shared_ptr<value_type>> args) : m_func(f), args_types(args) {}
+            function_overload(m_func_t f, all_types_t, int all_args_count = -1) : m_func(f), all_types(true), all_args_count(all_args_count) {}
             
-            template<typename Ret, typename... Args>
-            function_overload(std::function<Ret(Args...)> func, std::vector<std::shared_ptr<value_type>> args) : m_func(get_function_impl(func, std::index_sequence_for<Args...>{})), args_types(args) {
-                if(sizeof...(Args) != args.size()) throw std::runtime_error("sgl function_overload: invalid args count");
-            }
+            //template<typename Ret, typename... Args>
+            //function_overload(std::function<Ret(Args...)> func, std::vector<std::shared_ptr<value_type>> args) : m_func(get_function_impl(func, std::index_sequence_for<Args...>{})), args_types(args) {
+            //    if(sizeof...(Args) != args.size()) throw std::runtime_error("sgl function_overload: invalid args count");
+            //}//TODO implement
         };
     public:
         [[nodiscard]] function() = default;
@@ -81,8 +84,8 @@ namespace SGL {
                     size_t delta = 0;
                     bool ok = true;
                     for(size_t j = 0; j < v.size(); j++) {
-                        if(*m_overloads[i].args_types[j] == *v.begin()[j].get().m_type) continue;
-                        if(v.begin()[j].get().m_type->is_convertable_to(*m_overloads[i].args_types[j])) { delta++; continue; }
+                        if(*m_overloads[i].args_types[j] == *std::data(v)[j].get().m_type) continue;
+                        if(std::data(v)[j].get().m_type->is_convertable_to(*m_overloads[i].args_types[j])) { delta++; continue; }
                         ok = false;
                         break;
                     }

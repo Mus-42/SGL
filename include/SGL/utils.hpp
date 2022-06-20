@@ -40,6 +40,11 @@ namespace SGL {
         };
 
         
+        template<typename Ret, typename... Args>
+        struct sgl_function_identity;
+        template<typename Ret, typename... Args>
+        struct sgl_function_identity<Ret(Args...)> {};
+        
         template<auto... v>
         struct sgl_value_identity {};
 

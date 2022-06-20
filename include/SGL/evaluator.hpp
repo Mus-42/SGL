@@ -21,14 +21,7 @@ namespace SGL {
                     case details::token::t_none: std::cout << "[none] "; break;
                     case details::token::t_operator: std::cout << "[operator '" << v.operator_v << "'] "; break;
                     case details::token::t_punct: std::cout << "[punct '" << v.punct_v << "'] "; break;
-                    case details::token::t_value: std::cout << "[value `" << 
-                        v.value_v.to_string()
-//#if defined(SGL_OPTION_STORE_TYPE_NAME) && SGL_OPTION_STORE_TYPE_NAME
-//                        v.value_v.m_type->m_base_type->m_type_name
-//#else
-//                        v.value_v.m_type->m_base_type->m_type.name() 
-//#endif//SGL_OPTION_STORE_TYPE_NAME
-                        << "`] "; break; 
+                    case details::token::t_value: std::cout << "[value `" << v.value_v.to_string()  << "`] "; break; 
                     default: std::cout << "[invalid token] "; break;
                     }
                 }

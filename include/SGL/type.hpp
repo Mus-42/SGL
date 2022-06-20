@@ -486,10 +486,10 @@ namespace SGL {
         }
     };
 
-    bool operator==(const value_type& a, const value_type& b) {
+    inline bool operator==(const value_type& a, const value_type& b) {
         return a.is_same_with(b);
     }
-    bool operator!=(const value_type& a, const value_type& b) {
+    inline bool operator!=(const value_type& a, const value_type& b) {
         return !(a==b);
     }
 } // namespace SGL

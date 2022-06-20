@@ -41,11 +41,8 @@ namespace SGL {
         value call_operator(operator_type op, std::initializer_list<std::reference_wrapper<value>> args) const {
             return m_operators[static_cast<size_t>(op)].call(args);
         };
-        template<operator_type op, typename Ret, typename... Args> 
-        void add_operator(std::function<Ret(Args...)> op_func) {
-            constexpr size_t op_index = static_cast<size_t>(op);
-            static_assert(op_index < operators_count, "invalid operator index");
-            m_operators[op_index].add_overload(op_func);
+        void add_operator(operator_type op, auto op_func) {
+            m_operators[static_cast<size_t>(op)].add_overload(op_func);
         }
 
         //TODO replace with add operators between <A, B=A>
@@ -58,7 +55,7 @@ namespace SGL {
 //disable warnings for bool operators:
 #ifdef SGL_COMPILER_MSVC
 #pragma warning(push)
-#pragma warning(disable:4804)
+#pragma warning(disable:4018 4146 4389 4804)
 #endif//SGL_COMPILER_MSVC
 //TODO disable warnings for GCC & Clang?
 
@@ -67,16 +64,16 @@ namespace SGL {
             if constexpr(!std::is_same_v<T, void>) {
                 using T_t = std::add_lvalue_reference_t<std::add_const_t<T>>;
 
-                if constexpr(details::has_op_unary_plus  <T_t>) add_operator<operator_type::op_unary_plus  > (std::function<decltype(+std::declval<T_t>()) (T_t)>([](T_t v) { return +v;  }));
-                if constexpr(details::has_op_unary_minus <T_t>) add_operator<operator_type::op_unary_minus > (std::function<decltype(-std::declval<T_t>()) (T_t)>([](T_t v) { return -v;  }));
-                if constexpr(details::has_op_bit_not     <T_t>) add_operator<operator_type::op_bit_not     > (std::function<decltype(~std::declval<T_t>()) (T_t)>([](T_t v) { return ~v;  }));
-                if constexpr(details::has_op_not         <T_t>) add_operator<operator_type::op_not         > (std::function<decltype(!std::declval<T_t>()) (T_t)>([](T_t v) { return !v;  }));
-                if constexpr(details::has_op_deref       <T_t>) add_operator<operator_type::op_deref       > (std::function<decltype(*std::declval<T_t>()) (T_t)>([](T_t v) { return *v;  }));
-                if constexpr(details::has_op_adress_of   <T_t>) add_operator<operator_type::op_adress_of   > (std::function<decltype(&std::declval<T_t>()) (T_t)>([](T_t v) { return &v;  }));
-                if constexpr(details::has_op_prefix_incr <T_t>) add_operator<operator_type::op_prefix_incr > (std::function<decltype(++std::declval<T_t>())(T_t)>([](T_t v) { return ++v; }));
-                if constexpr(details::has_op_prefix_decr <T_t>) add_operator<operator_type::op_prefix_decr > (std::function<decltype(--std::declval<T_t>())(T_t)>([](T_t v) { return --v; }));
-                if constexpr(details::has_op_postfix_incr<T_t>) add_operator<operator_type::op_postfix_incr> (std::function<decltype(std::declval<T_t>()++)(T_t)>([](T_t v) { return v++; }));
-                if constexpr(details::has_op_postfix_decr<T_t>) add_operator<operator_type::op_postfix_decr> (std::function<decltype(std::declval<T_t>()--)(T_t)>([](T_t v) { return v--; }));
+                if constexpr(details::has_op_unary_plus  <T_t>) add_operator(operator_type::op_unary_plus  , static_cast<decltype(+std::declval<T_t>()) (*)(T_t)>([](T_t v) { return +v;  }));
+                if constexpr(details::has_op_unary_minus <T_t>) add_operator(operator_type::op_unary_minus , static_cast<decltype(-std::declval<T_t>()) (*)(T_t)>([](T_t v) { return -v;  }));
+                if constexpr(details::has_op_bit_not     <T_t>) add_operator(operator_type::op_bit_not     , static_cast<decltype(~std::declval<T_t>()) (*)(T_t)>([](T_t v) { return ~v;  }));
+                if constexpr(details::has_op_not         <T_t>) add_operator(operator_type::op_not         , static_cast<decltype(!std::declval<T_t>()) (*)(T_t)>([](T_t v) { return !v;  }));
+                if constexpr(details::has_op_deref       <T_t>) add_operator(operator_type::op_deref       , static_cast<decltype(*std::declval<T_t>()) (*)(T_t)>([](T_t v) { return *v;  }));
+                if constexpr(details::has_op_adress_of   <T_t>) add_operator(operator_type::op_adress_of   , static_cast<decltype(&std::declval<T_t>()) (*)(T_t)>([](T_t v) { return &v;  }));
+                if constexpr(details::has_op_prefix_incr <T_t>) add_operator(operator_type::op_prefix_incr , static_cast<decltype(++std::declval<T_t>())(*)(T_t)>([](T_t v) { return ++v; }));
+                if constexpr(details::has_op_prefix_decr <T_t>) add_operator(operator_type::op_prefix_decr , static_cast<decltype(--std::declval<T_t>())(*)(T_t)>([](T_t v) { return --v; }));
+                if constexpr(details::has_op_postfix_incr<T_t>) add_operator(operator_type::op_postfix_incr, static_cast<decltype(std::declval<T_t>()++)(*)(T_t)>([](T_t v) { return v++; }));
+                if constexpr(details::has_op_postfix_decr<T_t>) add_operator(operator_type::op_postfix_decr, static_cast<decltype(std::declval<T_t>()--)(*)(T_t)>([](T_t v) { return v--; }));
             }
         }
 
@@ -86,34 +83,34 @@ namespace SGL {
                 using A_t = std::add_lvalue_reference_t<std::add_const_t<A>>;
                 using B_t = std::add_lvalue_reference_t<std::add_const_t<B>>;
 
-                if constexpr(details::has_op_sum           <A_t, B_t>) add_operator<operator_type::op_sum           >(std::function<decltype(std::declval<A_t>() +   std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a +   b; }));
-                if constexpr(details::has_op_sub           <A_t, B_t>) add_operator<operator_type::op_sub           >(std::function<decltype(std::declval<A_t>() -   std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a -   b; }));
-                if constexpr(details::has_op_mul           <A_t, B_t>) add_operator<operator_type::op_mul           >(std::function<decltype(std::declval<A_t>() *   std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a *   b; }));
-                if constexpr(details::has_op_div           <A_t, B_t>) add_operator<operator_type::op_div           >(std::function<decltype(std::declval<A_t>() /   std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a /   b; }));
-                if constexpr(details::has_op_mod           <A_t, B_t>) add_operator<operator_type::op_mod           >(std::function<decltype(std::declval<A_t>() %   std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a %   b; }));
-                if constexpr(details::has_op_sum_assign    <A_t, B_t>) add_operator<operator_type::op_sum_assign    >(std::function<decltype(std::declval<A_t>() +=  std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a +=  b; }));
-                if constexpr(details::has_op_sub_assign    <A_t, B_t>) add_operator<operator_type::op_sub_assign    >(std::function<decltype(std::declval<A_t>() -=  std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a -=  b; }));
-                if constexpr(details::has_op_mul_assign    <A_t, B_t>) add_operator<operator_type::op_mul_assign    >(std::function<decltype(std::declval<A_t>() *=  std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a *=  b; }));
-                if constexpr(details::has_op_div_assign    <A_t, B_t>) add_operator<operator_type::op_div_assign    >(std::function<decltype(std::declval<A_t>() /=  std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a /=  b; }));
-                if constexpr(details::has_op_mod_assign    <A_t, B_t>) add_operator<operator_type::op_mod_assign    >(std::function<decltype(std::declval<A_t>() %=  std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a %=  b; }));
-                if constexpr(details::has_op_bit_or        <A_t, B_t>) add_operator<operator_type::op_bit_or        >(std::function<decltype(std::declval<A_t>() |   std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a |   b; }));
-                if constexpr(details::has_op_bit_and       <A_t, B_t>) add_operator<operator_type::op_bit_and       >(std::function<decltype(std::declval<A_t>() &   std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a &   b; }));
-                if constexpr(details::has_op_bit_xor       <A_t, B_t>) add_operator<operator_type::op_bit_xor       >(std::function<decltype(std::declval<A_t>() ^   std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a ^   b; }));
-                if constexpr(details::has_op_bit_lsh       <A_t, B_t>) add_operator<operator_type::op_bit_lsh       >(std::function<decltype(std::declval<A_t>() <<  std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a <<  b; }));
-                if constexpr(details::has_op_bit_rsh       <A_t, B_t>) add_operator<operator_type::op_bit_rsh       >(std::function<decltype(std::declval<A_t>() >>  std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a >>  b; }));
-                if constexpr(details::has_op_bit_or_assign <A_t, B_t>) add_operator<operator_type::op_bit_or_assign >(std::function<decltype(std::declval<A_t>() |=  std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a |=  b; }));
-                if constexpr(details::has_op_bit_and_assign<A_t, B_t>) add_operator<operator_type::op_bit_and_assign>(std::function<decltype(std::declval<A_t>() &=  std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a &=  b; }));
-                if constexpr(details::has_op_bit_xor_assign<A_t, B_t>) add_operator<operator_type::op_bit_xor_assign>(std::function<decltype(std::declval<A_t>() ^=  std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a ^=  b; }));
-                if constexpr(details::has_op_bit_lsh_assign<A_t, B_t>) add_operator<operator_type::op_bit_lsh_assign>(std::function<decltype(std::declval<A_t>() <<= std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a <<= b; }));
-                if constexpr(details::has_op_bit_rsh_assign<A_t, B_t>) add_operator<operator_type::op_bit_rsh_assign>(std::function<decltype(std::declval<A_t>() >>= std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a >>= b; }));
-                if constexpr(details::has_op_equal         <A_t, B_t>) add_operator<operator_type::op_equal         >(std::function<decltype(std::declval<A_t>() ==  std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a ==  b; }));
-                if constexpr(details::has_op_not_equal     <A_t, B_t>) add_operator<operator_type::op_not_equal     >(std::function<decltype(std::declval<A_t>() !=  std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a !=  b; }));
-                if constexpr(details::has_op_less          <A_t, B_t>) add_operator<operator_type::op_less          >(std::function<decltype(std::declval<A_t>() >   std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a >   b; }));
-                if constexpr(details::has_op_greater       <A_t, B_t>) add_operator<operator_type::op_greater       >(std::function<decltype(std::declval<A_t>() <   std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a <   b; }));
-                if constexpr(details::has_op_not_less      <A_t, B_t>) add_operator<operator_type::op_not_less      >(std::function<decltype(std::declval<A_t>() >=  std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a >=  b; }));
-                if constexpr(details::has_op_not_greater   <A_t, B_t>) add_operator<operator_type::op_not_greater   >(std::function<decltype(std::declval<A_t>() <=  std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a <=  b; }));
-                if constexpr(details::has_op_or            <A_t, B_t>) add_operator<operator_type::op_or            >(std::function<decltype(std::declval<A_t>() ||  std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a ||  b; }));
-                if constexpr(details::has_op_and           <A_t, B_t>) add_operator<operator_type::op_and           >(std::function<decltype(std::declval<A_t>() &&  std::declval<B_t>())(A_t, B_t)>([](A_t a, B_t b){ return a &&  b; }));
+                if constexpr(details::has_op_sum           <A_t, B_t>) add_operator(operator_type::op_sum           , static_cast<decltype(std::declval<A_t>() +   std::declval<B_t>())(*)(A_t, B_t)>([](A_t a, B_t b){ return a +   b; }));
+                if constexpr(details::has_op_sub           <A_t, B_t>) add_operator(operator_type::op_sub           , static_cast<decltype(std::declval<A_t>() -   std::declval<B_t>())(*)(A_t, B_t)>([](A_t a, B_t b){ return a -   b; }));
+                if constexpr(details::has_op_mul           <A_t, B_t>) add_operator(operator_type::op_mul           , static_cast<decltype(std::declval<A_t>() *   std::declval<B_t>())(*)(A_t, B_t)>([](A_t a, B_t b){ return a *   b; }));
+                if constexpr(details::has_op_div           <A_t, B_t>) add_operator(operator_type::op_div           , static_cast<decltype(std::declval<A_t>() /   std::declval<B_t>())(*)(A_t, B_t)>([](A_t a, B_t b){ return a /   b; }));
+                if constexpr(details::has_op_mod           <A_t, B_t>) add_operator(operator_type::op_mod           , static_cast<decltype(std::declval<A_t>() %   std::declval<B_t>())(*)(A_t, B_t)>([](A_t a, B_t b){ return a %   b; }));
+                if constexpr(details::has_op_sum_assign    <A_t, B_t>) add_operator(operator_type::op_sum_assign    , static_cast<decltype(std::declval<A_t>() +=  std::declval<B_t>())(*)(A_t, B_t)>([](A_t a, B_t b){ return a +=  b; }));
+                if constexpr(details::has_op_sub_assign    <A_t, B_t>) add_operator(operator_type::op_sub_assign    , static_cast<decltype(std::declval<A_t>() -=  std::declval<B_t>())(*)(A_t, B_t)>([](A_t a, B_t b){ return a -=  b; }));
+                if constexpr(details::has_op_mul_assign    <A_t, B_t>) add_operator(operator_type::op_mul_assign    , static_cast<decltype(std::declval<A_t>() *=  std::declval<B_t>())(*)(A_t, B_t)>([](A_t a, B_t b){ return a *=  b; }));
+                if constexpr(details::has_op_div_assign    <A_t, B_t>) add_operator(operator_type::op_div_assign    , static_cast<decltype(std::declval<A_t>() /=  std::declval<B_t>())(*)(A_t, B_t)>([](A_t a, B_t b){ return a /=  b; }));
+                if constexpr(details::has_op_mod_assign    <A_t, B_t>) add_operator(operator_type::op_mod_assign    , static_cast<decltype(std::declval<A_t>() %=  std::declval<B_t>())(*)(A_t, B_t)>([](A_t a, B_t b){ return a %=  b; }));
+                if constexpr(details::has_op_bit_or        <A_t, B_t>) add_operator(operator_type::op_bit_or        , static_cast<decltype(std::declval<A_t>() |   std::declval<B_t>())(*)(A_t, B_t)>([](A_t a, B_t b){ return a |   b; }));
+                if constexpr(details::has_op_bit_and       <A_t, B_t>) add_operator(operator_type::op_bit_and       , static_cast<decltype(std::declval<A_t>() &   std::declval<B_t>())(*)(A_t, B_t)>([](A_t a, B_t b){ return a &   b; }));
+                if constexpr(details::has_op_bit_xor       <A_t, B_t>) add_operator(operator_type::op_bit_xor       , static_cast<decltype(std::declval<A_t>() ^   std::declval<B_t>())(*)(A_t, B_t)>([](A_t a, B_t b){ return a ^   b; }));
+                if constexpr(details::has_op_bit_lsh       <A_t, B_t>) add_operator(operator_type::op_bit_lsh       , static_cast<decltype(std::declval<A_t>() <<  std::declval<B_t>())(*)(A_t, B_t)>([](A_t a, B_t b){ return a <<  b; }));
+                if constexpr(details::has_op_bit_rsh       <A_t, B_t>) add_operator(operator_type::op_bit_rsh       , static_cast<decltype(std::declval<A_t>() >>  std::declval<B_t>())(*)(A_t, B_t)>([](A_t a, B_t b){ return a >>  b; }));
+                if constexpr(details::has_op_bit_or_assign <A_t, B_t>) add_operator(operator_type::op_bit_or_assign , static_cast<decltype(std::declval<A_t>() |=  std::declval<B_t>())(*)(A_t, B_t)>([](A_t a, B_t b){ return a |=  b; }));
+                if constexpr(details::has_op_bit_and_assign<A_t, B_t>) add_operator(operator_type::op_bit_and_assign, static_cast<decltype(std::declval<A_t>() &=  std::declval<B_t>())(*)(A_t, B_t)>([](A_t a, B_t b){ return a &=  b; }));
+                if constexpr(details::has_op_bit_xor_assign<A_t, B_t>) add_operator(operator_type::op_bit_xor_assign, static_cast<decltype(std::declval<A_t>() ^=  std::declval<B_t>())(*)(A_t, B_t)>([](A_t a, B_t b){ return a ^=  b; }));
+                if constexpr(details::has_op_bit_lsh_assign<A_t, B_t>) add_operator(operator_type::op_bit_lsh_assign, static_cast<decltype(std::declval<A_t>() <<= std::declval<B_t>())(*)(A_t, B_t)>([](A_t a, B_t b){ return a <<= b; }));
+                if constexpr(details::has_op_bit_rsh_assign<A_t, B_t>) add_operator(operator_type::op_bit_rsh_assign, static_cast<decltype(std::declval<A_t>() >>= std::declval<B_t>())(*)(A_t, B_t)>([](A_t a, B_t b){ return a >>= b; }));
+                if constexpr(details::has_op_equal         <A_t, B_t>) add_operator(operator_type::op_equal         , static_cast<decltype(std::declval<A_t>() ==  std::declval<B_t>())(*)(A_t, B_t)>([](A_t a, B_t b){ return a ==  b; }));
+                if constexpr(details::has_op_not_equal     <A_t, B_t>) add_operator(operator_type::op_not_equal     , static_cast<decltype(std::declval<A_t>() !=  std::declval<B_t>())(*)(A_t, B_t)>([](A_t a, B_t b){ return a !=  b; }));
+                if constexpr(details::has_op_less          <A_t, B_t>) add_operator(operator_type::op_less          , static_cast<decltype(std::declval<A_t>() >   std::declval<B_t>())(*)(A_t, B_t)>([](A_t a, B_t b){ return a >   b; }));
+                if constexpr(details::has_op_greater       <A_t, B_t>) add_operator(operator_type::op_greater       , static_cast<decltype(std::declval<A_t>() <   std::declval<B_t>())(*)(A_t, B_t)>([](A_t a, B_t b){ return a <   b; }));
+                if constexpr(details::has_op_not_less      <A_t, B_t>) add_operator(operator_type::op_not_less      , static_cast<decltype(std::declval<A_t>() >=  std::declval<B_t>())(*)(A_t, B_t)>([](A_t a, B_t b){ return a >=  b; }));
+                if constexpr(details::has_op_not_greater   <A_t, B_t>) add_operator(operator_type::op_not_greater   , static_cast<decltype(std::declval<A_t>() <=  std::declval<B_t>())(*)(A_t, B_t)>([](A_t a, B_t b){ return a <=  b; }));
+                if constexpr(details::has_op_or            <A_t, B_t>) add_operator(operator_type::op_or            , static_cast<decltype(std::declval<A_t>() ||  std::declval<B_t>())(*)(A_t, B_t)>([](A_t a, B_t b){ return a ||  b; }));
+                if constexpr(details::has_op_and           <A_t, B_t>) add_operator(operator_type::op_and           , static_cast<decltype(std::declval<A_t>() &&  std::declval<B_t>())(*)(A_t, B_t)>([](A_t a, B_t b){ return a &&  b; }));
             }
         }
 
