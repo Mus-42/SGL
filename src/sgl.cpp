@@ -55,8 +55,8 @@ namespace SGL {
 
         //TODO how fix "to large obj file" 
         
-        add_binary_operator_permutations<sgl_float32_t, sgl_float64_t,
-            sgl_int8_t, sgl_int16_t, sgl_int32_t, sgl_int64_t,
-            sgl_uint8_t, sgl_uint16_t, sgl_uint32_t, sgl_uint64_t>();
+        //add_binary_operator_permutations<sgl_float32_t, sgl_float64_t,
+        //    sgl_int8_t, sgl_int16_t, sgl_int32_t, sgl_int64_t,
+        //    sgl_uint8_t, sgl_uint16_t, sgl_uint32_t, sgl_uint64_t>();
     }
 }//namespace SGL

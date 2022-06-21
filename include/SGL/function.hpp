@@ -25,6 +25,11 @@ namespace SGL {
             function_overload(function_overload&&) = default;
             function_overload&operator=(const function_overload&) = default;
             function_overload&operator=(function_overload&&) = default;
+            
+            struct m_impl_base {
+                virtual value call(std::initializer_list<std::reference_wrapper<value>>) const = 0;
+                virtual ~m_impl_base() = default;
+            };
 
             template<typename Ret, typename... Args>
             function_overload(std::function<Ret(Args...)> func) : m_func(get_function_impl(details::sgl_function_identity<Ret(Args...)>{}, func, std::index_sequence_for<Args...>{})), args_types({value_type::construct_value_type<Args>()...}) {}
@@ -33,18 +38,24 @@ namespace SGL {
 
             template<typename Func, typename Ret, typename... Args, size_t... N>
             static constexpr decltype(auto) get_function_impl(details::sgl_function_identity<Ret(Args...)>, Func func, std::index_sequence<N...>) {
-                return [func](std::initializer_list<std::reference_wrapper<value>> args) -> value {
-                    if(sizeof...(Args) != args.size()) throw std::runtime_error("sgl function_overload: invalid args count");
-                    if constexpr(std::is_same_v<Ret, void>) {
-                        func((std::data(args)[N]).get().get<Args>() ...);
-                        return value();            
+                struct func_impl : m_impl_base {
+                    func_impl(Func func) : func(func) {}
+                    virtual ~func_impl() = default;
+                    virtual value call(std::initializer_list<std::reference_wrapper<value>> args) const override {
+                        if(sizeof...(Args) != args.size()) throw std::runtime_error("sgl function_overload: invalid args count");
+                        if constexpr(std::is_same_v<Ret, void>) {
+                            func((std::data(args)[N]).get().get<Args>() ...);
+                            return value();            
+                        }
+                        else return value(val<Ret>(func((std::data(args)[N]).get().get<Args>() ...)));//TODO replase val with ..?
                     }
-                    else return value(val<Ret>(func((std::data(args)[N]).get().get<Args>() ...)));//TODO replase val with ..?
+                    Func func;
                 };
+                return new func_impl(func);
             }
 
-            using m_func_t = value(*)(std::initializer_list<std::reference_wrapper<value>>);
-            std::function<value(std::initializer_list<std::reference_wrapper<value>>)> m_func;
+            using m_func_ptr_t = value(*)(std::initializer_list<std::reference_wrapper<value>>);
+            std::shared_ptr<m_impl_base> m_func;
             std::vector<std::shared_ptr<value_type>> args_types;
             
             int all_args_count = 0;
@@ -58,8 +69,17 @@ namespace SGL {
 
             struct all_types_t {};
             //constructors for built-in functions
-            function_overload(m_func_t f, std::vector<std::shared_ptr<value_type>> args) : m_func(f), args_types(args) {}
-            function_overload(m_func_t f, all_types_t, int all_args_count = -1) : m_func(f), all_types(true), all_args_count(all_args_count) {}
+            function_overload(m_func_ptr_t f, all_types_t, int all_args_count = -1) : m_func([f](){
+                struct func_impl : m_impl_base {
+                    func_impl(m_func_ptr_t f) : func(f) {}
+                    virtual ~func_impl() = default;
+                    virtual value call(std::initializer_list<std::reference_wrapper<value>> args) const override {
+                        return func(args);
+                    }
+                    m_func_ptr_t func;
+                };
+                return new func_impl(f);
+            }()), all_args_count(all_args_count), all_types(true) {}
             
             //template<typename Ret, typename... Args>
             //function_overload(std::function<Ret(Args...)> func, std::vector<std::shared_ptr<value_type>> args) : m_func(get_function_impl(func, std::index_sequence_for<Args...>{})), args_types(args) {
@@ -97,7 +117,7 @@ namespace SGL {
             if(indexes.size() == 0) throw std::runtime_error("can't choose function overload");
             std::sort(indexes.begin(), indexes.end(), [](auto a, auto b){ return a.second < b.second; });
             if(indexes.size() != 1 && indexes[0].second == indexes[1].second) throw std::runtime_error("can't choose function overload: more than 1 candidate with same priority");
-            return m_overloads[indexes.front().first].m_func(v);
+            return m_overloads[indexes.front().first].m_func->call(v);
         }
         
         template<typename Ret, typename... Args>
@@ -105,7 +125,7 @@ namespace SGL {
             m_overloads.push_back({func});
             return *this;
         }
-        function& merge(const function& v) {
+        function& merge(const function& v) {//TODO rename to merge_overloads
             size_t s = m_overloads.size();
             m_overloads.resize(s + v.m_overloads.size());
             std::copy(v.m_overloads.begin(), v.m_overloads.end(), m_overloads.begin() + s);

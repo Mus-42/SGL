@@ -50,9 +50,8 @@ namespace SGL {
             if(!details::is_correct_identifier(name)) throw std::invalid_argument("incorrect function name: " + name);
             m_functions[name].add_overload(f);
         }
-
         template<typename Ret, typename... Args>
-        void add_function_overload(const std::string& name, std::function<Ret(Args...)> f) {
+        void add_function(const std::string& name, Ret(*f)(Args...)) {
             if(!details::is_correct_identifier(name)) throw std::invalid_argument("incorrect function name: " + name);
             m_functions[name].add_overload(f);
         }

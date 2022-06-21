@@ -4,6 +4,12 @@
 #include <iostream>
 
 int main() {
+    using namespace SGL;
+    auto st = state();
+    st.add_typecast_between_impl<int, float>("to_float");//int to float. float(int(v))
+    st.add_typecast_between_impl<double, float>("to_float");
+    auto v = st.register_type<int>("my_int");
+    SGL_ASSERT(v->m_type == typeid(int), "type check");
 
     //TODO add example
 
@@ -12,7 +18,6 @@ int main() {
     */
 
     //some test code
-    using namespace SGL;
 
     //state().get_evaluator()//invalid 
 
@@ -27,7 +32,6 @@ int main() {
         std::cout << ex.what() << std::endl;
     }
 
-    auto st = state();
     auto ev = st.get_evaluator();
 
     std::cout << st.get_type<const arr<int*>*&>()->type_to_str() << std::endl;;
@@ -41,13 +45,9 @@ int main() {
     ev.evaluate(tokenizer(R"("qq" + "\tall\n")"));
     ev.evaluate(tokenizer("auto v = {1, 4.26, \"mimsus\"};"));
 
-    auto v = st.register_type<int>("my_int");
-    SGL_ASSERT(v->m_type == typeid(int), "type check");
 
 
     //st.add_typecast_between_types<int, float, double>();
-    st.add_typecast_between_impl<int, float>("to_float");//int to float. float(int(v))
-    st.add_typecast_between_impl<double, float>("to_float");
     try {
         auto arg1 = value(val<int>(12));
         auto arg2 = value(const_val<double>(12.42));
@@ -93,11 +93,11 @@ int main() {
 /*
     std::cout << std::endl;
     auto f = function({
-        std::function<int(const int&)>([](const int& v){
+        static_cast<int(*)(const int&)>([](const int& v){
             std::cout << "i: " << v << std::endl;
             return v;
         }), 
-        std::function<void(double)>([](double v){ 
+        static_cast<void(*)(double)>([](double v){ 
             std::cout << "f: " << v << std::endl;
         })
     });
@@ -144,6 +144,7 @@ int main() {
         auto b = value(const_ref<base>{d2.get<const derived&>()});
         b.get<const base&>().say();
     }
+ 
     //*/
 }
 
