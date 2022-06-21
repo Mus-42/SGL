@@ -36,14 +36,16 @@ int main() {
 
     std::cout << st.get_type<const arr<int*>*&>()->type_to_str() << std::endl;;
 
-    ev.evaluate(tokenizer("int a = -100u * 10;"));
-    ev.evaluate(tokenizer("0xFFFF + 0b01101101u8"));
-    ev.evaluate(tokenizer("1.12 + 48u32"));
-    ev.evaluate(tokenizer("1.12e2"));
-    ev.evaluate(tokenizer("1.12e-2"));
-    ev.evaluate(tokenizer("1.12e+2f"));
-    ev.evaluate(tokenizer(R"("qq" + "\tall\n")"));
-    ev.evaluate(tokenizer("auto v = {1, 4.26, \"mimsus\"};"));
+    //ev.evaluate(tokenizer("int a = -100u * 10;"));
+    //ev.evaluate(tokenizer("0xFFFF + 0b01101101u8"));
+    //ev.evaluate(tokenizer("1.12 + 48u32"));
+    //ev.evaluate(tokenizer("1.12e2"));
+    //ev.evaluate(tokenizer("1.12e-2"));
+    //ev.evaluate(tokenizer("1.12e+2f"));
+    //ev.evaluate(tokenizer(R"("qq" + "\tall\n")"));
+    //ev.evaluate(tokenizer("auto v = {1, 4.26, \"mimsus\"};"));
+
+    ev.evaluate(tokenizer("2 + 2 * 2"));
 
 
 

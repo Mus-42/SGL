@@ -59,4 +59,78 @@ namespace SGL {
         //    sgl_int8_t, sgl_int16_t, sgl_int32_t, sgl_int64_t,
         //    sgl_uint8_t, sgl_uint16_t, sgl_uint32_t, sgl_uint64_t>();
     }
+
+
+    value evaluator::evaluate(tokenizer&& tk) {
+        /*
+            identifier can be reserved keyword, typename or user-defined name
+            operator - use operator_list.hpp enum?
+        */
+        std::cout << "before evaluation:\n";
+        for (auto& l : tk.m_tokens) print_tokens(l);
+
+
+        //TODO choose operators, sort in evaluation order, evaluate
+
+        for (auto& l : tk.m_tokens) {
+            using tk_iter = tokenizer::token_list::iterator;
+            using details::token;
+
+            std::vector<std::pair<size_t, tk_iter>> operators;
+            bool is_begin = true;
+            for (auto tkn = l.begin(); tkn != l.end(); tkn++) {//choose operators
+                if (tkn->type != token::token_type::t_operator || tkn->operator_v == operator_type::op_none) continue;
+
+                //`+` `-` `&` `*` can be unary or binary 
+
+                bool can_be_unary = is_begin || std::prev(tkn)->type != token::token_type::t_identifier && std::prev(tkn)->type != token::token_type::t_value;
+
+                if (can_be_unary && is_operator_unary[static_cast<size_t>(tkn->operator_v)]) switch (tkn->operator_v) {
+                case operator_type::op_sum:     tkn->operator_v = operator_type::op_unary_plus;
+                case operator_type::op_sub:     tkn->operator_v = operator_type::op_unary_minus;
+                case operator_type::op_mul:     tkn->operator_v = operator_type::op_deref;
+                case operator_type::op_bit_and: tkn->operator_v = operator_type::op_adress_of;
+                default: break;
+                }
+
+                operators.emplace_back(operator_precedence_step * (tkn->priority + 1) - operator_precedence[static_cast<size_t>(tkn->operator_v)], tkn);
+                is_begin = false;
+            }
+
+            std::sort(operators.begin(), operators.end(), [](auto& a, auto& b) {
+                return a.first > b.first;
+                });
+
+            for (auto& op : operators) {
+                auto& tkn = op.second;
+                auto t = tkn->operator_v;
+                //TODO chek if operands is t_value
+                token res(token::token_type::t_value, op.second->priority);
+
+
+                if (is_operator_unary[static_cast<size_t>(t)]) {
+                    //TODO suffix operators support?
+                    auto prev = std::prev(tkn);
+                    res.value_v = m_state.m_operator_list.call_operator(t, { prev->value_v });
+                    l.erase(prev);
+                }
+                else {
+
+                    auto prev = std::prev(tkn);
+                    auto next = std::next(tkn);
+                    res.value_v = m_state.m_operator_list.call_operator(t, { prev->value_v, next->value_v });
+
+                    l.erase(prev);
+                    l.erase(next);
+                }
+
+                *tkn = std::move(res);
+            }
+        }
+        std::cout << "after evaluation:\n";
+        for (auto& l : tk.m_tokens) print_tokens(l);
+
+
+        return value();
+    }
 }//namespace SGL

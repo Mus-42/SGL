@@ -5,6 +5,7 @@
 #include "config.hpp"
 #include "utils.hpp"
 #include "value.hpp"
+#include "operator_list.hpp"
 
 #include <cstdint>
 #include <cmath>//std::pow
@@ -24,7 +25,7 @@ namespace SGL {
                 t_identifier,//type name or constant or variable... (evaluator chose what it mean)
             };
 
-            explicit token(token_type t, int p) : type(t), priority(p) {         
+            explicit token(token_type t, size_t p) : type(t), priority(p) {         
                 switch (type) {
                 case t_none:       break;   
                 case t_value:      new (&value_v) value; break;   
@@ -39,7 +40,7 @@ namespace SGL {
                 case t_none:       break;   
                 case t_value:      new (&value_v) value(tk.value_v); break;   
                 case t_punct:      punct_v = tk.punct_v; break;   
-                case t_operator:   operator_v = tk.operator_v; break;   
+                case t_operator:   operator_v = tk.operator_v; operator_str = tk.operator_str; break;
                 case t_identifier: new (&identifier_v) std::string(tk.identifier_v); break;   
                 default: break;
                 }
@@ -49,7 +50,7 @@ namespace SGL {
                 case t_none:       break;   
                 case t_value:      new (&value_v) value(std::move(tk.value_v)); break;   
                 case t_punct:      punct_v = tk.punct_v; break;   
-                case t_operator:   operator_v = tk.operator_v; break;   
+                case t_operator:   operator_v = tk.operator_v; operator_str = tk.operator_str;  break;
                 case t_identifier: new (&identifier_v) std::string(std::move(tk.identifier_v)); break;   
                 default: break;
                 }
@@ -64,23 +65,34 @@ namespace SGL {
                 default: break;
                 }
             }
+            token& operator=(const token& tk) {
+                this->~token();
+                new (this) token(tk);
+                return *this;
+            }
+            token& operator=(token&& tk) {
+                this->~token();
+                new (this) token(tk);
+                return *this;
+            }
 
             const token_type type;
-            const int priority;
+            const size_t priority;
             union {
                 struct { } none_v;//OK...
                 value value_v;
                 char punct_v;
-                std::string_view operator_v;
+                struct {
+                    std::string_view operator_str;
+                    operator_type operator_v;
+                };
                 std::string identifier_v;
             };
         };
     }//namespace details
     class tokenizer : public details::no_copy {
     public:
-        tokenizer(tokenizer&& o) : m_tokens(std::move(o.m_tokens)) {
-
-        }
+        tokenizer(tokenizer&& o) : m_tokens(std::move(o.m_tokens)) {}
         //TODO add settings such as "ignore trailing comma"?
         [[nodiscard]] explicit tokenizer(std::string_view str);//TODO add char type as template arg?
         ~tokenizer() = default;
@@ -161,7 +173,7 @@ namespace SGL {
                     if(type_literal == "i32") return value(const_val<builtin_types::sgl_int32_t>(static_cast<builtin_types::sgl_int32_t>(int_val)));
                     if(type_literal == "i64") return value(const_val<builtin_types::sgl_int64_t>(static_cast<builtin_types::sgl_int64_t>(int_val)));
 
-                    if(type_literal == "u8"  || type_literal == "ui8" )  return value(const_val<builtin_types::sgl_uint8_t> (static_cast<builtin_types::sgl_uint8_t> (int_val)));
+                    if(type_literal == "u8"  || type_literal == "ui8" ) return value(const_val<builtin_types::sgl_uint8_t> (static_cast<builtin_types::sgl_uint8_t> (int_val)));
                     if(type_literal == "u16" || type_literal == "ui16") return value(const_val<builtin_types::sgl_uint16_t>(static_cast<builtin_types::sgl_uint16_t>(int_val)));
                     if(type_literal == "u32" || type_literal == "ui32") return value(const_val<builtin_types::sgl_uint32_t>(static_cast<builtin_types::sgl_uint32_t>(int_val)));
                     if(type_literal == "u64" || type_literal == "ui64") return value(const_val<builtin_types::sgl_uint64_t>(static_cast<builtin_types::sgl_uint64_t>(int_val)));
@@ -173,39 +185,39 @@ namespace SGL {
             return value();
         };
 
-        int priotity = 0;
+        size_t priority = 0;//brackets level
 
         while(skip_spaces_and_comments(), cur < str.size()) {
             switch(str[cur]) {
             case ';': {
                 //TODO check priority == 0
-                details::token t(details::token::t_punct, priotity);
+                details::token t(details::token::t_punct, priority);
                 t.punct_v = ';';
                 m_tokens.back().emplace_back(std::move(t));
                 m_tokens.emplace_back();
             } break;
             case ',': {
-                details::token t(details::token::t_punct, priotity);
+                details::token t(details::token::t_punct, priority);
                 t.punct_v = str[cur];
                 m_tokens.back().emplace_back(std::move(t));
             } break;
             case '(': case '{': case '[': {
-                priotity++;
-                details::token t(details::token::t_punct, priotity);
+                priority++;
+                details::token t(details::token::t_punct, priority);
                 t.punct_v = str[cur];
                 m_tokens.back().emplace_back(std::move(t));
             } break;
             case ')': case '}': case ']': {
                 //TODO check priority > 0
-                details::token t(details::token::t_punct, priotity);
-                priotity--;
+                details::token t(details::token::t_punct, priority);
+                priority--;
                 t.punct_v = str[cur];
                 m_tokens.back().emplace_back(std::move(t));
             } break;
 
             case '.': {//puntc ot value (a.b or .1426)
                 if(cur + 1 >= str.size() || !std::isdigit(str[cur+1])) {
-                    details::token t(details::token::t_punct, priotity);
+                    details::token t(details::token::t_punct, priority);
                     t.punct_v = str[cur];
                     m_tokens.back().emplace_back(std::move(t));
                     break;
@@ -243,7 +255,7 @@ namespace SGL {
                     auto type_literal = str.substr(lit_beg, cur - lit_beg);//suffix
                     cur--;
 
-                    details::token t(details::token::t_value, priotity);//TODO use type_literal to choose type
+                    details::token t(details::token::t_value, priority);//TODO use type_literal to choose type
                     t.value_v = construct_number_using_type_literal(num, 0, 0, 0, false, false, type_literal);
                     m_tokens.back().emplace_back(std::move(t));
 
@@ -284,7 +296,7 @@ namespace SGL {
                 
                 cur--;
 
-                details::token t(details::token::t_value, priotity);
+                details::token t(details::token::t_value, priority);
 
                 t.value_v = construct_number_using_type_literal(int_part, fract_part, fract_size, (is_exp_positive ? 1 : -1) * int(exp_part), has_fract, has_exp, type_literal);
 
@@ -317,7 +329,7 @@ namespace SGL {
                 }
                 if(is_char && s.size() != 1) tokenize_error("invalid character literal");
                 
-                details::token t(details::token::t_value, priotity);
+                details::token t(details::token::t_value, priority);
 
                 if(is_char) t.value_v = value(const_val<char>(s[0]));//TODO use other char type? char8_t? or 16 (or 32?) for unicode?
                 else t.value_v = value(const_val<std::string>(std::move(s)));
@@ -331,43 +343,62 @@ namespace SGL {
                     while(cur < str.size() && (std::isalnum(str[cur]) || str[cur] == '_')) cur++;
                     auto identifier_str = str.substr(beg, cur - beg);
                     cur--;
-                    details::token t(details::token::t_identifier, priotity);
+                    details::token t(details::token::t_identifier, priority);
                     t.identifier_v = identifier_str;
                     m_tokens.back().emplace_back(std::move(t));
                 } else {//operator
-                    details::token t(details::token::t_operator, priotity);
+                    details::token t(details::token::t_operator, priority);
                     if(cur + 2 < str.size()) {
-                        static constexpr std::array<std::string_view, 3> op_3_char_wide = { "<<=", ">>=", "<=>" };
-                        if(auto f = std::find(op_3_char_wide.begin(), op_3_char_wide.end(), str.substr(cur, 3)); f != op_3_char_wide.end()) {
-                            t.operator_v = *f;
+                        static constexpr std::array<std::string_view, 3> op_str = { "<<=", ">>=", "<=>" };
+                        static constexpr std::array<operator_type, 3> op_types = { operator_type::op_none, operator_type::op_none, operator_type::op_none };
+                        if(auto f = std::find(op_str.begin(), op_str.end(), str.substr(cur, 3)); f != op_str.end()) {
+                            size_t i = f - op_str.begin();
+                            t.operator_str = op_str[i];
+                            t.operator_v = op_types[i];
                             m_tokens.back().emplace_back(std::move(t));
                             cur += 2;
                             break;
                         }
                     }
                     if(cur + 1 < str.size()) {
-                        static constexpr std::array<std::string_view, 18> op_2_char_wide = { 
+                        static constexpr std::array<std::string_view, 18> op_str = {
                             "++", "--", 
                             "<<", ">>", 
                             "+=", "-=", "*=", "/=", "%=", "|=", "^=",
                             "<=", ">=", "!=", "==", "&&", "||", "->"
                         };
-                        if(auto f = std::find(op_2_char_wide.begin(), op_2_char_wide.end(), str.substr(cur, 2)); f != op_2_char_wide.end()) {
-                            t.operator_v = *f;
+                        static constexpr std::array<operator_type, 18> op_types = {
+                            operator_type::op_none, operator_type::op_none,
+                            operator_type::op_bit_lsh, operator_type::op_bit_rsh,
+                            operator_type::op_none, operator_type::op_none, operator_type::op_none, operator_type::op_none, operator_type::op_none, operator_type::op_none, operator_type::op_none,
+                            operator_type::op_not_greater, operator_type::op_not_less, operator_type::op_not_equal, operator_type::op_equal, operator_type::op_and, operator_type::op_or, operator_type::op_none
+                        };
+                        if(auto f = std::find(op_str.begin(), op_str.end(), str.substr(cur, 2)); f != op_str.end()) {
+                            size_t i = f - op_str.begin();
+                            t.operator_str = op_str[i];
+                            t.operator_v = op_types[i];
                             m_tokens.back().emplace_back(std::move(t));
                             cur += 1;
                             break;
                         }
                     }
                     {
-                        static constexpr std::array<std::string_view, 14> op_1_char_wide = { 
+                        static constexpr std::array<std::string_view, 14> op_str = {
                             "+", "-", "*", "/", "%", 
                             "|", "&", "~", "^",
                             "=",
                             "!", "<", ">", "."
                         };
-                        if(auto f = std::find(op_1_char_wide.begin(), op_1_char_wide.end(), str.substr(cur, 1)); f != op_1_char_wide.end()) {
-                            t.operator_v = *f;
+                        static constexpr std::array<operator_type, 14> op_types = {
+                            operator_type::op_sum, operator_type::op_sub, operator_type::op_mul, operator_type::op_div, operator_type::op_mod,
+                            operator_type::op_bit_or, operator_type::op_bit_and, operator_type::op_bit_not, operator_type::op_bit_xor,
+                            operator_type::op_none,
+                            operator_type::op_not, operator_type::op_less, operator_type::op_greater, operator_type::op_none,
+                        };
+                        if(auto f = std::find(op_str.begin(), op_str.end(), str.substr(cur, 1)); f != op_str.end()) {
+                            size_t i = f - op_str.begin();
+                            t.operator_str = op_str[i];
+                            t.operator_v = op_types[i];
                             m_tokens.back().emplace_back(std::move(t));
                             break;
                         }

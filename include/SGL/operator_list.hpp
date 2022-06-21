@@ -28,11 +28,54 @@ namespace SGL {
         op_or, op_and, op_not,
         //pointer: &a, *a
         op_adress_of, op_deref,
-        //TODO add other
+        //TODO add other (subscript, ...)
 
         __op_count
     };
     constexpr size_t operators_count = static_cast<size_t>(operator_type::__op_count);
+
+    constexpr std::array<uint8_t, operators_count> operator_precedence = {//TODO add associativity for operators (unary + - ! ~ ...)? (l to r (->) or r to l (<-)) (now all operators is l to r)
+        //op_none
+        0, 
+        //op_unary_plus, op_unary_minus, //op_prefix_incr, op_prefix_decr, op_postfix_incr, op_postfix_decr,
+        3, 3,//3, 3, 2, 2,
+        //op_sum, op_sub, op_mul, op_div, op_mod,
+        6, 6, 5, 5, 5,
+        //op_sum_assign, op_sub_assign, op_mul_assign, op_div_assign, op_mod_assign,
+        //16, 16, 16, 16, 16,
+        //op_bit_or, op_bit_and, op_bit_xor, op_bit_not, op_bit_lsh, op_bit_rsh,
+        13, 11, 12, 3, 7, 7,
+        //op_bit_or_assign, op_bit_and_assign, op_bit_xor_assign, op_bit_lsh_assign, op_bit_rsh_assign, 
+        //...
+        //op_equal, op_not_equal, op_less, op_greater, op_not_less, op_not_greater,
+        10, 10, 9, 9, 9, 9,
+        //op_or, op_and, op_not,
+        15, 14, 3,
+        //op_adress_of, op_deref,
+        3, 3,
+    };
+    constexpr size_t operator_precedence_step = 16;// > max(operator_precedence)
+
+    constexpr std::array<bool, operators_count> is_operator_unary = {
+        //op_none
+        false,
+        //op_unary_plus, op_unary_minus, //op_prefix_incr, op_prefix_decr, op_postfix_incr, op_postfix_decr,
+        true, true,//...
+        //op_sum, op_sub, op_mul, op_div, op_mod,
+        false, false, false, false, false,
+        //op_sum_assign, op_sub_assign, op_mul_assign, op_div_assign, op_mod_assign,
+        //...
+        //op_bit_or, op_bit_and, op_bit_xor, op_bit_not, op_bit_lsh, op_bit_rsh,
+        false, false, false, true, false, false,
+        //op_bit_or_assign, op_bit_and_assign, op_bit_xor_assign, op_bit_lsh_assign, op_bit_rsh_assign, 
+        //...
+        //op_equal, op_not_equal, op_less, op_greater, op_not_less, op_not_greater,
+        false, false, false, false, false,
+        //op_or, op_and, op_not,
+        false, false, false,
+        //op_adress_of, op_deref,
+        true, true,
+    };
 
     //TODO add operator priority list
 
