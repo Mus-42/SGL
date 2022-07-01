@@ -40,7 +40,7 @@ namespace SGL {
                 case t_none:       break;   
                 case t_value:      new (&value_v) value(tk.value_v); break;   
                 case t_punct:      punct_v = tk.punct_v; break;   
-                case t_operator:   operator_v = tk.operator_v; operator_str = tk.operator_str; break;
+                case t_operator:   operator_v.type = tk.operator_v.type; operator_v.str = tk.operator_v.str; break;
                 case t_identifier: new (&identifier_v) std::string(tk.identifier_v); break;   
                 default: break;
                 }
@@ -50,7 +50,7 @@ namespace SGL {
                 case t_none:       break;   
                 case t_value:      new (&value_v) value(std::move(tk.value_v)); break;   
                 case t_punct:      punct_v = tk.punct_v; break;   
-                case t_operator:   operator_v = tk.operator_v; operator_str = tk.operator_str;  break;
+                case t_operator:   operator_v.type = tk.operator_v.type; operator_v.str = tk.operator_v.str;  break;
                 case t_identifier: new (&identifier_v) std::string(std::move(tk.identifier_v)); break;   
                 default: break;
                 }
@@ -79,13 +79,12 @@ namespace SGL {
             const token_type type;
             const size_t priority;
             union {
-                struct { } none_v;//OK...
                 value value_v;
                 char punct_v;
-                struct {
-                    std::string_view operator_str;
-                    operator_type operator_v;
-                };
+                struct op_v_t  {
+                    std::string_view str;//TODO remove?
+                    operator_type type;
+                } operator_v;
                 std::string identifier_v;
             };
         };
@@ -145,7 +144,7 @@ namespace SGL {
             uint64_t int_val = int_part;
             bool is_float = false;
 
-            if(has_fract || has_fract) {
+            if(has_fract || has_exp) {
                 is_float = true;
                 float_val = double(int_part);
                 //division by pow10_table[fract_size+308] same as multiplication by pow10_table[308-fract_size]
@@ -353,8 +352,8 @@ namespace SGL {
                         static constexpr std::array<operator_type, 3> op_types = { operator_type::op_none, operator_type::op_none, operator_type::op_none };
                         if(auto f = std::find(op_str.begin(), op_str.end(), str.substr(cur, 3)); f != op_str.end()) {
                             size_t i = f - op_str.begin();
-                            t.operator_str = op_str[i];
-                            t.operator_v = op_types[i];
+                            t.operator_v.str = op_str[i];
+                            t.operator_v.type = op_types[i];
                             m_tokens.back().emplace_back(std::move(t));
                             cur += 2;
                             break;
@@ -375,8 +374,8 @@ namespace SGL {
                         };
                         if(auto f = std::find(op_str.begin(), op_str.end(), str.substr(cur, 2)); f != op_str.end()) {
                             size_t i = f - op_str.begin();
-                            t.operator_str = op_str[i];
-                            t.operator_v = op_types[i];
+                            t.operator_v.str = op_str[i];
+                            t.operator_v.type = op_types[i];
                             m_tokens.back().emplace_back(std::move(t));
                             cur += 1;
                             break;
@@ -397,8 +396,8 @@ namespace SGL {
                         };
                         if(auto f = std::find(op_str.begin(), op_str.end(), str.substr(cur, 1)); f != op_str.end()) {
                             size_t i = f - op_str.begin();
-                            t.operator_str = op_str[i];
-                            t.operator_v = op_types[i];
+                            t.operator_v.str = op_str[i];
+                            t.operator_v.type = op_types[i];
                             m_tokens.back().emplace_back(std::move(t));
                             break;
                         }

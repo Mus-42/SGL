@@ -21,3 +21,4 @@ replace asserts like bad value cast, illegal name etc. with exceptions
 fast function overload search (now it O(nlog(n)))
 
 now compilation to long: for each operator overload it generate 4 functions. optimize it?
+replace 'SGL' in namespaces & files with lowercase? ('sgl')

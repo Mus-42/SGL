@@ -1,5 +1,6 @@
 #include <SGL/SGL.hpp>
 
+//large functions linked static to increase compilation speed
 namespace SGL {
     void state::init() {
         using namespace builtin_types;
@@ -79,21 +80,21 @@ namespace SGL {
             std::vector<std::pair<size_t, tk_iter>> operators;
             bool is_begin = true;
             for (auto tkn = l.begin(); tkn != l.end(); tkn++) {//choose operators
-                if (tkn->type != token::token_type::t_operator || tkn->operator_v == operator_type::op_none) continue;
+                if (tkn->type != token::t_operator || tkn->operator_v.type == operator_type::op_none) continue;
 
                 //`+` `-` `&` `*` can be unary or binary 
 
-                bool can_be_unary = is_begin || std::prev(tkn)->type != token::token_type::t_identifier && std::prev(tkn)->type != token::token_type::t_value;
+                bool can_be_unary = is_begin || std::prev(tkn)->type != token::t_identifier && std::prev(tkn)->type != token::t_value;
 
-                if (can_be_unary && is_operator_unary[static_cast<size_t>(tkn->operator_v)]) switch (tkn->operator_v) {
-                case operator_type::op_sum:     tkn->operator_v = operator_type::op_unary_plus;
-                case operator_type::op_sub:     tkn->operator_v = operator_type::op_unary_minus;
-                case operator_type::op_mul:     tkn->operator_v = operator_type::op_deref;
-                case operator_type::op_bit_and: tkn->operator_v = operator_type::op_adress_of;
+                if (can_be_unary && is_operator_unary[static_cast<size_t>(tkn->operator_v.type)]) switch (tkn->operator_v.type) {
+                case operator_type::op_sum:     tkn->operator_v.type = operator_type::op_unary_plus;
+                case operator_type::op_sub:     tkn->operator_v.type = operator_type::op_unary_minus;
+                case operator_type::op_mul:     tkn->operator_v.type = operator_type::op_deref;
+                case operator_type::op_bit_and: tkn->operator_v.type = operator_type::op_adress_of;
                 default: break;
                 }
 
-                operators.emplace_back(operator_precedence_step * (tkn->priority + 1) - operator_precedence[static_cast<size_t>(tkn->operator_v)], tkn);
+                operators.emplace_back(operator_precedence_step * (tkn->priority + 1) - operator_precedence[static_cast<size_t>(tkn->operator_v.type)], tkn);
                 is_begin = false;
             }
 
@@ -103,21 +104,29 @@ namespace SGL {
 
             for (auto& op : operators) {
                 auto& tkn = op.second;
-                auto t = tkn->operator_v;
+                auto t = tkn->operator_v.type;
                 //TODO chek if operands is t_value
-                token res(token::token_type::t_value, op.second->priority);
+                token res(token::t_value, op.second->priority);
 
+                bool is_beg = l.begin() == tkn;
+                bool is_end = std::prev(l.end()) == tkn;
+
+                //TODO fix parentheses: now a+b != (a) + (b)
 
                 if (is_operator_unary[static_cast<size_t>(t)]) {
                     //TODO suffix operators support?
-                    auto prev = std::prev(tkn);
-                    res.value_v = m_state.m_operator_list.call_operator(t, { prev->value_v });
-                    l.erase(prev);
+                    if (is_end) throw std::runtime_error(std::string("opeator `") + std::string(tkn->operator_v.str) + std::string("` can't get arg"));
+                    auto next = std::next(tkn);
+                    if (next->type != token::t_value) throw std::runtime_error(std::string("opeator `") + std::string(tkn->operator_v.str) + std::string("` can't get arg"));
+
+                    res.value_v = m_state.m_operator_list.call_operator(t, { next->value_v });
+                    l.erase(next);
                 }
                 else {
-
+                    if (is_beg || is_end) throw std::runtime_error(std::string("opeator `") + std::string(tkn->operator_v.str) + std::string("` can't get 2 args"));
                     auto prev = std::prev(tkn);
                     auto next = std::next(tkn);
+                    if (prev->type != token::t_value || next->type != token::t_value) throw std::runtime_error(std::string("opeator `") + std::string(tkn->operator_v.str) + std::string("` can't get 2 args"));
                     res.value_v = m_state.m_operator_list.call_operator(t, { prev->value_v, next->value_v });
 
                     l.erase(prev);
@@ -125,12 +134,29 @@ namespace SGL {
                 }
 
                 *tkn = std::move(res);
+
+                //list changed -> update values
+                is_beg = l.begin() == tkn;
+                is_end = std::prev(l.end()) == tkn;
+
+                if (!is_beg && !is_end) {
+                    auto prev = std::prev(tkn);
+                    auto next = std::next(tkn);
+
+                    //TODO chek if isnt function?
+                    if (prev->type == token::t_punct && prev->punct_v == '(' && next->type == token::t_punct && prev->punct_v == ')') {
+                        l.erase(prev);
+                        l.erase(next);
+                    }
+                }
             }
         }
+
         std::cout << "after evaluation:\n";
         for (auto& l : tk.m_tokens) print_tokens(l);
+        
+        //TODO check legth?
 
-
-        return value();
+        return tk.m_tokens.front().front().value_v;
     }
 }//namespace SGL

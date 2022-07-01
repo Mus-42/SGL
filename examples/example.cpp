@@ -45,7 +45,8 @@ int main() {
     //ev.evaluate(tokenizer(R"("qq" + "\tall\n")"));
     //ev.evaluate(tokenizer("auto v = {1, 4.26, \"mimsus\"};"));
 
-    ev.evaluate(tokenizer("2 + 2 * 2"));
+    for(auto str : {"2 + 2 * 2", "1<<3 | 8>>2 & 5+3*10", "(2 + 2) * 2"})//ok, ok, error (in brackets)
+        std::cout << str << " = " << ev.evaluate(tokenizer(str)).to_string() << std::endl;
 
 
 
