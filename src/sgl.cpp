@@ -67,8 +67,8 @@ namespace SGL {
             identifier can be reserved keyword, typename or user-defined name
             operator - use operator_list.hpp enum?
         */
-        std::cout << "before evaluation:\n";
-        for (auto& l : tk.m_tokens) print_tokens(l);
+        //std::cout << "before evaluation:\n";
+        //for (auto& l : tk.m_tokens) print_tokens(l);
 
 
         //TODO choose operators, sort in evaluation order, evaluate
@@ -79,23 +79,32 @@ namespace SGL {
 
             std::vector<std::pair<size_t, tk_iter>> operators;
             bool is_begin = true;
+            //TODO add function calls
             for (auto tkn = l.begin(); tkn != l.end(); tkn++) {//choose operators
-                if (tkn->type != token::t_operator || tkn->operator_v.type == operator_type::op_none) continue;
-
-                //`+` `-` `&` `*` can be unary or binary 
-
-                bool can_be_unary = is_begin || std::prev(tkn)->type != token::t_identifier && std::prev(tkn)->type != token::t_value;
-
-                if (can_be_unary && is_operator_unary[static_cast<size_t>(tkn->operator_v.type)]) switch (tkn->operator_v.type) {
-                case operator_type::op_sum:     tkn->operator_v.type = operator_type::op_unary_plus;
-                case operator_type::op_sub:     tkn->operator_v.type = operator_type::op_unary_minus;
-                case operator_type::op_mul:     tkn->operator_v.type = operator_type::op_deref;
-                case operator_type::op_bit_and: tkn->operator_v.type = operator_type::op_adress_of;
-                default: break;
+                if (tkn->type == token::t_operator && tkn->operator_v.type != operator_type::op_none) {
+                    //`+` `-` `&` `*` can be unary or binary 
+                    
+                    bool can_be_unary = is_begin || std::prev(tkn)->type != token::t_identifier && std::prev(tkn)->type != token::t_value;
+                    
+                    if (can_be_unary && is_operator_unary[static_cast<size_t>(tkn->operator_v.type)]) switch (tkn->operator_v.type) {
+                    case operator_type::op_sum:     tkn->operator_v.type = operator_type::op_unary_plus;
+                    case operator_type::op_sub:     tkn->operator_v.type = operator_type::op_unary_minus;
+                    case operator_type::op_mul:     tkn->operator_v.type = operator_type::op_deref;
+                    case operator_type::op_bit_and: tkn->operator_v.type = operator_type::op_adress_of;
+                    default: break;
+                    }
+                    operators.emplace_back(operator_precedence_step * (tkn->priority + 1) - operator_precedence[static_cast<size_t>(tkn->operator_v.type)], tkn);
+                    is_begin = false;
+                } else 
+                //TODO add if(...is_func...) { ... } else
+                if (tkn->type == token::t_punct && tkn->punct_v == '(') {//remove redundant brackets (12) -> 12
+                    //TODO check if prev isnt func
+                    if (auto nxt = std::next(tkn); nxt != l.end() && nxt->type == token::t_value)
+                        if (auto br = std::next(nxt); br != l.end() && br->type == token::t_punct && br->punct_v == ')') {
+                            l.erase(tkn);
+                            tkn = l.erase(br);
+                        }
                 }
-
-                operators.emplace_back(operator_precedence_step * (tkn->priority + 1) - operator_precedence[static_cast<size_t>(tkn->operator_v.type)], tkn);
-                is_begin = false;
             }
 
             std::sort(operators.begin(), operators.end(), [](auto& a, auto& b) {
@@ -117,7 +126,11 @@ namespace SGL {
                     //TODO suffix operators support?
                     if (is_end) throw std::runtime_error(std::string("opeator `") + std::string(tkn->operator_v.str) + std::string("` can't get arg"));
                     auto next = std::next(tkn);
-                    if (next->type != token::t_value) throw std::runtime_error(std::string("opeator `") + std::string(tkn->operator_v.str) + std::string("` can't get arg"));
+                    if (next->type != token::t_value) {
+                        std::cout << "evaluation err:\n";
+                        for (auto& l : tk.m_tokens) print_tokens(l);
+                        throw std::runtime_error(std::string("opeator `") + std::string(tkn->operator_v.str) + std::string("` can't get arg"));
+                    }
 
                     res.value_v = m_state.m_operator_list.call_operator(t, { next->value_v });
                     l.erase(next);
@@ -126,7 +139,11 @@ namespace SGL {
                     if (is_beg || is_end) throw std::runtime_error(std::string("opeator `") + std::string(tkn->operator_v.str) + std::string("` can't get 2 args"));
                     auto prev = std::prev(tkn);
                     auto next = std::next(tkn);
-                    if (prev->type != token::t_value || next->type != token::t_value) throw std::runtime_error(std::string("opeator `") + std::string(tkn->operator_v.str) + std::string("` can't get 2 args"));
+                    if (prev->type != token::t_value || next->type != token::t_value) {
+                        std::cout << "evaluation err:\n";
+                        for (auto& l : tk.m_tokens) print_tokens(l);
+                        throw std::runtime_error(std::string("opeator `") + std::string(tkn->operator_v.str) + std::string("` can't get 2 args"));
+                    }
                     res.value_v = m_state.m_operator_list.call_operator(t, { prev->value_v, next->value_v });
 
                     l.erase(prev);
@@ -144,7 +161,7 @@ namespace SGL {
                     auto next = std::next(tkn);
 
                     //TODO chek if isnt function?
-                    if (prev->type == token::t_punct && prev->punct_v == '(' && next->type == token::t_punct && prev->punct_v == ')') {
+                    if (prev->type == token::t_punct && prev->punct_v == '(' && next->type == token::t_punct && next->punct_v == ')') {
                         l.erase(prev);
                         l.erase(next);
                     }
@@ -152,8 +169,8 @@ namespace SGL {
             }
         }
 
-        std::cout << "after evaluation:\n";
-        for (auto& l : tk.m_tokens) print_tokens(l);
+        //std::cout << "after evaluation:\n";
+        //for (auto& l : tk.m_tokens) print_tokens(l);
         
         //TODO check legth?
 

@@ -200,7 +200,7 @@ namespace SGL {
                 t.punct_v = str[cur];
                 m_tokens.back().emplace_back(std::move(t));
             } break;
-            case '(': case '{': case '[': {
+            case '(': case '{': case '[': {//TODO remove round brackets (let in function calls)? increase execution speed
                 priority++;
                 details::token t(details::token::t_punct, priority);
                 t.punct_v = str[cur];
