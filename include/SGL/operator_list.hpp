@@ -30,7 +30,9 @@ namespace SGL {
         op_adress_of, op_deref,
         //TODO add other (subscript, ...)
 
-        __op_count
+        __op_count,
+
+        op_assign, // a=b (non overloadable operator)
     };
     constexpr size_t operators_count = static_cast<size_t>(operator_type::__op_count);
 
@@ -103,7 +105,7 @@ namespace SGL {
 //TODO disable warnings for GCC & Clang?
 
         template<typename T>
-        void add_default_unary_operators_for_type() requires details::req_base_type<T> {
+        constexpr void add_default_unary_operators_for_type() requires details::req_base_type<T> {
             if constexpr(!std::is_same_v<T, void>) {
                 using T_t = std::add_lvalue_reference_t<std::add_const_t<T>>;
 
@@ -121,7 +123,7 @@ namespace SGL {
         }
 
         template<typename A, typename B = A>
-        void add_default_binary_operators_between_types() requires details::req_base_type<A> && details::req_base_type<B> {
+        constexpr void add_default_binary_operators_between_types() requires details::req_base_type<A> && details::req_base_type<B> {
             if constexpr(!std::is_same_v<A, void> && !std::is_same_v<B, void>) {
                 using A_t = std::add_lvalue_reference_t<std::add_const_t<A>>;
                 using B_t = std::add_lvalue_reference_t<std::add_const_t<B>>;

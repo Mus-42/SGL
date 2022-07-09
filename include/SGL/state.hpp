@@ -120,7 +120,7 @@ namespace SGL {
         }
         template<typename T, typename... Args> 
         void add_constructor_impl(const std::string& type_name) {
-            m_constructors[type_name].add_overload(std::function<T(Args&&...)>([](Args&&... args) -> T {
+            m_constructors[type_name].add_overload(std::function<T(Args&&...)>([](Args&&... args) -> T  {
                 return T(std::forward<Args>(args)...);
             }));
         }
@@ -128,9 +128,9 @@ namespace SGL {
         template<typename... Types> 
         void add_binary_operator_permutations() {
             constexpr size_t types_count = sizeof...(Types);
-            auto caller = [this]<size_t... i1>(std::index_sequence<i1...> s){
-                auto between_i_seq = [this]<size_t i2, size_t... j2>(details::sgl_value_identity<i2>, std::index_sequence<j2...>) {
-                    auto between_i_j = [this]<size_t i, size_t j>(details::sgl_value_identity<i>, details::sgl_value_identity<j>) {
+            auto caller = [this]<size_t... i1>(std::index_sequence<i1...> s) constexpr {
+                auto between_i_seq = [this]<size_t i2, size_t... j2>(details::sgl_value_identity<i2>, std::index_sequence<j2...>) constexpr {
+                    auto between_i_j = [this]<size_t i, size_t j>(details::sgl_value_identity<i>, details::sgl_value_identity<j>) constexpr {
                         using A = std::remove_reference_t<std::tuple_element_t<i, std::tuple<Types...>>>;//strange usage of std::tuple
                         using B = std::remove_reference_t<std::tuple_element_t<j, std::tuple<Types...>>>;
                         if constexpr(i != j && !std::is_same_v<A, B>) 
@@ -142,7 +142,6 @@ namespace SGL {
             };
             caller(std::make_index_sequence<types_count>{});
         }
-
         //TODO add registred constructors?
         void init();
     };

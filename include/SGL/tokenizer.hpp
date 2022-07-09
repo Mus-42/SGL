@@ -391,7 +391,7 @@ namespace SGL {
                         static constexpr std::array<operator_type, 14> op_types = {
                             operator_type::op_sum, operator_type::op_sub, operator_type::op_mul, operator_type::op_div, operator_type::op_mod,
                             operator_type::op_bit_or, operator_type::op_bit_and, operator_type::op_bit_not, operator_type::op_bit_xor,
-                            operator_type::op_none,
+                            operator_type::op_assign,
                             operator_type::op_not, operator_type::op_less, operator_type::op_greater, operator_type::op_none,
                         };
                         if(auto f = std::find(op_str.begin(), op_str.end(), str.substr(cur, 1)); f != op_str.end()) {
