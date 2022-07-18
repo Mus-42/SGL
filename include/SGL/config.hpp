@@ -29,7 +29,7 @@
 #include <iostream>//std::cerr
 #include <sstream>//std::stringstream
 namespace SGL::details {
-    inline void sgl_tokenize_error_impl(std::string_view desc, size_t line, size_t collumn) {
+    [[noreturn]] inline void sgl_tokenize_error_impl(std::string_view desc, size_t line, size_t collumn) {
         throw std::runtime_error((std::stringstream() << "SGL tokenize error (l: " << line << ", c:" << collumn << "): " << desc).str());
     }
 }//SGL::details

@@ -66,7 +66,7 @@ namespace SGL {
         for(size_t c = 0; c <= cur && c < str.size(); c++, collumn++) if(str[c] == '\n') [[unlikely]] line++, collumn = 0;
         SGL_TOKENIZE_ERROR(desc, line, collumn);
     }
-
+    
     static inline value scan_number(std::string_view base_str, std::string_view str, const char** cur_end) {
         if(str.empty() || str == "NaN") [[unlikely]] return cur_end ? *cur_end = str.data()+3 : nullptr, value(const_val<double>(std::numeric_limits<double>::quiet_NaN()));
         if(str == "inf") [[unlikely]] return cur_end ? *cur_end = str.data()+3 : nullptr,value(const_val<double>(std::numeric_limits<double>::infinity()));
@@ -122,7 +122,7 @@ namespace SGL {
                 if(str_cur < str_end) {
                     const char* suffix_beg = str_cur;
                     while(str_cur < str_end && std::isalnum(static_cast<unsigned char>(*str_cur))) str_cur++;
-                    literal_suffix = {suffix_beg, str_cur};
+                    literal_suffix = {suffix_beg, size_t(str_cur-suffix_beg)};
                 }
 
                 return cur_end ? *cur_end = str_cur : nullptr, int_value_from_suffix(num, literal_suffix);
@@ -136,13 +136,13 @@ namespace SGL {
         if(std::isdigit(static_cast<unsigned char>(*str_cur))) {
             const char* int_part_begin = str_cur;
             while(str_cur < str_end && std::isdigit(static_cast<unsigned char>(*str_cur))) str_cur++;
-            int_part = {int_part_begin, str_cur};
+            int_part = {int_part_begin, size_t(str_cur-int_part_begin)};
         }
         if(str_cur < str_end && *str_cur == '.') {
             str_cur++;
             const char* fract_part_begin = str_cur;
             while(str_cur < str_end && std::isdigit(static_cast<unsigned char>(*str_cur))) str_cur++;
-            fract_part = {fract_part_begin, std::min(fract_part_begin+308, str_cur)};
+            fract_part = {fract_part_begin, size_t(std::min(fract_part_begin+308, str_cur)-fract_part_begin)};
         }
         if(str_cur < str_end && *str_cur == 'e') {
             str_cur++;
@@ -152,12 +152,12 @@ namespace SGL {
                 else str_cur++;
             }
             while(str_cur < str_end && std::isdigit(static_cast<unsigned char>(*str_cur))) str_cur++;
-            exp_part = {exp_part_begin, str_cur};
+            exp_part = {exp_part_begin, size_t(str_cur-exp_part_begin)};
         }
         if(str_cur < str_end) {
             const char* suffix_beg = str_cur;
             while(str_cur < str_end && std::isalnum(static_cast<unsigned char>(*str_cur))) str_cur++;
-            literal_suffix = {suffix_beg, str_cur};
+            literal_suffix = {suffix_beg, size_t(str_cur-suffix_beg)};
         }
 
         static std::array<double, 308*2+1> pow10_table = ([](){
@@ -170,10 +170,16 @@ namespace SGL {
             double int_v = 0.;
             double fract_v = 0.;
             int exp_v = 0;
-            if(!int_part.empty())   std::from_chars(int_part.data(), int_part.data()+int_part.size(), int_v);
-            if(!fract_part.empty()) std::from_chars(fract_part.data(), fract_part.data()+fract_part.size(), fract_v);
-            if(!exp_part.empty())   std::from_chars(exp_part.data(), exp_part.data()+exp_part.size(), exp_v);
-            //TODO error cheks
+
+            auto m_from_chars = []<typename T>(const char* beg, const char* end, T& val) {
+                if constexpr(requires(const char* a, const char* b, T& v) { std::from_chars(a, b, v); }) std::from_chars(beg, end, val);
+                else std::istringstream({beg, end}) >> val;//TODO add warn here?  
+            };
+
+            if(!int_part.empty())   m_from_chars(int_part.data(), int_part.data()+int_part.size(), int_v);
+            if(!fract_part.empty()) m_from_chars(fract_part.data(), fract_part.data()+fract_part.size(), fract_v);
+            if(!exp_part.empty())   m_from_chars(exp_part.data(), exp_part.data()+exp_part.size(), exp_v);
+            
 
             double res = int_v + fract_v * pow10_table[308-fract_part.size()];
             if(exp_v > 308) [[unlikely]] res = std::abs(res) == 0. ? 0. : std::numeric_limits<double>::infinity();
@@ -208,63 +214,66 @@ namespace SGL {
                 else str_cur++;
             }
         };
-
-        if(str_cur == str_end) return args.cur_end ? *args.cur_end = str_cur : nullptr, value();
+        skip_comments_and_spaces();
+        if(str_cur == str_end) return args.cur_end ? *args.cur_end = str_cur : nullptr, value();//TODO throw error?
         value ret;
         //number|string literal or prefix unary operator
-        switch (*str_cur) {
+        switch(*str_cur) {
         //brackets
         case '(': {
-            auto v = details::eval_rec_impl(state, base_str, {str_cur+1, str_end}, {&str_cur, 0, false, false, true});
+            auto v = details::eval_rec_impl(state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, 0, false, false, true});
             if(str_cur == str_end || *str_cur != ')') [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "unclosed bracket");
             return args.cur_end ? *args.cur_end = str_cur+1 : nullptr, v;
         } break;
         case ')': {
             tokenize_error(base_str, str_cur-base_str.data(), "missing open bracket");
-            //if(!args.is_in_brackets && !args.is_in_function) [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "missing open bracket");
-            //return args.cur_end ? *args.cur_end = str_cur : nullptr, value();
         } break;
         //unary opeators
-        case '+': {
-            auto v = details::eval_rec_impl(state, base_str, {str_cur+1, str_end}, {&str_cur, 0, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
-            auto v2 = state.m_operator_list.call_operator(SGL::operator_type::op_unary_plus, {v});
-            return args.cur_end ? *args.cur_end = str_cur : nullptr, v2;
-        } break;
-        case '-': {
-            auto v = details::eval_rec_impl(state, base_str, {str_cur+1, str_end}, {&str_cur, 0, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
-            auto v2 = state.m_operator_list.call_operator(SGL::operator_type::op_unary_minus, {v});
-            return args.cur_end ? *args.cur_end = str_cur : nullptr, v2;
-        } break;
-        case '!': {
-            
-        } break;
-        case '~': {
-            
-        } break;
-        case '*': {
-            
-        } break;
-        case '&': {
+        case '+': case '-': case '!': case '~': case '*': case '&': {
+            char m_op_char = *str_cur;
+            auto v = details::eval_rec_impl(state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, 0, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
+            static constexpr std::array<char, 6> ops_chars = {
+                '+', '-', '!', '~', '*', '&'
+            }; 
+            static constexpr std::array<operator_type, 6> ops_types = {
+                operator_type::op_unary_plus, operator_type::op_unary_minus, operator_type::op_not, 
+                operator_type::op_bit_not, operator_type::op_deref, operator_type::op_adress_of
+            }; 
+            ret = state.m_operator_list.call_operator(ops_types[std::find(ops_chars.begin(), ops_chars.end(), m_op_char)-ops_chars.begin()], {v});
         } break;
 
-        case '0': {
-            //TODO hex | bin (| oct?)
-        }
-        [[fallthrough]];
         case '.':
-        case '1': case '2': case '3': case '4':
+        case '0': case '1': case '2': case '3': case '4':
         case '5': case '6': case '7': case '8': case '9': {
-            auto v = scan_number(base_str, {str_cur, str_end}, &str_cur);
-            //TODO fix it
-            return args.cur_end ? *args.cur_end = str_cur : nullptr, v;
+            ret = scan_number(base_str, {str_cur, size_t(str_end-str_cur)}, &str_cur);
         } break;
 
         //TODO scan value (string, char, number) literals here
 
         default:
+            //TODO identifiers (functions, variables)
             break;
         }
 
-        return args.cur_end ? *args.cur_end = str_cur : nullptr, value();
+        while(str_cur < str_end) {
+            switch(*str_cur) {
+            case '(': {
+                tokenize_error(base_str, str_cur-base_str.data(), "unexpected '('");
+            } break;
+            case ')': {
+                if(!args.is_in_brackets && !args.is_in_function) [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "missing open bracket");
+                return args.cur_end ? *args.cur_end = str_cur : nullptr, ret;
+            } break;
+
+            case '+': {
+
+            };
+            
+            default:
+                break;
+            }
+        }
+
+        return args.cur_end ? *args.cur_end = str_cur : nullptr, ret;
     }
 }//namespace SGL
