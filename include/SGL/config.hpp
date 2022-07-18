@@ -15,6 +15,7 @@
 //TODO set options from CMake?
 
 //assertion macro
+//TODO add error levels?
 #ifndef SGL_ASSERT
 #include <iostream>//std::cerr
 #if SGL_OPTION_ENABLE_ASSERT//TODO throw exception when assertion failed (after log?)?
@@ -24,12 +25,12 @@
 #endif
 #endif//SGL_ASSERT
 
-//TODO add error levels?
 #ifndef SGL_TOKENIZE_ERROR 
 #include <iostream>//std::cerr
+#include <sstream>//std::stringstream
 namespace SGL::details {
     inline void sgl_tokenize_error_impl(std::string_view desc, size_t line, size_t collumn) {
-        std::cerr << "SGL tokenize error (l: " << line << ", c:" << collumn << "): " << desc << std::endl;
+        throw std::runtime_error((std::stringstream() << "SGL tokenize error (l: " << line << ", c:" << collumn << "): " << desc).str());
     }
 }//SGL::details
 #define SGL_TOKENIZE_ERROR(desc, line, collumn) {SGL::details::sgl_tokenize_error_impl(desc, line, collumn); }//TODO replace with exceptions

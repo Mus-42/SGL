@@ -4,31 +4,27 @@
 
 #include "config.hpp"
 #include "state.hpp"
-#include "tokenizer.hpp"
+#include "value.hpp"
 
 namespace SGL {
+    namespace details {
+        struct eval_rec_impl_args {
+            const char** cur_end = nullptr;
+            uint8_t call_prior = 0;
+            bool is_in_function : 1 = false;
+            bool is_in_ternary  : 1 = false;
+            bool is_in_brackets : 1 = false;
+
+        };
+        value eval_rec_impl(const state& state, std::string_view base_str, std::string_view str, eval_rec_impl_args args);
+    };
     class evaluator {
     public:
-        value evaluate(tokenizer&& tk);
-
-        void print_tokens(const tokenizer::token_list& list) {
-            for (auto& v : list) {
-                switch (v.type) {
-                case details::token::t_identifier: std::cout << "[identifier '" << v.identifier_v << "'] "; break;
-                case details::token::t_none: std::cout << "[none] "; break;
-                case details::token::t_operator: std::cout << "[operator '" << v.operator_v.str << "'] "; break;
-                case details::token::t_punct: std::cout << "[punct '" << v.punct_v << "'] "; break;
-                case details::token::t_value: std::cout << "[value `" << v.value_v.to_string() << "`] "; break;
-                default: std::cout << "[invalid token] "; break;
-                }
-            }
-            std::cout << std::endl;
+        value evaluate(std::string_view str) {
+            return details::eval_rec_impl(m_state, str, str, {});
         }
-
     protected:
         friend class state;
-
-        //[[nodiscard]] explicit evaluator() = default;//TODO evaluator(state&) instead of default constructor?
         [[nodiscard]] explicit evaluator(const state& state) : m_state(state) {}
 
         const state& m_state;

@@ -1,6 +1,4 @@
 #include <SGL/SGL.hpp>
-#include <SGL/function.hpp>
-
 #include <iostream>
 
 int main() {
@@ -8,8 +6,8 @@ int main() {
     auto st = state();
     st.add_typecast_between_impl<int, float>("to_float");//int to float. float(int(v))
     st.add_typecast_between_impl<double, float>("to_float");
-    auto v = st.register_type<int>("my_int");
-    SGL_ASSERT(v->m_type == typeid(int), "type check");
+    auto my_int = st.register_type<int>("my_int");
+    SGL_ASSERT(my_int->m_type == typeid(int), "type check");
 
     //TODO add example
 
@@ -46,7 +44,7 @@ int main() {
     //ev.evaluate(tokenizer("auto v = {1, 4.26, \"mimsus\"};"));
 
     for(auto str : {"2 + 2 * 2", "1<<3 | 8>>2 & 5+3*10", "(2 + 2) * 2", "((2) + (5>>(1)) * (((1))<<1))" })//ok, ok, ok, error (in brackets)
-        std::cout << str << " = " << ev.evaluate(tokenizer(str)).to_string() << std::endl;
+        std::cout << str << " = " << ev.evaluate(str).to_string() << std::endl;
 
 
 

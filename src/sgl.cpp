@@ -60,125 +60,93 @@ namespace SGL {
         //    sgl_int8_t, sgl_int16_t, sgl_int32_t, sgl_int64_t,
         //    sgl_uint8_t, sgl_uint16_t, sgl_uint32_t, sgl_uint64_t>();
     }
-   
-    value evaluator::evaluate(tokenizer&& tk) {
-        /*
-            identifier can be reserved keyword, typename or user-defined name
-            operator - use operator_list.hpp enum?
-        */
-        //std::cout << "before evaluation:\n";
-        //for (auto& l : tk.m_tokens) print_tokens(l);
 
+    [[noreturn]] static inline void tokenize_error(std::string_view str, size_t cur, std::string_view desc) {
+        size_t line = 0, collumn = 0;
+        for(size_t c = 0; c <= cur && c < str.size(); c++, collumn++) if(str[c] == '\n') [[unlikely]] line++, collumn = 0;
+        SGL_TOKENIZE_ERROR(desc, line, collumn);
+    }
 
-        //TODO choose operators, sort in evaluation order, evaluate
+    static inline value scan_number(std::string_view str, const char** cur_end) {
+        if(str == "NaN") [[unlikely]] return value(const_val<double>(std::numeric_limits<double>::quiet_NaN()));
+        if(str == "inf") [[unlikely]] return value(const_val<double>(std::numeric_limits<double>::infinity()));
 
-        for (auto& l : tk.m_tokens) {
-            if (l.empty()) continue;
-            using tk_iter = tokenizer::token_list::iterator;
-            using details::token;
+        const char *str_beg = str.data(), *str_cur = str_beg, *str_end = str_beg + str.size();
+        //[int][.][fract][e[+|-]exp][literal_suffix]
+        std::string_view int_part, fract_part, exp_part;
 
-            bool is_variable = false;
-            if(l.size() >= 3) if (auto third = std::next(l.begin(), 2); third->type == token::t_operator && third->operator_v.type == operator_type::op_assign) {//if T name = ...; -> variable decl
-                //TODO create variable in parse result, remove first 3 tokens
+    }
 
-                is_variable = true;
+    value details::eval_rec_impl(const state& state, std::string_view base_str, std::string_view str, details::eval_rec_impl_args args) {
+        const char *str_beg = str.data(), *str_cur = str_beg, *str_end = str_beg + str.size();
+
+        auto skip_comments_and_spaces = [&str_cur, &str_end, str, str_beg](){
+            while(str_cur < str_end && (std::isspace(static_cast<unsigned char>(*str_cur)) || *str_cur == '/')) {
+                if(*str_cur  == '/') {
+                    if(str_cur + 1 < str_end) {
+                        if(*(str_cur+1) == '/') str_cur = str.find('\n', str_cur-str_beg) + 1 + str_beg;
+                        else if(*(str_cur+1) == '*') str_cur = str.find("*/", str_cur-str_beg) + 2 + str_beg;
+                        if(str_cur > str_end) [[unlikely]] str_cur = str_end;
+                    } else return;
+                }
+                else str_cur++;
             }
+        };
 
-            std::vector<std::pair<size_t, tk_iter>> operators;
-            bool is_begin = true;
-            //TODO add function calls
-            for (auto tkn = l.begin(); tkn != l.end(); tkn++) {//choose operators
-                if (tkn->type == token::t_operator && tkn->operator_v.type != operator_type::op_none) {
-                    if (tkn->operator_v.type == operator_type::op_assign) [[unlikely]]  {
-                        throw std::runtime_error("assign operator allowed only in variable definition");
-                    }
+        if(str_cur == str_end) return args.cur_end ? *args.cur_end = str_cur : nullptr, value();
+        value ret;
+        //number|string literal or prefix unary operator
+        switch (*str_cur) {
+        //brackets
+        case '(': {
+            auto v = details::eval_rec_impl(state, base_str, {str_cur+1, str_end}, {&str_cur, 0, false, false, true});
+            if(str_cur == str_end || *str_cur != ')') [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "unclosed bracket");
+            return args.cur_end ? *args.cur_end = str_cur+1 : nullptr, v;
+        } break;
+        case ')': {
+            tokenize_error(base_str, str_cur-base_str.data(), "missing open bracket");
+            //if(!args.is_in_brackets && !args.is_in_function) [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "missing open bracket");
+            //return args.cur_end ? *args.cur_end = str_cur : nullptr, value();
+        } break;
+        //unary opeators
+        case '+': {
+            auto v = details::eval_rec_impl(state, base_str, {str_cur+1, str_end}, {&str_cur, 0, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
+            auto v2 = state.m_operator_list.call_operator(SGL::operator_type::op_unary_plus, {v});
+            return args.cur_end ? *args.cur_end = str_cur : nullptr, v2;
+        } break;
+        case '-': {
+            auto v = details::eval_rec_impl(state, base_str, {str_cur+1, str_end}, {&str_cur, 0, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
+            auto v2 = state.m_operator_list.call_operator(SGL::operator_type::op_unary_minus, {v});
+            return args.cur_end ? *args.cur_end = str_cur : nullptr, v2;
+        } break;
+        case '!': {
+            
+        } break;
+        case '~': {
+            
+        } break;
+        case '*': {
+            
+        } break;
+        case '&': {
+        } break;
 
-                    //`+` `-` `&` `*` can be unary or binary 
-                    
-                    bool can_be_unary = is_begin || std::prev(tkn)->type != token::t_identifier && std::prev(tkn)->type != token::t_value;
-                    
-                    if (can_be_unary && is_operator_unary[static_cast<size_t>(tkn->operator_v.type)]) switch (tkn->operator_v.type) {
-                    case operator_type::op_sum:     tkn->operator_v.type = operator_type::op_unary_plus;  break;
-                    case operator_type::op_sub:     tkn->operator_v.type = operator_type::op_unary_minus; break;
-                    case operator_type::op_mul:     tkn->operator_v.type = operator_type::op_deref;       break;
-                    case operator_type::op_bit_and: tkn->operator_v.type = operator_type::op_adress_of;   break;
-                    default: break;
-                    }
-                    operators.emplace_back(operator_precedence_step * (tkn->priority + 1) - operator_precedence[static_cast<size_t>(tkn->operator_v.type)], tkn);
-                    is_begin = false;
-                } else 
-                //TODO add if(...is_func...) { ... } else
-                if (tkn->type == token::t_punct && tkn->punct_v == '(') {//remove redundant brackets (12) -> 12
-                    //TODO check if prev isnt func
-                    if (auto nxt = std::next(tkn); nxt != l.end() && nxt->type == token::t_value)
-                        if (auto br = std::next(nxt); br != l.end() && br->type == token::t_punct && br->punct_v == ')') {
-                            l.erase(tkn);
-                            tkn = l.erase(br);
-                        }
-                }
-            }
+        case '0': {
+            //TODO hex | bin (| oct?)
+        }
+        [[fallthrough]];
+        case '.':
+        case '1': case '2': case '3': case '4':
+        case '5': case '6': case '7': case '8': case '9': {
+            auto v = scan_number({str_cur, str_end}, &str_cur);
+        } break;
 
-            std::sort(operators.begin(), operators.end(), [](auto& a, auto& b) {
-                return a.first > b.first;
-                });
+        //TODO scan value (string, char, number) literals here
 
-            for (auto& op : operators) {
-                auto& tkn = op.second;
-                auto t = tkn->operator_v.type;
-                //TODO chek if operands is t_value
-                token res(token::t_value, op.second->priority);
-
-                bool is_beg = l.begin() == tkn;
-                bool is_end = std::prev(l.end()) == tkn;
-
-                //TODO fix parentheses: now a+b != (a) + (b)
-
-                if (is_operator_unary[static_cast<size_t>(t)]) {
-                    //TODO suffix operators support?
-                    if (is_end) [[unlikely]] throw std::runtime_error(std::string("opeator `") + std::string(tkn->operator_v.str) + std::string("` can't get arg"));
-                    auto next = std::next(tkn);
-                    if (next->type != token::t_value) [[unlikely]] throw std::runtime_error(std::string("opeator `") + std::string(tkn->operator_v.str) + std::string("` can't get arg"));
-                    
-
-                    res.value_v = m_state.m_operator_list.call_operator(t, { next->value_v });
-                    l.erase(next);
-                }
-                else {
-                    if (is_beg || is_end) [[unlikely]] throw std::runtime_error(std::string("opeator `") + std::string(tkn->operator_v.str) + std::string("` can't get 2 args"));
-                    auto prev = std::prev(tkn);
-                    auto next = std::next(tkn);
-                    if (prev->type != token::t_value || next->type != token::t_value) [[unlikely]] throw std::runtime_error(std::string("opeator `") + std::string(tkn->operator_v.str) + std::string("` can't get 2 args"));
-                    
-                    res.value_v = m_state.m_operator_list.call_operator(t, { prev->value_v, next->value_v });
-
-                    l.erase(prev);
-                    l.erase(next);
-                }
-
-                *tkn = std::move(res);
-
-                //list changed -> update values
-                is_beg = l.begin() == tkn;
-                is_end = std::prev(l.end()) == tkn;
-
-                if (!is_beg && !is_end) {
-                    auto prev = std::prev(tkn);
-                    auto next = std::next(tkn);
-
-                    //TODO chek if isnt function?
-                    if (prev->type == token::t_punct && prev->punct_v == '(' && next->type == token::t_punct && next->punct_v == ')') {
-                        l.erase(prev);
-                        l.erase(next);
-                    }
-                }
-            }
+        default:
+            break;
         }
 
-        //std::cout << "after evaluation:\n";
-        //for (auto& l : tk.m_tokens) print_tokens(l);
-        
-        //TODO check legth?
-
-        return tk.m_tokens.front().front().value_v;
+        return args.cur_end ? *args.cur_end = str_cur : nullptr, value();
     }
 }//namespace SGL

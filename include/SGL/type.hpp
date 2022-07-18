@@ -237,7 +237,7 @@ namespace SGL {
 */
         template<typename U, typename T> 
         static constexpr size_t m_offsetof(U T::*member_ptr) {
-            return static_cast<size_t>(&(static_cast<T*>(nullptr)->*member_ptr));
+            return static_cast<size_t>(static_cast<const char*>(&(static_cast<T*>(nullptr)->*member_ptr)));
         }
     };
 
