@@ -1,5 +1,5 @@
 #include <SGL/SGL.hpp>
-
+#include <charconv>
 //large functions linked static to increase compilation speed
 namespace SGL {
     void state::init() {
@@ -67,23 +67,139 @@ namespace SGL {
         SGL_TOKENIZE_ERROR(desc, line, collumn);
     }
 
-    static inline value scan_number(std::string_view str, const char** cur_end) {
-        if(str == "NaN") [[unlikely]] return value(const_val<double>(std::numeric_limits<double>::quiet_NaN()));
-        if(str == "inf") [[unlikely]] return value(const_val<double>(std::numeric_limits<double>::infinity()));
+    static inline value scan_number(std::string_view base_str, std::string_view str, const char** cur_end) {
+        if(str.empty() || str == "NaN") [[unlikely]] return cur_end ? *cur_end = str.data()+3 : nullptr, value(const_val<double>(std::numeric_limits<double>::quiet_NaN()));
+        if(str == "inf") [[unlikely]] return cur_end ? *cur_end = str.data()+3 : nullptr,value(const_val<double>(std::numeric_limits<double>::infinity()));
 
         const char *str_beg = str.data(), *str_cur = str_beg, *str_end = str_beg + str.size();
-        //[int][.][fract][e[+|-]exp][literal_suffix]
-        std::string_view int_part, fract_part, exp_part;
+        
+        auto int_value_from_suffix = [base_str, str](uint64_t val, std::string_view literal_suffix) -> value {
+            //TODO type overflow check
+            //TODO fix sing? (0bFFFFi16 -> -1i16 or ..?)
+            if(literal_suffix == "i") return value(const_val<builtin_types::sgl_int_t>(static_cast<builtin_types::sgl_int_t>(val)));
+            if(literal_suffix == "u" || literal_suffix == "ui") return value(const_val<builtin_types::sgl_uint_t>(static_cast<builtin_types::sgl_uint_t>(val)));
+            if(literal_suffix == "i8")  return value(const_val<builtin_types::sgl_int8_t> (static_cast<builtin_types::sgl_int8_t> (val)));
+            if(literal_suffix == "i16") return value(const_val<builtin_types::sgl_int16_t>(static_cast<builtin_types::sgl_int16_t>(val)));
+            if(literal_suffix == "i32") return value(const_val<builtin_types::sgl_int32_t>(static_cast<builtin_types::sgl_int32_t>(val)));
+            if(literal_suffix == "i64") return value(const_val<builtin_types::sgl_int64_t>(static_cast<builtin_types::sgl_int64_t>(val)));
 
+            if(literal_suffix == "u8"  || literal_suffix == "ui8" ) return value(const_val<builtin_types::sgl_uint8_t> (static_cast<builtin_types::sgl_uint8_t> (val)));
+            if(literal_suffix == "u16" || literal_suffix == "ui16") return value(const_val<builtin_types::sgl_uint16_t>(static_cast<builtin_types::sgl_uint16_t>(val)));
+            if(literal_suffix == "u32" || literal_suffix == "ui32") return value(const_val<builtin_types::sgl_uint32_t>(static_cast<builtin_types::sgl_uint32_t>(val)));
+            if(literal_suffix == "u64" || literal_suffix == "ui64") return value(const_val<builtin_types::sgl_uint64_t>(static_cast<builtin_types::sgl_uint64_t>(val)));
+
+            if(!literal_suffix.empty()) tokenize_error(base_str, str.data()-base_str.data(), "invalid integer literal suffix");
+
+            return value(const_val<uint64_t>(val));
+        };
+
+        if(str.size() > 2 && str[0] == '0') [[likely]] {
+            uint64_t num = 0;
+            bool has_num = false;
+            if(str[1] == 'x' || str[1] == 'X') {//hex
+                str_cur+=2;
+                has_num = true;
+                while(str_cur < str_end && std::isxdigit(static_cast<unsigned char>(*str_cur))) {
+                    num<<=4;
+                    if('0' <= *str_cur && *str_cur <= '9') num |= *str_cur - '0';
+                    else if('a' <= *str_cur && *str_cur <= 'f') num |= *str_cur - 'a' + 10;
+                    else num |= *str_cur - 'A' + 10;
+                    str_cur++;
+                }
+                if(str_beg + 2 + (64/4) < str_cur) [[unlikely]] tokenize_error(base_str, str_beg+2-base_str.data(), "uint64 overflow");
+                if(str_beg + 2 == str_cur) [[unlikely]] tokenize_error(base_str, str_beg+2-base_str.data(), "invalid integer constant");
+            }
+            else if(str[1] == 'b' || str[1] == 'B') {//bin
+                str_cur+=2;
+                has_num = true;
+                while(str_cur < str_end && (*str_cur == '0' || *str_cur == '1')) num=num<<1|*str_cur++-'0';
+                if(str_beg + 2 + 64 < str_cur) [[unlikely]] tokenize_error(base_str, str_beg+2-base_str.data(), "uint64 overflow");
+                if(str_beg + 2 == str_cur) [[unlikely]] tokenize_error(base_str, str_beg+2-base_str.data(), "invalid integer constant");
+            }
+            //TODO octal?
+            if(has_num) {
+                std::string_view literal_suffix;
+                if(str_cur < str_end) {
+                    const char* suffix_beg = str_cur;
+                    while(str_cur < str_end && std::isalnum(static_cast<unsigned char>(*str_cur))) str_cur++;
+                    literal_suffix = {suffix_beg, str_cur};
+                }
+
+                return cur_end ? *cur_end = str_cur : nullptr, int_value_from_suffix(num, literal_suffix);
+            }
+        }
+
+        //[int][.][fract][e[+|-]exp][literal_suffix]
+        std::string_view int_part, fract_part, exp_part, literal_suffix;
+
+        //TODO hex floats?
+        if(std::isdigit(static_cast<unsigned char>(*str_cur))) {
+            const char* int_part_begin = str_cur;
+            while(str_cur < str_end && std::isdigit(static_cast<unsigned char>(*str_cur))) str_cur++;
+            int_part = {int_part_begin, str_cur};
+        }
+        if(str_cur < str_end && *str_cur == '.') {
+            str_cur++;
+            const char* fract_part_begin = str_cur;
+            while(str_cur < str_end && std::isdigit(static_cast<unsigned char>(*str_cur))) str_cur++;
+            fract_part = {fract_part_begin, std::min(fract_part_begin+308, str_cur)};
+        }
+        if(str_cur < str_end && *str_cur == 'e') {
+            str_cur++;
+            const char* exp_part_begin = str_cur;
+            if(str_cur < str_end && (*str_cur == '+' || *str_cur == '-')) {
+                if(*str_cur == '+') exp_part_begin++;
+                else str_cur++;
+            }
+            while(str_cur < str_end && std::isdigit(static_cast<unsigned char>(*str_cur))) str_cur++;
+            exp_part = {exp_part_begin, str_cur};
+        }
+        if(str_cur < str_end) {
+            const char* suffix_beg = str_cur;
+            while(str_cur < str_end && std::isalnum(static_cast<unsigned char>(*str_cur))) str_cur++;
+            literal_suffix = {suffix_beg, str_cur};
+        }
+
+        static std::array<double, 308*2+1> pow10_table = ([](){
+            static std::array<double, 308*2+1> ret;
+            for(size_t i = 0; i <= 308*2; i++) ret[i] = std::pow(10, int(i)-308);
+            return ret;
+        })();
+
+        if(!fract_part.empty() || !exp_part.empty()) {
+            double int_v = 0.;
+            double fract_v = 0.;
+            int exp_v = 0;
+            if(!int_part.empty())   std::from_chars(int_part.data(), int_part.data()+int_part.size(), int_v);
+            if(!fract_part.empty()) std::from_chars(fract_part.data(), fract_part.data()+fract_part.size(), fract_v);
+            if(!exp_part.empty())   std::from_chars(exp_part.data(), exp_part.data()+exp_part.size(), exp_v);
+            //TODO error cheks
+
+            double res = int_v + fract_v * pow10_table[308-fract_part.size()];
+            if(exp_v > 308) [[unlikely]] res = std::abs(res) == 0. ? 0. : std::numeric_limits<double>::infinity();
+            else if(exp_v < -308) [[unlikely]] res = 0.;
+            else [[likely]] res *= pow10_table[308+exp_v];
+            
+            if(literal_suffix == "f" || literal_suffix == "f32") return cur_end ? *cur_end = str_cur : nullptr, value(const_val<builtin_types::sgl_float32_t>(static_cast<builtin_types::sgl_float32_t>(res)));
+            if(literal_suffix == "f64") return cur_end ? *cur_end = str_cur : nullptr, value(const_val<builtin_types::sgl_float64_t>(static_cast<builtin_types::sgl_float64_t>(res)));
+
+            if(!literal_suffix.empty()) tokenize_error(base_str, str.data()-base_str.data(), "invalid floating point literal suffix");
+            return cur_end ? *cur_end = str_cur : nullptr, value(const_val<double>(res));
+        }
+        uint64_t val = 0;
+        auto r = std::from_chars(int_part.data(), int_part.data()+int_part.size(), val);
+
+        if(r.ec == std::errc::result_out_of_range) [[unlikely]] tokenize_error(base_str, str_beg+2-base_str.data(), "uint64 overflow");
+
+        return cur_end ? *cur_end = str_cur : nullptr, int_value_from_suffix(val, literal_suffix);
     }
 
     value details::eval_rec_impl(const state& state, std::string_view base_str, std::string_view str, details::eval_rec_impl_args args) {
         const char *str_beg = str.data(), *str_cur = str_beg, *str_end = str_beg + str.size();
-
         auto skip_comments_and_spaces = [&str_cur, &str_end, str, str_beg](){
             while(str_cur < str_end && (std::isspace(static_cast<unsigned char>(*str_cur)) || *str_cur == '/')) {
                 if(*str_cur  == '/') {
-                    if(str_cur + 1 < str_end) {
+                    if(str_cur + 1 < str_end) [[likely]] {
                         if(*(str_cur+1) == '/') str_cur = str.find('\n', str_cur-str_beg) + 1 + str_beg;
                         else if(*(str_cur+1) == '*') str_cur = str.find("*/", str_cur-str_beg) + 2 + str_beg;
                         if(str_cur > str_end) [[unlikely]] str_cur = str_end;
@@ -138,7 +254,9 @@ namespace SGL {
         case '.':
         case '1': case '2': case '3': case '4':
         case '5': case '6': case '7': case '8': case '9': {
-            auto v = scan_number({str_cur, str_end}, &str_cur);
+            auto v = scan_number(base_str, {str_cur, str_end}, &str_cur);
+            //TODO fix it
+            return args.cur_end ? *args.cur_end = str_cur : nullptr, v;
         } break;
 
         //TODO scan value (string, char, number) literals here
