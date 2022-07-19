@@ -1,5 +1,5 @@
 #include <SGL/SGL.hpp>
-
+#include <charconv>
 //large functions linked static to increase compilation speed
 namespace SGL {
     void state::init() {
@@ -60,125 +60,274 @@ namespace SGL {
         //    sgl_int8_t, sgl_int16_t, sgl_int32_t, sgl_int64_t,
         //    sgl_uint8_t, sgl_uint16_t, sgl_uint32_t, sgl_uint64_t>();
     }
-   
-    value evaluator::evaluate(tokenizer&& tk) {
-        /*
-            identifier can be reserved keyword, typename or user-defined name
-            operator - use operator_list.hpp enum?
-        */
-        //std::cout << "before evaluation:\n";
-        //for (auto& l : tk.m_tokens) print_tokens(l);
 
+    [[noreturn]] static inline void tokenize_error(std::string_view str, size_t cur, std::string_view desc) {
+        size_t line = 0, collumn = 0;
+        for(size_t c = 0; c <= cur && c < str.size(); c++, collumn++) if(str[c] == '\n') [[unlikely]] line++, collumn = 0;
+        SGL_TOKENIZE_ERROR(desc, line, collumn);
+    }
+    
+    static inline value scan_number(std::string_view base_str, std::string_view str, const char** cur_end) {
+        if(str.empty() || str == "NaN") [[unlikely]] return cur_end ? *cur_end = str.data()+3 : nullptr, value(const_val<double>(std::numeric_limits<double>::quiet_NaN()));
+        if(str == "inf") [[unlikely]] return cur_end ? *cur_end = str.data()+3 : nullptr,value(const_val<double>(std::numeric_limits<double>::infinity()));
 
-        //TODO choose operators, sort in evaluation order, evaluate
+        const char *str_beg = str.data(), *str_cur = str_beg, *str_end = str_beg + str.size();
+        
+        auto int_value_from_suffix = [base_str, str](uint64_t val, std::string_view literal_suffix) -> value {
+            //TODO type overflow check
+            //TODO fix sing? (0bFFFFi16 -> -1i16 or ..?)
+            if(literal_suffix == "i") return value(const_val<builtin_types::sgl_int_t>(static_cast<builtin_types::sgl_int_t>(val)));
+            if(literal_suffix == "u" || literal_suffix == "ui") return value(const_val<builtin_types::sgl_uint_t>(static_cast<builtin_types::sgl_uint_t>(val)));
+            if(literal_suffix == "i8")  return value(const_val<builtin_types::sgl_int8_t> (static_cast<builtin_types::sgl_int8_t> (val)));
+            if(literal_suffix == "i16") return value(const_val<builtin_types::sgl_int16_t>(static_cast<builtin_types::sgl_int16_t>(val)));
+            if(literal_suffix == "i32") return value(const_val<builtin_types::sgl_int32_t>(static_cast<builtin_types::sgl_int32_t>(val)));
+            if(literal_suffix == "i64") return value(const_val<builtin_types::sgl_int64_t>(static_cast<builtin_types::sgl_int64_t>(val)));
 
-        for (auto& l : tk.m_tokens) {
-            if (l.empty()) continue;
-            using tk_iter = tokenizer::token_list::iterator;
-            using details::token;
+            if(literal_suffix == "u8"  || literal_suffix == "ui8" ) return value(const_val<builtin_types::sgl_uint8_t> (static_cast<builtin_types::sgl_uint8_t> (val)));
+            if(literal_suffix == "u16" || literal_suffix == "ui16") return value(const_val<builtin_types::sgl_uint16_t>(static_cast<builtin_types::sgl_uint16_t>(val)));
+            if(literal_suffix == "u32" || literal_suffix == "ui32") return value(const_val<builtin_types::sgl_uint32_t>(static_cast<builtin_types::sgl_uint32_t>(val)));
+            if(literal_suffix == "u64" || literal_suffix == "ui64") return value(const_val<builtin_types::sgl_uint64_t>(static_cast<builtin_types::sgl_uint64_t>(val)));
 
-            bool is_variable = false;
-            if(l.size() >= 3) if (auto third = std::next(l.begin(), 2); third->type == token::t_operator && third->operator_v.type == operator_type::op_assign) {//if T name = ...; -> variable decl
-                //TODO create variable in parse result, remove first 3 tokens
+            if(!literal_suffix.empty()) tokenize_error(base_str, str.data()-base_str.data(), "invalid integer literal suffix");
 
-                is_variable = true;
+            return value(const_val<uint64_t>(val));
+        };
+
+        if(str.size() > 2 && str[0] == '0') [[likely]] {
+            uint64_t num = 0;
+            bool has_num = false;
+            if(str[1] == 'x' || str[1] == 'X') {//hex
+                str_cur+=2;
+                has_num = true;
+                while(str_cur < str_end && std::isxdigit(static_cast<unsigned char>(*str_cur))) {
+                    num<<=4;
+                    if('0' <= *str_cur && *str_cur <= '9') num |= *str_cur - '0';
+                    else if('a' <= *str_cur && *str_cur <= 'f') num |= *str_cur - 'a' + 10;
+                    else num |= *str_cur - 'A' + 10;
+                    str_cur++;
+                }
+                if(str_beg + 2 + (64/4) < str_cur) [[unlikely]] tokenize_error(base_str, str_beg+2-base_str.data(), "uint64 overflow");
+                if(str_beg + 2 == str_cur) [[unlikely]] tokenize_error(base_str, str_beg+2-base_str.data(), "invalid integer constant");
             }
-
-            std::vector<std::pair<size_t, tk_iter>> operators;
-            bool is_begin = true;
-            //TODO add function calls
-            for (auto tkn = l.begin(); tkn != l.end(); tkn++) {//choose operators
-                if (tkn->type == token::t_operator && tkn->operator_v.type != operator_type::op_none) {
-                    if (tkn->operator_v.type == operator_type::op_assign) [[unlikely]]  {
-                        throw std::runtime_error("assign operator allowed only in variable definition");
-                    }
-
-                    //`+` `-` `&` `*` can be unary or binary 
-                    
-                    bool can_be_unary = is_begin || std::prev(tkn)->type != token::t_identifier && std::prev(tkn)->type != token::t_value;
-                    
-                    if (can_be_unary && is_operator_unary[static_cast<size_t>(tkn->operator_v.type)]) switch (tkn->operator_v.type) {
-                    case operator_type::op_sum:     tkn->operator_v.type = operator_type::op_unary_plus;  break;
-                    case operator_type::op_sub:     tkn->operator_v.type = operator_type::op_unary_minus; break;
-                    case operator_type::op_mul:     tkn->operator_v.type = operator_type::op_deref;       break;
-                    case operator_type::op_bit_and: tkn->operator_v.type = operator_type::op_adress_of;   break;
-                    default: break;
-                    }
-                    operators.emplace_back(operator_precedence_step * (tkn->priority + 1) - operator_precedence[static_cast<size_t>(tkn->operator_v.type)], tkn);
-                    is_begin = false;
-                } else 
-                //TODO add if(...is_func...) { ... } else
-                if (tkn->type == token::t_punct && tkn->punct_v == '(') {//remove redundant brackets (12) -> 12
-                    //TODO check if prev isnt func
-                    if (auto nxt = std::next(tkn); nxt != l.end() && nxt->type == token::t_value)
-                        if (auto br = std::next(nxt); br != l.end() && br->type == token::t_punct && br->punct_v == ')') {
-                            l.erase(tkn);
-                            tkn = l.erase(br);
-                        }
-                }
+            else if(str[1] == 'b' || str[1] == 'B') {//bin
+                str_cur+=2;
+                has_num = true;
+                while(str_cur < str_end && (*str_cur == '0' || *str_cur == '1')) num=num<<1|*str_cur++-'0';
+                if(str_beg + 2 + 64 < str_cur) [[unlikely]] tokenize_error(base_str, str_beg+2-base_str.data(), "uint64 overflow");
+                if(str_beg + 2 == str_cur) [[unlikely]] tokenize_error(base_str, str_beg+2-base_str.data(), "invalid integer constant");
             }
-
-            std::sort(operators.begin(), operators.end(), [](auto& a, auto& b) {
-                return a.first > b.first;
-                });
-
-            for (auto& op : operators) {
-                auto& tkn = op.second;
-                auto t = tkn->operator_v.type;
-                //TODO chek if operands is t_value
-                token res(token::t_value, op.second->priority);
-
-                bool is_beg = l.begin() == tkn;
-                bool is_end = std::prev(l.end()) == tkn;
-
-                //TODO fix parentheses: now a+b != (a) + (b)
-
-                if (is_operator_unary[static_cast<size_t>(t)]) {
-                    //TODO suffix operators support?
-                    if (is_end) [[unlikely]] throw std::runtime_error(std::string("opeator `") + std::string(tkn->operator_v.str) + std::string("` can't get arg"));
-                    auto next = std::next(tkn);
-                    if (next->type != token::t_value) [[unlikely]] throw std::runtime_error(std::string("opeator `") + std::string(tkn->operator_v.str) + std::string("` can't get arg"));
-                    
-
-                    res.value_v = m_state.m_operator_list.call_operator(t, { next->value_v });
-                    l.erase(next);
-                }
-                else {
-                    if (is_beg || is_end) [[unlikely]] throw std::runtime_error(std::string("opeator `") + std::string(tkn->operator_v.str) + std::string("` can't get 2 args"));
-                    auto prev = std::prev(tkn);
-                    auto next = std::next(tkn);
-                    if (prev->type != token::t_value || next->type != token::t_value) [[unlikely]] throw std::runtime_error(std::string("opeator `") + std::string(tkn->operator_v.str) + std::string("` can't get 2 args"));
-                    
-                    res.value_v = m_state.m_operator_list.call_operator(t, { prev->value_v, next->value_v });
-
-                    l.erase(prev);
-                    l.erase(next);
+            //TODO octal?
+            if(has_num) {
+                std::string_view literal_suffix;
+                if(str_cur < str_end) {
+                    const char* suffix_beg = str_cur;
+                    while(str_cur < str_end && std::isalnum(static_cast<unsigned char>(*str_cur))) str_cur++;
+                    literal_suffix = {suffix_beg, size_t(str_cur-suffix_beg)};
                 }
 
-                *tkn = std::move(res);
-
-                //list changed -> update values
-                is_beg = l.begin() == tkn;
-                is_end = std::prev(l.end()) == tkn;
-
-                if (!is_beg && !is_end) {
-                    auto prev = std::prev(tkn);
-                    auto next = std::next(tkn);
-
-                    //TODO chek if isnt function?
-                    if (prev->type == token::t_punct && prev->punct_v == '(' && next->type == token::t_punct && next->punct_v == ')') {
-                        l.erase(prev);
-                        l.erase(next);
-                    }
-                }
+                return cur_end ? *cur_end = str_cur : nullptr, int_value_from_suffix(num, literal_suffix);
             }
         }
 
-        //std::cout << "after evaluation:\n";
-        //for (auto& l : tk.m_tokens) print_tokens(l);
-        
-        //TODO check legth?
+        //[int][.][fract][e[+|-]exp][literal_suffix]
+        std::string_view int_part, fract_part, exp_part, literal_suffix;
 
-        return tk.m_tokens.front().front().value_v;
+        //TODO hex floats?
+        if(std::isdigit(static_cast<unsigned char>(*str_cur))) {
+            const char* int_part_begin = str_cur;
+            while(str_cur < str_end && std::isdigit(static_cast<unsigned char>(*str_cur))) str_cur++;
+            int_part = {int_part_begin, size_t(str_cur-int_part_begin)};
+        }
+        if(str_cur < str_end && *str_cur == '.') {
+            str_cur++;
+            const char* fract_part_begin = str_cur;
+            while(str_cur < str_end && std::isdigit(static_cast<unsigned char>(*str_cur))) str_cur++;
+            fract_part = {fract_part_begin, size_t(std::min(fract_part_begin+308, str_cur)-fract_part_begin)};
+        }
+        if(str_cur < str_end && *str_cur == 'e') {
+            str_cur++;
+            const char* exp_part_begin = str_cur;
+            if(str_cur < str_end && (*str_cur == '+' || *str_cur == '-')) {
+                if(*str_cur == '+') exp_part_begin++;
+                else str_cur++;
+            }
+            while(str_cur < str_end && std::isdigit(static_cast<unsigned char>(*str_cur))) str_cur++;
+            exp_part = {exp_part_begin, size_t(str_cur-exp_part_begin)};
+        }
+        if(str_cur < str_end) {
+            const char* suffix_beg = str_cur;
+            while(str_cur < str_end && std::isalnum(static_cast<unsigned char>(*str_cur))) str_cur++;
+            literal_suffix = {suffix_beg, size_t(str_cur-suffix_beg)};
+        }
+
+        static std::array<double, 308*2+1> pow10_table = ([](){
+            static std::array<double, 308*2+1> ret;
+            for(size_t i = 0; i <= 308*2; i++) ret[i] = std::pow(10, int(i)-308);
+            return ret;
+        })();
+
+        if(!fract_part.empty() || !exp_part.empty()) {
+            double int_v = 0.;
+            double fract_v = 0.;
+            int exp_v = 0;
+
+            auto m_from_chars = []<typename T>(const char* beg, const char* end, T& val) {
+                if constexpr(requires(const char* a, const char* b, T& v) { std::from_chars(a, b, v); }) std::from_chars(beg, end, val);
+                else std::istringstream({beg, end}) >> val;//TODO add warn here?  
+            };
+
+            if(!int_part.empty())   m_from_chars(int_part.data(), int_part.data()+int_part.size(), int_v);
+            if(!fract_part.empty()) m_from_chars(fract_part.data(), fract_part.data()+fract_part.size(), fract_v);
+            if(!exp_part.empty())   m_from_chars(exp_part.data(), exp_part.data()+exp_part.size(), exp_v);
+            
+
+            double res = int_v + fract_v * pow10_table[308-fract_part.size()];
+            if(exp_v > 308) [[unlikely]] res = std::abs(res) == 0. ? 0. : std::numeric_limits<double>::infinity();
+            else if(exp_v < -308) [[unlikely]] res = 0.;
+            else [[likely]] res *= pow10_table[308+exp_v];
+            
+            if(literal_suffix == "f" || literal_suffix == "f32") return cur_end ? *cur_end = str_cur : nullptr, value(const_val<builtin_types::sgl_float32_t>(static_cast<builtin_types::sgl_float32_t>(res)));
+            if(literal_suffix == "f64") return cur_end ? *cur_end = str_cur : nullptr, value(const_val<builtin_types::sgl_float64_t>(static_cast<builtin_types::sgl_float64_t>(res)));
+
+            if(!literal_suffix.empty()) tokenize_error(base_str, str.data()-base_str.data(), "invalid floating point literal suffix");
+            return cur_end ? *cur_end = str_cur : nullptr, value(const_val<double>(res));
+        }
+        uint64_t val = 0;
+        auto r = std::from_chars(int_part.data(), int_part.data()+int_part.size(), val);
+
+        if(r.ec == std::errc::result_out_of_range) [[unlikely]] tokenize_error(base_str, str_beg+2-base_str.data(), "uint64 overflow");
+
+        return cur_end ? *cur_end = str_cur : nullptr, int_value_from_suffix(val, literal_suffix);
+    }
+
+    value details::eval_expr_rec_impl(const state& state, std::string_view base_str, std::string_view str, details::eval_impl_args args) {
+        const char *str_beg = str.data(), *str_cur = str_beg, *str_end = str_beg + str.size();
+        auto skip_comments_and_spaces = [&str_cur, &str_end, str, str_beg](){
+            while(str_cur < str_end && (std::isspace(static_cast<unsigned char>(*str_cur)) || *str_cur == '/')) {
+                if(*str_cur  == '/') {
+                    if(str_cur + 1 < str_end) [[likely]] {
+                        if(*(str_cur+1) == '/') str_cur = str.find('\n', str_cur-str_beg) + 1 + str_beg;
+                        else if(*(str_cur+1) == '*') str_cur = str.find("*/", str_cur-str_beg) + 2 + str_beg;
+                        if(str_cur > str_end) [[unlikely]] str_cur = str_end;
+                    } else return;
+                }
+                else str_cur++;
+            }
+        };
+        skip_comments_and_spaces();
+        if(str_cur == str_end) return args.cur_end ? *args.cur_end = str_cur : nullptr, value();//TODO throw error?
+        value ret;
+        //number|string literal or prefix unary operator
+        switch(*str_cur) {
+        //brackets
+        case '(': {
+            ret = details::eval_expr_rec_impl(state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, static_cast<uint8_t>(operator_precedence_step), false, false, true});
+            if(str_cur == str_end || *str_cur != ')') [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "unclosed bracket");
+            str_cur++;
+        } break;
+        case ')': {
+            tokenize_error(base_str, str_cur-base_str.data(), "missing open bracket");
+        } break;
+        //unary opeators
+        case '+': case '-': case '!': case '~': case '*': case '&': {
+            char m_op_char = *str_cur;
+            static constexpr std::array<char, 6> ops_chars = {
+                '+', '-', '!', '~', '*', '&'
+            }; 
+            static constexpr std::array<operator_type, 6> ops_types = {
+                operator_type::op_unary_plus, operator_type::op_unary_minus, operator_type::op_not, 
+                operator_type::op_bit_not, operator_type::op_deref, operator_type::op_adress_of
+            }; 
+            auto m_op = ops_types[std::find(ops_chars.begin(), ops_chars.end(), m_op_char)-ops_chars.begin()];
+            auto m_op_pred = operator_precedence[static_cast<size_t>(m_op)];
+            auto v = details::eval_expr_rec_impl(state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, m_op_pred, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
+            
+            ret = state.m_operator_list.call_operator(m_op, {v});
+        } break;
+
+        case '.':
+        case '0': case '1': case '2': case '3': case '4':
+        case '5': case '6': case '7': case '8': case '9': {
+            ret = scan_number(base_str, {str_cur, size_t(str_end-str_cur)}, &str_cur);
+        } break;
+
+        //TODO scan value (string, char, number) literals here
+
+        default:
+            if(std::isalnum(static_cast<unsigned char>(*str_cur))) [[likely]] {
+                //TODO identifier
+            } else [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "invalid character");
+            break;
+        }
+
+        while(str_cur < str_end) {
+            skip_comments_and_spaces();
+            if(str_cur == str_end) break;
+            switch(*str_cur) {
+            case '(': {
+                tokenize_error(base_str, str_cur-base_str.data(), "unexpected '('");
+            } break;
+            case ')': {
+                if(!args.is_in_brackets && !args.is_in_function) [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "missing open bracket");
+                return args.cur_end ? *args.cur_end = str_cur : nullptr, ret;
+            } break;
+
+            case ',': {
+                //binary a, b operator or comma in function f(a, b, ...)
+            } break;;
+
+            case '+': case '-': case '*': case '/': case '%': 
+            case '|': case '&': case '^': case '<': case '>': 
+            case '!': case '=': {
+                static constexpr std::array<std::string_view, 8> op_2wide_str = {
+                    "<<", ">>", "<=", ">=", "!=", "==", "&&", "||"
+                };
+                static constexpr std::array<operator_type, 8> op_2wide_type = {
+                    operator_type::op_bit_lsh, operator_type::op_bit_rsh,
+                    operator_type::op_not_greater, operator_type::op_not_less, 
+                    operator_type::op_not_equal, operator_type::op_equal, 
+                    operator_type::op_and, operator_type::op_or
+                };
+                if(str_cur + 1 < str_end) [[likely]] {
+                    if(auto f = std::find(op_2wide_str.begin(), op_2wide_str.end(), std::string_view(str_cur, 2)); f != op_2wide_str.end()) {
+                        auto m_op = op_2wide_type[f-op_2wide_str.begin()];
+                        auto m_op_pred = operator_precedence[static_cast<size_t>(m_op)];
+                        if(args.call_pred <= m_op_pred) return args.cur_end ? *args.cur_end = str_cur : nullptr, ret;
+                        auto v = details::eval_expr_rec_impl(state, base_str, {str_cur+2, size_t(str_end-(str_cur+1))}, {&str_cur, m_op_pred, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
+                        ret = state.m_operator_list.call_operator(m_op, {ret, v});
+                        break;
+                    }
+                }
+                
+                static constexpr std::array<char, 10> op_1wide_str = {
+                    '+', '-', '*', '/', '%',
+                    '|', '&', '^', '<', '>'
+                };
+                static constexpr std::array<operator_type, 10> op_1wide_type = {
+                    operator_type::op_sum, operator_type::op_sub, operator_type::op_mul, operator_type::op_div, operator_type::op_mod,
+                    operator_type::op_bit_or, operator_type::op_bit_and, operator_type::op_bit_xor, 
+                    operator_type::op_less, operator_type::op_greater
+                };
+
+                if(auto f = std::find(op_1wide_str.begin(), op_1wide_str.end(), *str_cur); f != op_1wide_str.end()) [[likely]] {
+                    auto m_op = op_1wide_type[f-op_1wide_str.begin()];
+                    auto m_op_pred = operator_precedence[static_cast<size_t>(m_op)];
+                    if(args.call_pred <= m_op_pred) return args.cur_end ? *args.cur_end = str_cur : nullptr, ret;
+                    auto v = details::eval_expr_rec_impl(state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, m_op_pred, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
+                    ret = state.m_operator_list.call_operator(m_op, {ret, v});
+                    break;
+                }
+            } 
+            [[fallthrough]];//if not found
+            default:
+                if(std::isalnum(static_cast<unsigned char>(*str_cur))) [[likely]] {
+                    //TODO identifier
+
+                } else [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "invalid character");
+                break;
+            }
+        }
+
+        return args.cur_end ? *args.cur_end = str_cur : nullptr, ret;
     }
 }//namespace SGL

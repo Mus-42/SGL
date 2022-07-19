@@ -3,7 +3,7 @@ project(SGL)
 
 #TODO remove it
 #add_compile_options(-Wall -Wextra)
-add_compile_options(/W4)# 
+#add_compile_options(/W4)# 
 
 add_library(SGL STATIC src/sgl.cpp)
 target_include_directories(SGL PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/)

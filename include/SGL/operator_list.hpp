@@ -58,28 +58,7 @@ namespace SGL {
     };
     constexpr size_t operator_precedence_step = 16;// > max(operator_precedence)
 
-    constexpr std::array<bool, operators_count> is_operator_unary = {
-        //op_none
-        false,
-        //op_unary_plus, op_unary_minus, //op_prefix_incr, op_prefix_decr, op_postfix_incr, op_postfix_decr,
-        true, true,//...
-        //op_sum, op_sub, op_mul, op_div, op_mod,
-        false, false, false, false, false,
-        //op_sum_assign, op_sub_assign, op_mul_assign, op_div_assign, op_mod_assign,
-        //...
-        //op_bit_or, op_bit_and, op_bit_xor, op_bit_not, op_bit_lsh, op_bit_rsh,
-        false, false, false, true, false, false,
-        //op_bit_or_assign, op_bit_and_assign, op_bit_xor_assign, op_bit_lsh_assign, op_bit_rsh_assign, 
-        //...
-        //op_equal, op_not_equal, op_less, op_greater, op_not_less, op_not_greater,
-        false, false, false, false, false,
-        //op_or, op_and, op_not,
-        false, false, false,
-        //op_adress_of, op_deref,
-        true, true,
-    };
-
-    //TODO add operator priority list
+    //TODO: use something more efficient than SGL::function to choose overload
 
     class operator_list {
     public:
