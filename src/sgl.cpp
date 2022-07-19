@@ -254,7 +254,9 @@ namespace SGL {
         //TODO scan value (string, char, number) literals here
 
         default:
-            //TODO identifiers (functions, variables)
+            if(std::isalnum(static_cast<unsigned char>(*str_cur))) [[likely]] {
+                //TODO identifier
+            } else [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "invalid character");
             break;
         }
 
@@ -269,6 +271,10 @@ namespace SGL {
                 if(!args.is_in_brackets && !args.is_in_function) [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "missing open bracket");
                 return args.cur_end ? *args.cur_end = str_cur : nullptr, ret;
             } break;
+
+            case ',': {
+                //binary a, b operator or comma in function f(a, b, ...)
+            } break;;
 
             case '+': case '-': case '*': case '/': case '%': 
             case '|': case '&': case '^': case '<': case '>': 
@@ -287,7 +293,7 @@ namespace SGL {
                         auto m_op = op_2wide_type[f-op_2wide_str.begin()];
                         auto m_op_pred = operator_precedence[static_cast<size_t>(m_op)];
                         if(args.call_pred <= m_op_pred) return args.cur_end ? *args.cur_end = str_cur : nullptr, ret;
-                        auto v = details::eval_rec_impl(state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, m_op_pred, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
+                        auto v = details::eval_rec_impl(state, base_str, {str_cur+2, size_t(str_end-(str_cur+1))}, {&str_cur, m_op_pred, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
                         ret = state.m_operator_list.call_operator(m_op, {ret, v});
                         break;
                     }

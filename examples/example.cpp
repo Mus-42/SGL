@@ -43,7 +43,7 @@ int main() {
     //ev.evaluate(tokenizer(R"("qq" + "\tall\n")"));
     //ev.evaluate(tokenizer("auto v = {1, 4.26, \"mimsus\"};"));
 
-    for(auto str : {"2 + 2 * 2", "1<<3 | 8>>2 & 5+3*10", "(2 + 2) * 2", "((2) + (5>>(1)) * (((1))<<1))" })//ok, ok, ok, error (in brackets)
+    for(auto str : {"2 + 2 * 2", "1<<3 | 8>>2 & 5+3*10", "(2 + 2) * 2", "((2) + (5>>(1)) * (((1))<<1))" })
         std::cout << str << " = " << ev.evaluate(str).to_string() << std::endl;
 
 
