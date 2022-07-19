@@ -352,8 +352,11 @@ namespace SGL {
         }
 
         std::string to_string(const void* data) const {
-            if(m_traits.is_final_v || (m_traits.is_reference && m_type->m_traits.is_final_v)) return m_base_type->to_string(data);
-            else return {};//TODO add value of type ... here?
+            if(m_traits.is_final_v || (m_traits.is_reference && m_type->m_traits.is_final_v)) [[likely]] return m_base_type->to_string(data);
+            else [[unlikely]] {
+                if(m_traits.is_pointer) [[likely]] return (std::stringstream() << data).str();
+                return {};
+            }//TODO add value of type ... here?
         }
 
     //protected:

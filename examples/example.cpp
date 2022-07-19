@@ -36,6 +36,8 @@ int main() {
 
     std::cout << st.get_type<const arr<int*>*&>()->type_to_str() << std::endl;;
 
+    std::cout << value(val<void*>(&ev)).to_string() << std::endl;
+
     //ev.evaluate(tokenizer("int a = -100u * 10;"));
     //ev.evaluate(tokenizer("0xFFFF + 0b01101101u8"));
     //ev.evaluate(tokenizer("1.12 + 48u32"));
