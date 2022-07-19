@@ -10,7 +10,7 @@ namespace SGL {
     namespace details {
         struct eval_rec_impl_args {
             const char** cur_end = nullptr;
-            uint8_t call_prior = 0;
+            uint8_t call_pred = 16;//static_cast<uint8_t>(operator_precedence_step);
             bool is_in_function : 1 = false;
             bool is_in_ternary  : 1 = false;
             bool is_in_brackets : 1 = false;

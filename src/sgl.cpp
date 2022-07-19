@@ -221,9 +221,9 @@ namespace SGL {
         switch(*str_cur) {
         //brackets
         case '(': {
-            auto v = details::eval_rec_impl(state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, 0, false, false, true});
+            ret = details::eval_rec_impl(state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, static_cast<uint8_t>(operator_precedence_step), false, false, true});
             if(str_cur == str_end || *str_cur != ')') [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "unclosed bracket");
-            return args.cur_end ? *args.cur_end = str_cur+1 : nullptr, v;
+            str_cur++;
         } break;
         case ')': {
             tokenize_error(base_str, str_cur-base_str.data(), "missing open bracket");
@@ -231,7 +231,6 @@ namespace SGL {
         //unary opeators
         case '+': case '-': case '!': case '~': case '*': case '&': {
             char m_op_char = *str_cur;
-            auto v = details::eval_rec_impl(state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, 0, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
             static constexpr std::array<char, 6> ops_chars = {
                 '+', '-', '!', '~', '*', '&'
             }; 
@@ -239,7 +238,11 @@ namespace SGL {
                 operator_type::op_unary_plus, operator_type::op_unary_minus, operator_type::op_not, 
                 operator_type::op_bit_not, operator_type::op_deref, operator_type::op_adress_of
             }; 
-            ret = state.m_operator_list.call_operator(ops_types[std::find(ops_chars.begin(), ops_chars.end(), m_op_char)-ops_chars.begin()], {v});
+            auto m_op = ops_types[std::find(ops_chars.begin(), ops_chars.end(), m_op_char)-ops_chars.begin()];
+            auto m_op_pred = operator_precedence[static_cast<size_t>(m_op)];
+            auto v = details::eval_rec_impl(state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, m_op_pred, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
+            
+            ret = state.m_operator_list.call_operator(m_op, {v});
         } break;
 
         case '.':
@@ -256,6 +259,8 @@ namespace SGL {
         }
 
         while(str_cur < str_end) {
+            skip_comments_and_spaces();
+            if(str_cur == str_end) break;
             switch(*str_cur) {
             case '(': {
                 tokenize_error(base_str, str_cur-base_str.data(), "unexpected '('");
@@ -265,11 +270,54 @@ namespace SGL {
                 return args.cur_end ? *args.cur_end = str_cur : nullptr, ret;
             } break;
 
-            case '+': {
+            case '+': case '-': case '*': case '/': case '%': 
+            case '|': case '&': case '^': case '<': case '>': 
+            case '!': case '=': {
+                static constexpr std::array<std::string_view, 8> op_2wide_str = {
+                    "<<", ">>", "<=", ">=", "!=", "==", "&&", "||"
+                };
+                static constexpr std::array<operator_type, 8> op_2wide_type = {
+                    operator_type::op_bit_lsh, operator_type::op_bit_rsh,
+                    operator_type::op_not_greater, operator_type::op_not_less, 
+                    operator_type::op_not_equal, operator_type::op_equal, 
+                    operator_type::op_and, operator_type::op_or
+                };
+                if(str_cur + 1 < str_end) [[likely]] {
+                    if(auto f = std::find(op_2wide_str.begin(), op_2wide_str.end(), std::string_view(str_cur, 2)); f != op_2wide_str.end()) {
+                        auto m_op = op_2wide_type[f-op_2wide_str.begin()];
+                        auto m_op_pred = operator_precedence[static_cast<size_t>(m_op)];
+                        if(args.call_pred <= m_op_pred) return args.cur_end ? *args.cur_end = str_cur : nullptr, ret;
+                        auto v = details::eval_rec_impl(state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, m_op_pred, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
+                        ret = state.m_operator_list.call_operator(m_op, {ret, v});
+                        break;
+                    }
+                }
+                
+                static constexpr std::array<char, 10> op_1wide_str = {
+                    '+', '-', '*', '/', '%',
+                    '|', '&', '^', '<', '>'
+                };
+                static constexpr std::array<operator_type, 10> op_1wide_type = {
+                    operator_type::op_sum, operator_type::op_sub, operator_type::op_mul, operator_type::op_div, operator_type::op_mod,
+                    operator_type::op_bit_or, operator_type::op_bit_and, operator_type::op_bit_xor, 
+                    operator_type::op_less, operator_type::op_greater
+                };
 
-            };
-            
+                if(auto f = std::find(op_1wide_str.begin(), op_1wide_str.end(), *str_cur); f != op_1wide_str.end()) [[likely]] {
+                    auto m_op = op_1wide_type[f-op_1wide_str.begin()];
+                    auto m_op_pred = operator_precedence[static_cast<size_t>(m_op)];
+                    if(args.call_pred <= m_op_pred) return args.cur_end ? *args.cur_end = str_cur : nullptr, ret;
+                    auto v = details::eval_rec_impl(state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, m_op_pred, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
+                    ret = state.m_operator_list.call_operator(m_op, {ret, v});
+                    break;
+                }
+            } 
+            [[fallthrough]];//if not found
             default:
+                if(std::isalnum(static_cast<unsigned char>(*str_cur))) [[likely]] {
+                    //TODO identifier
+
+                } else [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "invalid character");
                 break;
             }
         }
