@@ -200,7 +200,7 @@ namespace SGL {
         return cur_end ? *cur_end = str_cur : nullptr, int_value_from_suffix(val, literal_suffix);
     }
 
-    value details::eval_rec_impl(const state& state, std::string_view base_str, std::string_view str, details::eval_rec_impl_args args) {
+    value details::eval_expr_rec_impl(const state& state, std::string_view base_str, std::string_view str, details::eval_impl_args args) {
         const char *str_beg = str.data(), *str_cur = str_beg, *str_end = str_beg + str.size();
         auto skip_comments_and_spaces = [&str_cur, &str_end, str, str_beg](){
             while(str_cur < str_end && (std::isspace(static_cast<unsigned char>(*str_cur)) || *str_cur == '/')) {
@@ -221,7 +221,7 @@ namespace SGL {
         switch(*str_cur) {
         //brackets
         case '(': {
-            ret = details::eval_rec_impl(state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, static_cast<uint8_t>(operator_precedence_step), false, false, true});
+            ret = details::eval_expr_rec_impl(state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, static_cast<uint8_t>(operator_precedence_step), false, false, true});
             if(str_cur == str_end || *str_cur != ')') [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "unclosed bracket");
             str_cur++;
         } break;
@@ -240,7 +240,7 @@ namespace SGL {
             }; 
             auto m_op = ops_types[std::find(ops_chars.begin(), ops_chars.end(), m_op_char)-ops_chars.begin()];
             auto m_op_pred = operator_precedence[static_cast<size_t>(m_op)];
-            auto v = details::eval_rec_impl(state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, m_op_pred, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
+            auto v = details::eval_expr_rec_impl(state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, m_op_pred, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
             
             ret = state.m_operator_list.call_operator(m_op, {v});
         } break;
@@ -293,7 +293,7 @@ namespace SGL {
                         auto m_op = op_2wide_type[f-op_2wide_str.begin()];
                         auto m_op_pred = operator_precedence[static_cast<size_t>(m_op)];
                         if(args.call_pred <= m_op_pred) return args.cur_end ? *args.cur_end = str_cur : nullptr, ret;
-                        auto v = details::eval_rec_impl(state, base_str, {str_cur+2, size_t(str_end-(str_cur+1))}, {&str_cur, m_op_pred, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
+                        auto v = details::eval_expr_rec_impl(state, base_str, {str_cur+2, size_t(str_end-(str_cur+1))}, {&str_cur, m_op_pred, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
                         ret = state.m_operator_list.call_operator(m_op, {ret, v});
                         break;
                     }
@@ -313,7 +313,7 @@ namespace SGL {
                     auto m_op = op_1wide_type[f-op_1wide_str.begin()];
                     auto m_op_pred = operator_precedence[static_cast<size_t>(m_op)];
                     if(args.call_pred <= m_op_pred) return args.cur_end ? *args.cur_end = str_cur : nullptr, ret;
-                    auto v = details::eval_rec_impl(state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, m_op_pred, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
+                    auto v = details::eval_expr_rec_impl(state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, m_op_pred, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
                     ret = state.m_operator_list.call_operator(m_op, {ret, v});
                     break;
                 }

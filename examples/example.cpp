@@ -44,7 +44,7 @@ int main() {
     //ev.evaluate(tokenizer("auto v = {1, 4.26, \"mimsus\"};"));
 
     for(auto str : {"2 + 2 * 2", "1<<3 | 8>>2 & 5+3*10", "(2 + 2) * 2", "((2) + (5>>(1)) * (((1))<<1))" })
-        std::cout << str << " = " << ev.evaluate(str).to_string() << std::endl;
+        std::cout << str << " = " << ev.evaluate_expression(str).to_string() << std::endl;
 
 
 
