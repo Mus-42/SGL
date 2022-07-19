@@ -242,7 +242,7 @@ namespace SGL {
             auto m_op_pred = operator_precedence[static_cast<size_t>(m_op)];
             auto v = details::eval_expr_rec_impl(state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, m_op_pred, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
             
-            ret = state.m_operator_list.call_operator(m_op, {v});
+            ret = state.m_operator_list.call_unary_operator(m_op, v);
         } break;
 
         case '.':
@@ -294,7 +294,7 @@ namespace SGL {
                         auto m_op_pred = operator_precedence[static_cast<size_t>(m_op)];
                         if(args.call_pred <= m_op_pred) return args.cur_end ? *args.cur_end = str_cur : nullptr, ret;
                         auto v = details::eval_expr_rec_impl(state, base_str, {str_cur+2, size_t(str_end-(str_cur+1))}, {&str_cur, m_op_pred, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
-                        ret = state.m_operator_list.call_operator(m_op, {ret, v});
+                        ret = state.m_operator_list.call_binary_operator(m_op, ret, v);
                         break;
                     }
                 }
@@ -314,7 +314,7 @@ namespace SGL {
                     auto m_op_pred = operator_precedence[static_cast<size_t>(m_op)];
                     if(args.call_pred <= m_op_pred) return args.cur_end ? *args.cur_end = str_cur : nullptr, ret;
                     auto v = details::eval_expr_rec_impl(state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, m_op_pred, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
-                    ret = state.m_operator_list.call_operator(m_op, {ret, v});
+                    ret = state.m_operator_list.call_binary_operator(m_op, ret, v);
                     break;
                 }
             } 

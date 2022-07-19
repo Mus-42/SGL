@@ -240,7 +240,9 @@ namespace SGL {
             return reinterpret_cast<size_t>(static_cast<const char*>(&(static_cast<T*>(nullptr)->*member_ptr)));
         }
     };
-
+    inline std::strong_ordering operator<=>(const base_type& a, const base_type& b) {
+        return std::type_index(a.m_type) <=> std::type_index(b.m_type);
+    }
    
     class type {
     public:
@@ -359,11 +361,49 @@ namespace SGL {
             }//TODO add value of type ... here?
         }
 
+        type& add_const() {//const int* -> const int* const
+            if(m_traits.is_reference) m_type->add_const();
+            else m_traits.is_const = true;
+            return *this;
+        }
+        type& remove_const() {//const int* const -> const int*
+            if(m_traits.is_reference) m_type->remove_const();
+            else m_traits.is_const = false;
+            return *this;
+        }
+
+        type& add_reference() {//int -> int&
+            if(!m_traits.is_reference) {
+                auto cur = std::make_shared<type>(std::move(*this));
+                type ret;
+                ret.m_type = std::move(cur);
+
+                ret.m_traits.is_const     = false;
+                ret.m_traits.is_pointer   = false;
+                ret.m_traits.is_reference = true;
+                ret.m_traits.is_array     = false;
+                ret.m_traits.is_void      = false;
+                ret.m_traits.is_final_v   = false;
+                ret.m_traits.is_temp_v    = false;
+
+                *this = std::move(ret);
+            }
+            return *this;
+        }
+
+        type& remove_reference() {//int& -> int
+            if(m_traits.is_reference) *this = std::move(*m_type);
+            return *this;
+        }
+
+
     //protected:
         friend class value;
         friend class evaluator;
         friend class function;
+        friend class operator_list;
         friend class value_creator_base;
+        friend inline std::strong_ordering operator<=>(const type& a, const type& b);
         
         std::shared_ptr<type> m_type;
         std::shared_ptr<base_type> m_base_type;
@@ -401,7 +441,8 @@ namespace SGL {
                     && is_void      == other.is_void
                     && is_final_v   == other.is_final_v;//TODO add is_temp_v to compare?
             }
-            bool operator!=(const m_traits_t& other) const { return !(*this == other); }
+            constexpr bool operator!=(const m_traits_t& other) const { return !(*this == other); }
+            constexpr std::strong_ordering operator<=>(const m_traits_t& other) const = default;
         } m_traits;
 
         //TODO move it to constuctor?
@@ -484,7 +525,7 @@ namespace SGL {
             }
             else {
                 if(v->m_traits.is_const) ret += "const ";
-                ret += 'T';
+                ret += v->m_base_type->m_type_name;
             }
         }
     };
@@ -495,6 +536,14 @@ namespace SGL {
     inline bool operator!=(const type& a, const type& b) {
         return !(a==b);
     }
+    inline std::strong_ordering operator<=>(const type& a, const type& b) {
+        if(a.m_traits == b.m_traits) {
+            if(a.m_traits.is_final_v) return *a.m_base_type <=> *b.m_base_type;
+            else return *a.m_type <=> *b.m_type;
+        }
+        else return a.m_traits <=> b.m_traits;
+    }
+
 } // namespace SGL
 
 #endif// SGL_TYPE_HPP_INCLUDE_

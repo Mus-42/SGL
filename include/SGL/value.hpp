@@ -238,7 +238,7 @@ namespace SGL {
         template<typename T>
         void check_type(details::sgl_type_identity<T>) const {
             //TODO add type_name to exception info?
-            if(!m_type->is_convertable_to<T>()) throw details::invalid_value_cast("value not convertable to T");
+            if(!m_type->is_convertable_to<T>()) [[unlikely]] throw details::invalid_value_cast("value not convertable to T");
         }
 
 

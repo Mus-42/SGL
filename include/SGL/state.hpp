@@ -13,6 +13,7 @@
 #include "type.hpp"
 #include "evaluator.hpp"
 #include "operator_list.hpp"
+#include "function.hpp"
 
 namespace SGL {
     class function;

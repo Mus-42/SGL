@@ -152,6 +152,7 @@ namespace SGL {
 
         //TODO add a<=>b, a?b:c, a->b
         //TODO fix T=void
+        //TODO move to operator_list.hpp?
         //unary 
         template<typename T> constexpr bool has_op_unary_plus   = requires(T v) { + v; };//+a
         template<typename T> constexpr bool has_op_unary_minus  = requires(T v) { - v; };//-a

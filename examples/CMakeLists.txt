@@ -7,7 +7,7 @@ file(GLOB examples_sources "*.cpp")
 #all examples - single *.cpp file
 foreach(example_source_file IN LISTS examples_sources)
     #convert filename to example name
-    string(REPLACE "." "_" example_name ${example_source_file})
+    string(REPLACE ".cpp" "" example_name ${example_source_file})
 	string(REPLACE "${CMAKE_CURRENT_SOURCE_DIR}/" "" example_name ${example_name})
     string(TOUPPER ${example_name} example_name)
     set(example_name "SGL_${example_name}_EXAMPLE")
