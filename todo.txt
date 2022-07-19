@@ -1,14 +1,11 @@
 Features:
-C++ templates support?
-Custom types definition? (auto?)
-Custom operators 
+auto kywd
 check 32-bit systems support
 
 Lib:
 state global vars
 cmake install
-how shold return value for get<arr<T>*>? pointer to array_impl?
-add ret_type<T>? cast_to_ret_type<T>(v)? (from <arr<T>> -> <vector<T>> etc.)
+what value get<arr<T>*> shold return? pointer to array_impl?
 implement value_type functions for array
 replace "//protected:" with macro in config.hpp?
 rename type to base_type, value_type to type?
@@ -20,5 +17,4 @@ replace asserts like bad value cast, illegal name etc. with exceptions
 
 fast function overload search (now it O(nlog(n)))
 
-now compilation to long: for each operator overload it generate 4 functions. optimize it?
 replace 'SGL' in namespaces & files with lowercase? ('sgl')

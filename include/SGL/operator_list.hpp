@@ -81,7 +81,12 @@ namespace SGL {
 #pragma warning(push)
 #pragma warning(disable:4018 4146 4389 4804)
 #endif//SGL_COMPILER_MSVC
-//TODO disable warnings for GCC & Clang?
+#ifdef SGL_COMPILER_CLANG 
+#pragma clang diagonstic push
+#pragma clang diagnostic ignored "-Wbool-operation"
+#endif//SGL_COMPILER_CLANG
+
+//TODO disable warnings for GCC?
 
         template<typename T>
         constexpr void add_default_unary_operators_for_type() requires details::req_base_type<T> {
@@ -141,6 +146,9 @@ namespace SGL {
 #ifdef SGL_COMPILER_MSVC
 #pragma warning(pop)
 #endif//SGL_COMPILER_MSVC
+#ifdef SGL_COMPILER_CLANG 
+#pragma clang diagonstic pop
+#endif//SGL_COMPILER_CLANG
 
     protected:
         template<operator_type op> 

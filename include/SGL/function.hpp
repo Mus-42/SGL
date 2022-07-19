@@ -32,9 +32,9 @@ namespace SGL {
             };
 
             template<typename Ret, typename... Args>
-            function_overload(std::function<Ret(Args...)> func) : m_func(get_function_impl(details::sgl_function_identity<Ret(Args...)>{}, func, std::index_sequence_for<Args...>{})), args_types({value_type::construct_value_type<Args>()...}) {}
+            function_overload(std::function<Ret(Args...)> func) : m_func(get_function_impl(details::sgl_function_identity<Ret(Args...)>{}, func, std::index_sequence_for<Args...>{})), args_types({type::construct_type<Args>()...}) {}
             template<typename Ret, typename... Args>
-            function_overload(Ret(*func)(Args...)) : m_func(get_function_impl(details::sgl_function_identity<Ret(Args...)>{}, func, std::index_sequence_for<Args...>{})), args_types({value_type::construct_value_type<Args>()...}) {}
+            function_overload(Ret(*func)(Args...)) : m_func(get_function_impl(details::sgl_function_identity<Ret(Args...)>{}, func, std::index_sequence_for<Args...>{})), args_types({type::construct_type<Args>()...}) {}
 
             template<typename Func, typename Ret, typename... Args, size_t... N>
             static constexpr decltype(auto) get_function_impl(details::sgl_function_identity<Ret(Args...)>, Func func, std::index_sequence<N...>) {
@@ -56,7 +56,7 @@ namespace SGL {
 
             using m_func_ptr_t = value(*)(std::initializer_list<std::reference_wrapper<value>>);
             std::shared_ptr<m_impl_base> m_func;
-            std::vector<std::shared_ptr<value_type>> args_types;
+            std::vector<std::shared_ptr<type>> args_types;
             
             int all_args_count = 0;
             bool all_types = false;
@@ -82,7 +82,7 @@ namespace SGL {
             }()), all_args_count(all_args_count), all_types(true) {}
             
             //template<typename Ret, typename... Args>
-            //function_overload(std::function<Ret(Args...)> func, std::vector<std::shared_ptr<value_type>> args) : m_func(get_function_impl(func, std::index_sequence_for<Args...>{})), args_types(args) {
+            //function_overload(std::function<Ret(Args...)> func, std::vector<std::shared_ptr<type>> args) : m_func(get_function_impl(func, std::index_sequence_for<Args...>{})), args_types(args) {
             //    if(sizeof...(Args) != args.size()) throw std::runtime_error("sgl function_overload: invalid args count");
             //}//TODO implement
         };

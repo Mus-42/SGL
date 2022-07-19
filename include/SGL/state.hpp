@@ -25,19 +25,19 @@ namespace SGL {
         //base type 
 
         template<typename T, std::enable_if_t<details::is_base_type<T>, bool> = true>
-        std::shared_ptr<type> register_type(const std::string& type_name) {
+        std::shared_ptr<base_type> register_type(const std::string& type_name) {
             if(!details::is_correct_identifier(type_name)) throw std::invalid_argument("incorrect type name: " + type_name);
             m_operator_list.add_default_operators_for_type<T>();
-            return m_types_val[std::type_index(typeid(T))] = register_type(type_name, std::make_shared<type>(details::sgl_type_identity<T>{}));
+            return m_types_val[std::type_index(typeid(T))] = register_type(type_name, std::make_shared<base_type>(details::sgl_type_identity<T>{}));
         }
-        std::shared_ptr<type> register_type(const std::string& type_name, std::shared_ptr<type> type_ptr) {
+        std::shared_ptr<base_type> register_type(const std::string& type_name, std::shared_ptr<base_type> type_ptr) {
             if(!details::is_correct_identifier(type_name)) throw std::invalid_argument("incorrect type name: " + type_name);
             auto f = m_types.find(type_name);
             if(f != m_types.end()) throw std::runtime_error("type with same name already exists in this state");
             m_types[type_name] = type_ptr;
             return type_ptr;
         }
-        std::shared_ptr<type> find_type(const std::string& type_name) const {
+        std::shared_ptr<base_type> find_type(const std::string& type_name) const {
             return m_types.at(type_name);
         }
 
@@ -56,18 +56,18 @@ namespace SGL {
             m_functions[name].add_overload(f);
         }
 
-        [[nodiscard]] std::shared_ptr<type> get_base_type(const std::string& name) const {
+        [[nodiscard]] std::shared_ptr<base_type> get_base_type(const std::string& name) const {
             return m_types.at(name);
         }
         template<typename T, std::enable_if_t<details::is_base_type<T>, bool> = true>
-        [[nodiscard]] std::shared_ptr<type> get_base_type() const {
+        [[nodiscard]] std::shared_ptr<base_type> get_base_type() const {
             return m_types_val.at(std::type_index(typeid(T)));
         }
         
         template<typename T>
-        [[nodiscard]] std::shared_ptr<value_type> get_type() const {
+        [[nodiscard]] std::shared_ptr<type> get_type() const {
             //TODO add type if it not exist?
-            return value_type::construct_value_type<T>(m_types_val.at(std::type_index(typeid(details::make_base_type_t<T>))));
+            return type::construct_type<T>(m_types_val.at(std::type_index(typeid(details::make_base_type_t<T>))));
         }
 
         function& get_function(const std::string& name) {
@@ -86,13 +86,13 @@ namespace SGL {
 
         
     //protected:
+        friend class base_type;
         friend class type;
-        friend class value_type;
         friend class value;
         friend class evaluator;
 
-        std::unordered_map<std::string, std::shared_ptr<type>> m_types;
-        std::unordered_map<std::type_index, std::shared_ptr<type>> m_types_val;
+        std::unordered_map<std::string, std::shared_ptr<base_type>> m_types;
+        std::unordered_map<std::type_index, std::shared_ptr<base_type>> m_types_val;
 
         std::unordered_map<std::string, function> m_functions;
         std::unordered_map<std::string, function> m_constructors;//and operators (syntax same: T(args))//TODO move to functions? (same syntax)
