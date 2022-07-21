@@ -48,7 +48,7 @@ namespace SGL {
         struct const_value_creator : public value_creator_base<const T> {
             template<typename... Args>
             [[nodiscard]] const_value_creator(Args... args) {
-                this->m_const_data = new const T(args...);
+                this->m_const_data = new const T(args...);//TODO fix for pointer
                 this->need_free_data = true;
             }
             template<typename... Args>

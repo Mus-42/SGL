@@ -10,13 +10,13 @@ namespace SGL {
     namespace details {
         struct eval_impl_args {
             const char** cur_end = nullptr;
-            uint8_t call_pred = 16;//static_cast<uint8_t>(operator_precedence_step);
+            uint8_t call_prior = 16;//static_cast<uint8_t>(operator_precedence_step);
             bool is_in_function : 1 = false;
             bool is_in_ternary  : 1 = false;
             bool is_in_brackets : 1 = false;
 
         };
-        value eval_expr_rec_impl(const state& state, std::string_view base_str, std::string_view str, eval_impl_args args);
+        value eval_expr_rec_impl(const state& m_state, std::string_view base_str, std::string_view str, eval_impl_args args);
     };
     class evaluator {
     public:

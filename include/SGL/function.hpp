@@ -27,7 +27,7 @@ namespace SGL {
             function_overload&operator=(function_overload&&) = default;
             
             struct m_impl_base {
-                virtual value call(std::initializer_list<std::reference_wrapper<value>>) const = 0;
+                virtual value call(const std::vector<value>&) const = 0;
                 virtual ~m_impl_base() = default;
             };
 
@@ -41,20 +41,20 @@ namespace SGL {
                 struct func_impl : m_impl_base {
                     func_impl(Func func) : func(func) {}
                     virtual ~func_impl() = default;
-                    virtual value call(std::initializer_list<std::reference_wrapper<value>> args) const override {
+                    virtual value call(const std::vector<value>& args) const override {
                         if(sizeof...(Args) != args.size()) throw std::runtime_error("sgl function_overload: invalid args count");
                         if constexpr(std::is_same_v<Ret, void>) {
-                            func((std::data(args)[N]).get().get<Args>() ...);
+                            func((args[N]).get<Args>() ...);
                             return value();            
                         }
-                        else return value(val<Ret>(func((std::data(args)[N]).get().get<Args>() ...)));//TODO replase val with ..?
+                        else return value(val<Ret>(func((args[N]).get<Args>() ...)));//TODO replase val with ..?
                     }
                     Func func;
                 };
                 return new func_impl(func);
             }
 
-            using m_func_ptr_t = value(*)(std::initializer_list<std::reference_wrapper<value>>);
+            using m_func_ptr_t = value(*)(const std::vector<value>&);
             std::shared_ptr<m_impl_base> m_func;
             std::vector<std::shared_ptr<type>> args_types;
             
@@ -73,7 +73,7 @@ namespace SGL {
                 struct func_impl : m_impl_base {
                     func_impl(m_func_ptr_t f) : func(f) {}
                     virtual ~func_impl() = default;
-                    virtual value call(std::initializer_list<std::reference_wrapper<value>> args) const override {
+                    virtual value call(const std::vector<value>& args) const override {
                         return func(args);
                     }
                     m_func_ptr_t func;
@@ -97,15 +97,15 @@ namespace SGL {
         template<typename Ret, typename... Args>
         [[nodiscard]] function(std::function<Ret(Args...)> func) : m_overloads({{func}}) {}
 
-        value call(std::initializer_list<std::reference_wrapper<value>> v) const {
+        value call(const std::vector<value>& v) const {
             std::vector<std::pair<size_t, size_t>> indexes;
             for(size_t i = 0; i < m_overloads.size(); i++) 
                 if(m_overloads[i].args_types.size() == v.size()) {
                     size_t delta = 0;
                     bool ok = true;
                     for(size_t j = 0; j < v.size(); j++) {
-                        if(*m_overloads[i].args_types[j] == *std::data(v)[j].get().m_type) continue;
-                        if(std::data(v)[j].get().m_type->is_convertable_to(*m_overloads[i].args_types[j])) { delta++; continue; }
+                        if(*m_overloads[i].args_types[j] == *v[j].m_type) continue;
+                        if(v[j].m_type->is_convertable_to(*m_overloads[i].args_types[j])) { delta++; continue; }
                         ok = false;
                         break;
                     }

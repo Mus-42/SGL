@@ -37,28 +37,23 @@ namespace SGL {
         //TODO type for type (result of typeof)?
 
         //builtin functions:
-        add_function("addressof", {{{static_cast<value(*)(std::initializer_list<std::reference_wrapper<value>>)>([](std::initializer_list<std::reference_wrapper<value>> v)->value{
+        add_function("addressof", {{{static_cast<value(*)(const std::vector<value>&)>([](const std::vector<value>& v)->value{
             if(v.size() != 1) throw std::runtime_error("addressof args count != 1");
-            auto& q = v.begin()->get();
-            if(q.is_const()) return { const_val<void*>(q.m_data) };
-            else return { const_val<void*>(q.m_data) };
+            if(v.front().is_const()) return { const_val<const void*>(v.front().m_const_data) };//TODO fix const
+            else return { const_val<void*>(v.front().m_data) };
         }), function::function_overload::all_types_t{}, 1} }});
-        add_function("sizeof", {{{static_cast<value(*)(std::initializer_list<std::reference_wrapper<value>>)>([](std::initializer_list<std::reference_wrapper<value>> v)->value{
+        add_function("sizeof", {{{static_cast<value(*)(const std::vector<value>&)>([](const std::vector<value>& v)->value{
             if(v.size() != 1) throw std::runtime_error("sizeof args count != 1");
-            auto& q = v.begin()->get();
-            return { const_val<sgl_uint64_t>(q.m_type->size()) };
+            return { const_val<sgl_uint64_t>(v.front().m_type->size()) };
         }), function::function_overload::all_types_t{}, 1} }});
+
 
         //TODO register operators
 
         //TODO for builtin types add all possible operator permutation
         //such as 1. + 1.f and 1.f + 1.
 
-        //TODO how fix "to large obj file" 
-        
-        //add_binary_operator_permutations<sgl_float32_t, sgl_float64_t,
-        //    sgl_int8_t, sgl_int16_t, sgl_int32_t, sgl_int64_t,
-        //    sgl_uint8_t, sgl_uint16_t, sgl_uint32_t, sgl_uint64_t>();
+        //TODO add constants (nullptr, true, false)
     }
 
     [[noreturn]] static inline void tokenize_error(std::string_view str, size_t cur, std::string_view desc) {
@@ -200,7 +195,7 @@ namespace SGL {
         return cur_end ? *cur_end = str_cur : nullptr, int_value_from_suffix(val, literal_suffix);
     }
 
-    value details::eval_expr_rec_impl(const state& state, std::string_view base_str, std::string_view str, details::eval_impl_args args) {
+    value details::eval_expr_rec_impl(const state& m_state, std::string_view base_str, std::string_view str, details::eval_impl_args args) {
         const char *str_beg = str.data(), *str_cur = str_beg, *str_end = str_beg + str.size();
         auto skip_comments_and_spaces = [&str_cur, &str_end, str, str_beg](){
             while(str_cur < str_end && (std::isspace(static_cast<unsigned char>(*str_cur)) || *str_cur == '/')) {
@@ -221,7 +216,7 @@ namespace SGL {
         switch(*str_cur) {
         //brackets
         case '(': {
-            ret = details::eval_expr_rec_impl(state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, static_cast<uint8_t>(operator_precedence_step), false, false, true});
+            ret = details::eval_expr_rec_impl(m_state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, static_cast<uint8_t>(operator_precedence_step), false, false, true});
             if(str_cur == str_end || *str_cur != ')') [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "unclosed bracket");
             str_cur++;
         } break;
@@ -239,10 +234,10 @@ namespace SGL {
                 operator_type::op_bit_not, operator_type::op_deref, operator_type::op_adress_of
             }; 
             auto m_op = ops_types[std::find(ops_chars.begin(), ops_chars.end(), m_op_char)-ops_chars.begin()];
-            auto m_op_pred = operator_precedence[static_cast<size_t>(m_op)];
-            auto v = details::eval_expr_rec_impl(state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, m_op_pred, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
+            auto m_op_prior = operator_precedence[static_cast<size_t>(m_op)];
+            auto v = details::eval_expr_rec_impl(m_state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, m_op_prior, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
             
-            ret = state.m_operator_list.call_unary_operator(m_op, v);
+            ret = m_state.m_operator_list.call_unary_operator(m_op, v);
         } break;
 
         case '.':
@@ -255,7 +250,25 @@ namespace SGL {
 
         default:
             if(std::isalnum(static_cast<unsigned char>(*str_cur))) [[likely]] {
-                //TODO identifier
+                const char* id_beg = str_cur;
+                while(str_cur < str_end && (std::isalnum(static_cast<unsigned char>(*str_cur)) || *str_cur == '_')) str_cur++;
+                std::string_view id = {id_beg, size_t(str_cur - id_beg)};
+                std::string id_str = std::string{id};
+                skip_comments_and_spaces();
+                if(str_cur < str_end && *str_cur == '(') {//func call
+                    std::vector<value> func_args;
+                    while(str_cur < str_end) {
+                        func_args.emplace_back(details::eval_expr_rec_impl(m_state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, static_cast<uint8_t>(operator_precedence_step), true, false, false}));
+                        if(*str_cur == ')') break;
+                        if(*str_cur != ',') [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "invalid character");
+                    }
+                    if(auto f = m_state.m_functions.find(id_str); f != m_state.m_functions.end()) 
+                        ret = f->second.call(func_args);
+                    else if(auto f = m_state.m_constructors.find(id_str); f != m_state.m_constructors.end()) [[likely]] 
+                        ret = f->second.call(func_args);//TODO add constructors for types such as `const arr<const int**const>`
+                    else [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "invalid function_name");
+                    str_cur++;//skip ')'
+                }
             } else [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "invalid character");
             break;
         }
@@ -272,9 +285,26 @@ namespace SGL {
                 return args.cur_end ? *args.cur_end = str_cur : nullptr, ret;
             } break;
 
-            case ',': {
-                //binary a, b operator or comma in function f(a, b, ...)
-            } break;;
+            
+            case '?': {
+                if(args.call_prior < static_cast<uint8_t>(operator_precedence_step)) return args.cur_end ? *args.cur_end = str_cur : nullptr, ret;
+                auto v1 = details::eval_expr_rec_impl(m_state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, static_cast<uint8_t>(operator_precedence_step), false, true, args.is_in_brackets});
+                if(str_cur == str_end || *str_cur != ':') [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "ternary condition: missing ':'");
+                auto v2 = details::eval_expr_rec_impl(m_state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, static_cast<uint8_t>(operator_precedence_step), false, true, args.is_in_brackets});
+                //TODO typecast to bool
+                ret = ret.get<bool>() ? std::move(v1) : std::move(v2);
+            } break;
+
+            case ':': {
+                if(!args.is_in_ternary) [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "':' without ternary conditional");
+                return args.cur_end ? *args.cur_end = str_cur : nullptr, ret;
+            } break;
+
+            case ',': {//binary a, b operator or comma in function f(a, b, ...)
+                //TODO add function check
+                if(args.is_in_function || args.call_prior < static_cast<uint8_t>(operator_precedence_step)) return args.cur_end ? *args.cur_end = str_cur : nullptr, ret;
+                ret = details::eval_expr_rec_impl(m_state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, static_cast<uint8_t>(operator_precedence_step), false, args.is_in_ternary, args.is_in_brackets});  
+            } break;
 
             case '+': case '-': case '*': case '/': case '%': 
             case '|': case '&': case '^': case '<': case '>': 
@@ -291,10 +321,10 @@ namespace SGL {
                 if(str_cur + 1 < str_end) [[likely]] {
                     if(auto f = std::find(op_2wide_str.begin(), op_2wide_str.end(), std::string_view(str_cur, 2)); f != op_2wide_str.end()) {
                         auto m_op = op_2wide_type[f-op_2wide_str.begin()];
-                        auto m_op_pred = operator_precedence[static_cast<size_t>(m_op)];
-                        if(args.call_pred <= m_op_pred) return args.cur_end ? *args.cur_end = str_cur : nullptr, ret;
-                        auto v = details::eval_expr_rec_impl(state, base_str, {str_cur+2, size_t(str_end-(str_cur+1))}, {&str_cur, m_op_pred, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
-                        ret = state.m_operator_list.call_binary_operator(m_op, ret, v);
+                        auto m_op_prior = operator_precedence[static_cast<size_t>(m_op)];
+                        if(args.call_prior <= m_op_prior) return args.cur_end ? *args.cur_end = str_cur : nullptr, ret;
+                        auto v = details::eval_expr_rec_impl(m_state, base_str, {str_cur+2, size_t(str_end-(str_cur+2))}, {&str_cur, m_op_prior, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
+                        ret = m_state.m_operator_list.call_binary_operator(m_op, ret, v);
                         break;
                     }
                 }
@@ -311,17 +341,17 @@ namespace SGL {
 
                 if(auto f = std::find(op_1wide_str.begin(), op_1wide_str.end(), *str_cur); f != op_1wide_str.end()) [[likely]] {
                     auto m_op = op_1wide_type[f-op_1wide_str.begin()];
-                    auto m_op_pred = operator_precedence[static_cast<size_t>(m_op)];
-                    if(args.call_pred <= m_op_pred) return args.cur_end ? *args.cur_end = str_cur : nullptr, ret;
-                    auto v = details::eval_expr_rec_impl(state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, m_op_pred, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
-                    ret = state.m_operator_list.call_binary_operator(m_op, ret, v);
+                    auto m_op_prior = operator_precedence[static_cast<size_t>(m_op)];
+                    if(args.call_prior <= m_op_prior) return args.cur_end ? *args.cur_end = str_cur : nullptr, ret;
+                    auto v = details::eval_expr_rec_impl(m_state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, m_op_prior, args.is_in_function, args.is_in_ternary, args.is_in_brackets});
+                    ret = m_state.m_operator_list.call_binary_operator(m_op, ret, v);
                     break;
                 }
             } 
             [[fallthrough]];//if not found
             default:
-                if(std::isalnum(static_cast<unsigned char>(*str_cur))) [[likely]] {
-                    //TODO identifier
+                if(std::isalnum(static_cast<unsigned char>(*str_cur)) || *str_cur == '_') [[likely]] {
+                    
 
                 } else [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "invalid character");
                 break;
