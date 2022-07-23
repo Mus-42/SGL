@@ -283,6 +283,7 @@ namespace SGL {
                     if(str_cur + 1 < str_end) [[likely]] {
                         if(*(str_cur+1) == '/') str_cur = str.find('\n', str_cur-str_beg) + 1 + str_beg;
                         else if(*(str_cur+1) == '*') str_cur = str.find("*/", str_cur-str_beg) + 2 + str_beg;
+                        else return;
                         if(str_cur > str_end) [[unlikely]] str_cur = str_end;
                     } else return;
                 }

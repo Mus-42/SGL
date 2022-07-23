@@ -118,10 +118,18 @@ namespace SGL {
 
             virtual std::string to_string(const void* data) const override {
                 const T& v = *static_cast<const T*>(data);
-                if constexpr(requires(const T& v) {
+                if constexpr(std::is_floating_point_v<T>) {
+                    if(std::isfinite(v)) [[likely]] return std::to_string(v);
+                    else [[unlikely]] {
+                        if(std::isnan(v)) return "nan";
+                        if(std::isinf(v)) return "inf";
+                        return "[floating-point value]";
+                    }
+                } if constexpr(requires(const T& v) {
                     { std::to_string(v) } -> std::convertible_to<std::string>;
-                }) return std::to_string(v);//cast char as integer type
-                else if constexpr(requires(const T& v) {
+                }) {
+                    return std::to_string(v);//cast char as integer type
+                } else if constexpr(requires(const T& v) {
                     { v.to_string() } -> std::convertible_to<std::string>;
                 }) {
                     return v.to_string();
@@ -259,11 +267,11 @@ namespace SGL {
         bool is_same_with() const {//same with T
             if(m_traits != m_traits_t(details::sgl_type_identity<T>{})) return false;
             if(m_traits.is_final_v) return m_base_type->m_type == typeid(T);
-            else return is_same_with(*construct_type<T>());//TODO implement
+            else return is_same_with(*construct_type<T>());
         } 
         template<typename T>
         bool is_convertable_to() const {//convertable to T
-            return is_convertable_to(*construct_type<T>());//TODO add impl
+            return is_convertable_to(*construct_type<T>());//TODO replace construct type with something else?
         }
 
         bool is_same_with(const type& t) const {//same with t
