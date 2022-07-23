@@ -52,6 +52,11 @@ namespace SGL {
             if(v.size() != 1) throw std::runtime_error("__type_name args count != 1");
             return { const_val<sgl_string_t>(v.front().m_type->type_to_str()) };
         }), function::function_overload::all_types_t{}, 1} }});
+        add_function("__print", {{{static_cast<value(*)(const std::vector<value>&)>([](const std::vector<value>& v)->value{
+            if(v.size() != 1) throw std::runtime_error("__print args count != 1");
+            std::cout << v[0].to_string() << std::endl;
+            return v[0];
+        }), function::function_overload::all_types_t{}, 1} }});
 
         //TODO for builtin types add all possible operator permutation
         //such as 1. + 1.f and 1.f + 1.
@@ -118,30 +123,36 @@ namespace SGL {
     }
     
     static inline value scan_number(std::string_view base_str, std::string_view str, const char** cur_end) {
-        if(str.empty() || str == "NaN") [[unlikely]] return cur_end ? *cur_end = str.data()+3 : nullptr, value(const_val<double>(std::numeric_limits<double>::quiet_NaN()));
-        if(str == "inf") [[unlikely]] return cur_end ? *cur_end = str.data()+3 : nullptr,value(const_val<double>(std::numeric_limits<double>::infinity()));
-
         const char *str_beg = str.data(), *str_cur = str_beg, *str_end = str_beg + str.size();
         
         auto int_value_from_suffix = [base_str, str](uint64_t val, std::string_view literal_suffix) -> value {
             using namespace builtin_types;
             //TODO type overflow check
             //TODO fix sing? (0bFFFFi16 -> -1i16 or ..?)
-            if(literal_suffix == "i") return value(const_val<sgl_int_t>(static_cast<sgl_int_t>(val)));
-            if(literal_suffix == "u" || literal_suffix == "ui") return value(const_val<sgl_uint_t>(static_cast<sgl_uint_t>(val)));
-            if(literal_suffix == "i8")  return value(const_val<sgl_int8_t> (static_cast<sgl_int8_t> (val)));
-            if(literal_suffix == "i16") return value(const_val<sgl_int16_t>(static_cast<sgl_int16_t>(val)));
-            if(literal_suffix == "i32") return value(const_val<sgl_int32_t>(static_cast<sgl_int32_t>(val)));
-            if(literal_suffix == "i64") return value(const_val<sgl_int64_t>(static_cast<sgl_int64_t>(val)));
+            auto i_val = [&]<typename T>(details::sgl_type_identity<T>, uint64_t val){
+                if(std::numeric_limits<T>::max() < val) [[unlikely]] tokenize_error(base_str, str.data()-base_str.data(), "specified integer type (by using literal suffix) overflowed");
+                return value(const_val<T>(static_cast<T>(val)));
+            };
 
-            if(literal_suffix == "u8"  || literal_suffix == "ui8" ) return value(const_val<sgl_uint8_t> (static_cast<sgl_uint8_t> (val)));
-            if(literal_suffix == "u16" || literal_suffix == "ui16") return value(const_val<sgl_uint16_t>(static_cast<sgl_uint16_t>(val)));
-            if(literal_suffix == "u32" || literal_suffix == "ui32") return value(const_val<sgl_uint32_t>(static_cast<sgl_uint32_t>(val)));
-            if(literal_suffix == "u64" || literal_suffix == "ui64") return value(const_val<sgl_uint64_t>(static_cast<sgl_uint64_t>(val)));
+            if(literal_suffix == "i")                               return i_val(details::sgl_type_identity<sgl_int_t>   {}, val);
+            if(literal_suffix == "u" || literal_suffix == "ui")     return i_val(details::sgl_type_identity<sgl_uint_t>  {}, val);
+            if(literal_suffix == "i8")                              return i_val(details::sgl_type_identity<sgl_int8_t>  {}, val);
+            if(literal_suffix == "i16")                             return i_val(details::sgl_type_identity<sgl_int16_t> {}, val);
+            if(literal_suffix == "i32")                             return i_val(details::sgl_type_identity<sgl_int32_t> {}, val);
+            if(literal_suffix == "i64")                             return i_val(details::sgl_type_identity<sgl_int64_t> {}, val);
+            if(literal_suffix == "u8"  || literal_suffix == "ui8" ) return i_val(details::sgl_type_identity<sgl_uint8_t> {}, val);
+            if(literal_suffix == "u16" || literal_suffix == "ui16") return i_val(details::sgl_type_identity<sgl_uint16_t>{}, val);
+            if(literal_suffix == "u32" || literal_suffix == "ui32") return i_val(details::sgl_type_identity<sgl_uint32_t>{}, val);
+            if(literal_suffix == "u64" || literal_suffix == "ui64") return i_val(details::sgl_type_identity<sgl_uint64_t>{}, val);
+
+            if(literal_suffix == "f" || literal_suffix == "f32") return value(const_val<sgl_float32_t>(static_cast<sgl_float32_t>(val)));
+            if(literal_suffix == "f64") return value(const_val<sgl_float64_t>(static_cast<sgl_float64_t>(val)));
 
             if(!literal_suffix.empty()) tokenize_error(base_str, str.data()-base_str.data(), "invalid integer literal suffix");
 
-            return value(const_val<uint64_t>(val));
+            if(val <= std::numeric_limits<sgl_int32_t>::max()) return value(const_val<sgl_int32_t>(static_cast<sgl_int32_t>(val)));
+            if(val <= std::numeric_limits<sgl_int64_t>::max()) return value(const_val<sgl_int64_t>(static_cast<sgl_int64_t>(val)));
+            return value(const_val<sgl_uint64_t>(val));
         };
 
         if(str.size() > 2 && str[0] == '0') [[likely]] {
@@ -221,13 +232,19 @@ namespace SGL {
             return ret;
         })();
 
+        if(exp_part.empty() && fract_part.empty() && int_part.empty()) [[unlikely]] 
+            tokenize_error(base_str, str_cur-base_str.data(), "invalid number");
+
         if(!fract_part.empty() || !exp_part.empty() || has_float) {
             double int_v = 0.;
             double fract_v = 0.;
             int exp_v = 0;
 
-            auto m_from_chars = []<typename T>(const char* beg, const char* end, T& val) {
-                if constexpr(requires(const char* a, const char* b, T& v) { std::from_chars(a, b, v); }) std::from_chars(beg, end, val);
+            auto m_from_chars = [&]<typename T>(const char* beg, const char* end, T& val) {
+                if constexpr(requires(const char* a, const char* b, T& v) { std::from_chars(a, b, v); }) {
+                    auto r = std::from_chars(beg, end, val);
+                    if(r.ec != std::errc()) [[unlikely]] tokenize_error(base_str, str_beg-base_str.data(), "invalid number");
+                }
                 else std::istringstream({beg, end}) >> val;//TODO add warn here?  
             };
 
@@ -248,10 +265,12 @@ namespace SGL {
             if(!literal_suffix.empty()) tokenize_error(base_str, str.data()-base_str.data(), "invalid floating point literal suffix");
             return cur_end ? *cur_end = str_cur : nullptr, value(const_val<double>(res));
         }
+
         uint64_t val = 0;
         auto r = std::from_chars(int_part.data(), int_part.data()+int_part.size(), val);
 
-        if(r.ec == std::errc::result_out_of_range) [[unlikely]] tokenize_error(base_str, str_beg+2-base_str.data(), "uint64 overflow");
+        if(r.ec == std::errc::result_out_of_range) [[unlikely]] tokenize_error(base_str, str_beg-base_str.data(), "uint64 overflow");
+        if(r.ec != std::errc()) [[unlikely]] tokenize_error(base_str, str_beg-base_str.data(), "invalid number");
 
         return cur_end ? *cur_end = str_cur : nullptr, int_value_from_suffix(val, literal_suffix);
     }
@@ -318,8 +337,12 @@ namespace SGL {
                 skip_comments_and_spaces();
                 if(str_cur < str_end && *str_cur == '(') {//func call
                     std::vector<value> func_args;
+                    str_cur+=1;
                     while(str_cur < str_end) {
-                        func_args.emplace_back(details::eval_expr_rec_impl(m_state, base_str, {str_cur+1, size_t(str_end-(str_cur+1))}, {&str_cur, static_cast<uint8_t>(operator_precedence_step), true, false, false}));
+                        skip_comments_and_spaces();
+                        if(str_cur == str_end) [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "unexpected eof");
+                        if(*str_cur == ')') break;
+                        func_args.emplace_back(details::eval_expr_rec_impl(m_state, base_str, {str_cur, size_t(str_end-(str_cur))}, {&str_cur, static_cast<uint8_t>(operator_precedence_step), true, false, false}));
                         if(*str_cur == ')') break;
                         if(*str_cur != ',') [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "invalid character");
                     }
@@ -329,7 +352,10 @@ namespace SGL {
                         ret = f->second.call(func_args);//TODO add constructors for types such as `const arr<const int**const>`
                     else [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "invalid function_name");
                     str_cur++;//skip ')'
+                    break;
                 }
+                //TODO add variables
+                tokenize_error(base_str, str_cur-base_str.data(), "variables not implemented now");
             } else [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "invalid character");
             break;
         }
@@ -411,10 +437,9 @@ namespace SGL {
             } 
             [[fallthrough]];//if not found
             default:
-                if(std::isalnum(static_cast<unsigned char>(*str_cur)) || *str_cur == '_') [[likely]] {
-                    
-
-                } else [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "invalid character");
+                if(std::isalnum(static_cast<unsigned char>(*str_cur)) || *str_cur == '_')
+                    tokenize_error(base_str, str_cur-base_str.data(), "custom keywords not allowed");
+                else tokenize_error(base_str, str_cur-base_str.data(), "invalid character");
                 break;
             }
         }
