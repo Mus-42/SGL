@@ -23,7 +23,7 @@ namespace SGL {
         op_bit_or, op_bit_and, op_bit_xor, op_bit_not, op_bit_lsh, op_bit_rsh,
         //bitwise assigment: a|=b, a&=b, a^=b, a<<=b, a>>=b
         //op_bit_or_assign, op_bit_and_assign, op_bit_xor_assign, op_bit_lsh_assign, op_bit_rsh_assign, 
-        //compare: a==b, a!=b, a<b, a>b, a<=b, a>=b //TODO three-way compare?
+        //compare: a==b, a!=b, a<b, a>b, a>=b, a<=b //TODO three-way compare?
         op_equal, op_not_equal, op_less, op_greater, op_not_less, op_not_greater,
         //logic: a||b, a&&b, !a
         op_or, op_and, op_not,
@@ -58,6 +58,16 @@ namespace SGL {
         3, 3,
     };
     constexpr size_t operator_precedence_step = 16;// > max(operator_precedence)
+    constexpr std::array<std::string_view, operators_count> operator_str = {
+        "[none]",
+        "+", "-",
+        "+", "-", "*", "/", "%",
+        "|", "&", "^", "~", "<<", ">>",
+        "==", "!=", "<", ">", ">=", "<=",
+        "||", "&&", "!",
+        "&", "*"
+    };
+
 
     //TODO: use something more efficient than SGL::function to choose overload
 
@@ -87,7 +97,7 @@ namespace SGL {
                 }
             }
 
-            if(res == m_ops.end()) [[unlikely]] throw std::runtime_error("can't find unary operator for type T=" + arg.m_type->type_to_str());
+            if(res == m_ops.end()) [[unlikely]] throw std::runtime_error("can't find unary operator `" + std::string(operator_str[op_idex]) + "` for type T=" + arg.m_type->type_to_str());
             auto [f, impl] = res->second;
             return impl(f, arg);
         }
@@ -117,7 +127,8 @@ namespace SGL {
                 }
             }
 
-            if(res1 == op1.end()) [[unlikely]] throw std::runtime_error("can't find binary operator for type T=" + arg1.m_type->type_to_str());
+            if(res1 == op1.end()) [[unlikely]] 
+                throw std::runtime_error("can't find binary operator `" + std::string(operator_str[op_idex]) + "` for types Arg1=" + arg1.m_type->type_to_str() + " Arg2="+ arg2.m_type->type_to_str());
             auto& op2 = res1->second;
             {
                 auto t_v = *arg2.m_type;
@@ -136,8 +147,8 @@ namespace SGL {
                 }
             }
 
-            if(res2 == op2.end()) [[unlikely]] throw std::runtime_error("can't find binary operator for type T=" + arg2.m_type->type_to_str());
-
+            if(res2 == op2.end()) [[unlikely]] 
+                throw std::runtime_error("can't find binary operator `" + std::string(operator_str[op_idex]) + "` for types Arg1=" + arg1.m_type->type_to_str() + " Arg2="+ arg2.m_type->type_to_str());
             auto [f, impl] = res2->second;
             return impl(f, arg1, arg2);
         }

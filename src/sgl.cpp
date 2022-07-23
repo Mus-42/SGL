@@ -48,12 +48,67 @@ namespace SGL {
         }), function::function_overload::all_types_t{}, 1} }});
 
 
-        //TODO register operators
+        add_function("__type_name", {{{static_cast<value(*)(const std::vector<value>&)>([](const std::vector<value>& v)->value{
+            if(v.size() != 1) throw std::runtime_error("__type_name args count != 1");
+            return { const_val<sgl_string_t>(v.front().m_type->type_to_str()) };
+        }), function::function_overload::all_types_t{}, 1} }});
 
         //TODO for builtin types add all possible operator permutation
         //such as 1. + 1.f and 1.f + 1.
+        
+        auto add_default_constructors_for_t = [this]<typename T>(details::sgl_type_identity<T>, const std::string& type_name) {
+            add_constructors_impl<T, 
+                details::sgl_type_identity<sgl_int8_t>,
+                details::sgl_type_identity<sgl_int16_t>,
+                details::sgl_type_identity<sgl_int32_t>,
+                details::sgl_type_identity<sgl_int64_t>,
+
+                details::sgl_type_identity<sgl_uint8_t>,
+                details::sgl_type_identity<sgl_uint16_t>,
+                details::sgl_type_identity<sgl_uint32_t>,
+                details::sgl_type_identity<sgl_uint64_t>,
+
+                details::sgl_type_identity<sgl_float32_t>,
+                details::sgl_type_identity<sgl_float64_t>,
+
+                details::sgl_type_identity<sgl_bool_t>,
+                details::sgl_type_identity<sgl_char_t>
+                //details::sgl_type_identity<sgl_string_t>
+            >(type_name);
+        };
+
+        add_default_constructors_for_t(details::sgl_type_identity<sgl_int_t>{}, "int");
+        add_default_constructors_for_t(details::sgl_type_identity<sgl_uint_t>{}, "uint");
+
+        add_default_constructors_for_t(details::sgl_type_identity<sgl_int8_t>{},  "int8");
+        add_default_constructors_for_t(details::sgl_type_identity<sgl_int16_t>{}, "int16");
+        add_default_constructors_for_t(details::sgl_type_identity<sgl_int32_t>{}, "int32");
+        add_default_constructors_for_t(details::sgl_type_identity<sgl_int64_t>{}, "int64");
+
+        add_default_constructors_for_t(details::sgl_type_identity<sgl_uint8_t>{},  "uint8");
+        add_default_constructors_for_t(details::sgl_type_identity<sgl_uint16_t>{}, "uint16");
+        add_default_constructors_for_t(details::sgl_type_identity<sgl_uint32_t>{}, "uint32");
+        add_default_constructors_for_t(details::sgl_type_identity<sgl_uint64_t>{}, "uint64");
+        
+        add_default_constructors_for_t(details::sgl_type_identity<sgl_float32_t>{}, "float32");
+        add_default_constructors_for_t(details::sgl_type_identity<sgl_float64_t>{}, "float64");
+
+        add_default_constructors_for_t(details::sgl_type_identity<sgl_float_t>{}, "float");
+        add_default_constructors_for_t(details::sgl_type_identity<sgl_double_t>{}, "double");
+
+        add_default_constructors_for_t(details::sgl_type_identity<sgl_char_t>{}, "char");
+        add_default_constructors_for_t(details::sgl_type_identity<sgl_bool_t>{}, "bool");
+        //add_default_constructors_for_t(details::sgl_type_identity<sgl_string_t>{}, "string");
+
+        add_constructors_impl<sgl_string_t, 
+            details::sgl_type_identity<const sgl_string_t&>,
+            //details::sgl_type_identity<sgl_uint64_t>,//TODO Fix
+            details::sgl_type_identity<sgl_uint64_t, sgl_char_t>
+            //TODO add other string constructors
+        >("string");
 
         //TODO add constants (nullptr, true, false)
+
     }
 
     [[noreturn]] static inline void tokenize_error(std::string_view str, size_t cur, std::string_view desc) {
@@ -69,19 +124,20 @@ namespace SGL {
         const char *str_beg = str.data(), *str_cur = str_beg, *str_end = str_beg + str.size();
         
         auto int_value_from_suffix = [base_str, str](uint64_t val, std::string_view literal_suffix) -> value {
+            using namespace builtin_types;
             //TODO type overflow check
             //TODO fix sing? (0bFFFFi16 -> -1i16 or ..?)
-            if(literal_suffix == "i") return value(const_val<builtin_types::sgl_int_t>(static_cast<builtin_types::sgl_int_t>(val)));
-            if(literal_suffix == "u" || literal_suffix == "ui") return value(const_val<builtin_types::sgl_uint_t>(static_cast<builtin_types::sgl_uint_t>(val)));
-            if(literal_suffix == "i8")  return value(const_val<builtin_types::sgl_int8_t> (static_cast<builtin_types::sgl_int8_t> (val)));
-            if(literal_suffix == "i16") return value(const_val<builtin_types::sgl_int16_t>(static_cast<builtin_types::sgl_int16_t>(val)));
-            if(literal_suffix == "i32") return value(const_val<builtin_types::sgl_int32_t>(static_cast<builtin_types::sgl_int32_t>(val)));
-            if(literal_suffix == "i64") return value(const_val<builtin_types::sgl_int64_t>(static_cast<builtin_types::sgl_int64_t>(val)));
+            if(literal_suffix == "i") return value(const_val<sgl_int_t>(static_cast<sgl_int_t>(val)));
+            if(literal_suffix == "u" || literal_suffix == "ui") return value(const_val<sgl_uint_t>(static_cast<sgl_uint_t>(val)));
+            if(literal_suffix == "i8")  return value(const_val<sgl_int8_t> (static_cast<sgl_int8_t> (val)));
+            if(literal_suffix == "i16") return value(const_val<sgl_int16_t>(static_cast<sgl_int16_t>(val)));
+            if(literal_suffix == "i32") return value(const_val<sgl_int32_t>(static_cast<sgl_int32_t>(val)));
+            if(literal_suffix == "i64") return value(const_val<sgl_int64_t>(static_cast<sgl_int64_t>(val)));
 
-            if(literal_suffix == "u8"  || literal_suffix == "ui8" ) return value(const_val<builtin_types::sgl_uint8_t> (static_cast<builtin_types::sgl_uint8_t> (val)));
-            if(literal_suffix == "u16" || literal_suffix == "ui16") return value(const_val<builtin_types::sgl_uint16_t>(static_cast<builtin_types::sgl_uint16_t>(val)));
-            if(literal_suffix == "u32" || literal_suffix == "ui32") return value(const_val<builtin_types::sgl_uint32_t>(static_cast<builtin_types::sgl_uint32_t>(val)));
-            if(literal_suffix == "u64" || literal_suffix == "ui64") return value(const_val<builtin_types::sgl_uint64_t>(static_cast<builtin_types::sgl_uint64_t>(val)));
+            if(literal_suffix == "u8"  || literal_suffix == "ui8" ) return value(const_val<sgl_uint8_t> (static_cast<sgl_uint8_t> (val)));
+            if(literal_suffix == "u16" || literal_suffix == "ui16") return value(const_val<sgl_uint16_t>(static_cast<sgl_uint16_t>(val)));
+            if(literal_suffix == "u32" || literal_suffix == "ui32") return value(const_val<sgl_uint32_t>(static_cast<sgl_uint32_t>(val)));
+            if(literal_suffix == "u64" || literal_suffix == "ui64") return value(const_val<sgl_uint64_t>(static_cast<sgl_uint64_t>(val)));
 
             if(!literal_suffix.empty()) tokenize_error(base_str, str.data()-base_str.data(), "invalid integer literal suffix");
 
@@ -126,6 +182,7 @@ namespace SGL {
 
         //[int][.][fract][e[+|-]exp][literal_suffix]
         std::string_view int_part, fract_part, exp_part, literal_suffix;
+        bool has_float = false;
 
         //TODO hex floats?
         if(std::isdigit(static_cast<unsigned char>(*str_cur))) {
@@ -134,6 +191,7 @@ namespace SGL {
             int_part = {int_part_begin, size_t(str_cur-int_part_begin)};
         }
         if(str_cur < str_end && *str_cur == '.') {
+            has_float = true;
             str_cur++;
             const char* fract_part_begin = str_cur;
             while(str_cur < str_end && std::isdigit(static_cast<unsigned char>(*str_cur))) str_cur++;
@@ -148,6 +206,8 @@ namespace SGL {
             }
             while(str_cur < str_end && std::isdigit(static_cast<unsigned char>(*str_cur))) str_cur++;
             exp_part = {exp_part_begin, size_t(str_cur-exp_part_begin)};
+            if(exp_part.empty() || exp_part.size() == 1 && !std::isdigit(exp_part[0])) 
+                [[unlikely]] tokenize_error(base_str, exp_part_begin-base_str.data(), "invalid exponent");
         }
         if(str_cur < str_end) {
             const char* suffix_beg = str_cur;
@@ -161,7 +221,7 @@ namespace SGL {
             return ret;
         })();
 
-        if(!fract_part.empty() || !exp_part.empty()) {
+        if(!fract_part.empty() || !exp_part.empty() || has_float) {
             double int_v = 0.;
             double fract_v = 0.;
             int exp_v = 0;
@@ -181,8 +241,9 @@ namespace SGL {
             else if(exp_v < -308) [[unlikely]] res = 0.;
             else [[likely]] res *= pow10_table[308+exp_v];
             
-            if(literal_suffix == "f" || literal_suffix == "f32") return cur_end ? *cur_end = str_cur : nullptr, value(const_val<builtin_types::sgl_float32_t>(static_cast<builtin_types::sgl_float32_t>(res)));
-            if(literal_suffix == "f64") return cur_end ? *cur_end = str_cur : nullptr, value(const_val<builtin_types::sgl_float64_t>(static_cast<builtin_types::sgl_float64_t>(res)));
+            using namespace builtin_types;
+            if(literal_suffix == "f" || literal_suffix == "f32") return cur_end ? *cur_end = str_cur : nullptr, value(const_val<sgl_float32_t>(static_cast<sgl_float32_t>(res)));
+            if(literal_suffix == "f64") return cur_end ? *cur_end = str_cur : nullptr, value(const_val<sgl_float64_t>(static_cast<sgl_float64_t>(res)));
 
             if(!literal_suffix.empty()) tokenize_error(base_str, str.data()-base_str.data(), "invalid floating point literal suffix");
             return cur_end ? *cur_end = str_cur : nullptr, value(const_val<double>(res));
@@ -249,7 +310,7 @@ namespace SGL {
         //TODO scan value (string, char, number) literals here
 
         default:
-            if(std::isalnum(static_cast<unsigned char>(*str_cur))) [[likely]] {
+            if(std::isalnum(static_cast<unsigned char>(*str_cur)) || *str_cur == '_') [[likely]] {
                 const char* id_beg = str_cur;
                 while(str_cur < str_end && (std::isalnum(static_cast<unsigned char>(*str_cur)) || *str_cur == '_')) str_cur++;
                 std::string_view id = {id_beg, size_t(str_cur - id_beg)};

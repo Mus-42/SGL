@@ -8,6 +8,9 @@ int main() {
     auto ev = st.get_evaluator();
 
     std::string expr_str;
-    while(std::getline(std::cin, expr_str), expr_str != "exit") 
+    while(std::cout << ">>> ", std::getline(std::cin, expr_str), expr_str != "exit") try {
         std::cout << ev.evaluate_expression(expr_str).to_string() << std::endl;
+    } catch(std::exception& ex) {
+        std::cout << ex.what() << std::endl;
+    }
 }

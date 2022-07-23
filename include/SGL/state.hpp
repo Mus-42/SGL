@@ -121,8 +121,8 @@ namespace SGL {
         }
         template<typename T, typename... Args> 
         void add_constructor_impl(const std::string& type_name) {
-            m_constructors[type_name].add_overload(std::function<T(Args&&...)>([](Args&&... args) -> T  {
-                return T(std::forward<Args>(args)...);
+            m_constructors[type_name].add_overload(std::function<T(Args...)>([](Args... args) -> T  {
+                return T(args...);
             }));
         }
 
@@ -143,7 +143,18 @@ namespace SGL {
             };
             caller(std::make_index_sequence<types_count>{});
         }
-        //TODO add registred constructors?
+
+        
+        //usage: add_constructors_impl<T, details::sgl_type_identity<Ags1...>, details::sgl_type_identity<Args2...>, ...>("T");
+        template<typename To, typename... From>
+        void add_constructors_impl(const std::string& type_name) {
+            auto l = [&type_name, this]<typename... Args>(details::sgl_type_identity<Args...>){
+                add_constructor_impl<To, Args...>(type_name);
+            };
+            (l(From{}), ...);
+        }
+
+
         void init();
     };
 }//namespace SGL

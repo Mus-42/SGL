@@ -45,6 +45,8 @@ namespace SGL {
         using sgl_char_t = char;//using char8_t?
         //string
         using sgl_string_t = std::basic_string<sgl_char_t>;
+
+        //TODO add unicode strings?
     }
 
 
