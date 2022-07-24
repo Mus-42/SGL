@@ -144,7 +144,7 @@ namespace SGL {
             //TODO type overflow check
             //TODO fix sing? (0bFFFFi16 -> -1i16 or ..?)
             auto i_val = [&]<typename T>(details::sgl_type_identity<T>, uint64_t val){
-                if(std::numeric_limits<T>::max() < val) [[unlikely]] tokenize_error(base_str, str.data()-base_str.data(), "specified integer type (by using literal suffix) overflowed");
+                if(static_cast<uint64_t>(std::numeric_limits<T>::max()) < val) [[unlikely]] tokenize_error(base_str, str.data()-base_str.data(), "specified integer type (by using literal suffix) overflowed");
                 return value(const_val<T>(static_cast<T>(val)));
             };
 
@@ -164,8 +164,8 @@ namespace SGL {
 
             if(!literal_suffix.empty()) tokenize_error(base_str, str.data()-base_str.data(), "invalid integer literal suffix");
 
-            if(val <= std::numeric_limits<sgl_int32_t>::max()) return value(const_val<sgl_int32_t>(static_cast<sgl_int32_t>(val)));
-            if(val <= std::numeric_limits<sgl_int64_t>::max()) return value(const_val<sgl_int64_t>(static_cast<sgl_int64_t>(val)));
+            if(val <= static_cast<uint64_t>(std::numeric_limits<sgl_int32_t>::max())) return value(const_val<sgl_int32_t>(static_cast<sgl_int32_t>(val)));
+            if(val <= static_cast<uint64_t>(std::numeric_limits<sgl_int64_t>::max())) return value(const_val<sgl_int64_t>(static_cast<sgl_int64_t>(val)));
             return value(const_val<sgl_uint64_t>(val));
         };
 
@@ -231,7 +231,7 @@ namespace SGL {
             }
             while(str_cur < str_end && std::isdigit(static_cast<unsigned char>(*str_cur))) str_cur++;
             exp_part = {exp_part_begin, size_t(str_cur-exp_part_begin)};
-            if(exp_part.empty() || exp_part.size() == 1 && !std::isdigit(exp_part[0])) 
+            if(exp_part.empty() || (exp_part.size() == 1 && !std::isdigit(exp_part[0]))) 
                 [[unlikely]] tokenize_error(base_str, exp_part_begin-base_str.data(), "invalid exponent");
         }
         if(str_cur < str_end) {
@@ -363,8 +363,8 @@ namespace SGL {
                     }
                     if(auto f = m_state.m_functions.find(id_str); f != m_state.m_functions.end()) 
                         ret = f->second.call(func_args);
-                    else if(auto f = m_state.m_constructors.find(id_str); f != m_state.m_constructors.end()) [[likely]] 
-                        ret = f->second.call(func_args);//TODO add constructors for types such as `const arr<const int**const>`
+                    else if(auto f2 = m_state.m_constructors.find(id_str); f2 != m_state.m_constructors.end()) [[likely]] 
+                        ret = f2->second.call(func_args);//TODO add constructors for types such as `const arr<const int**const>`
                     else [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "invalid function name `" + id_str + '`');
                     str_cur++;//skip ')'
                     break;

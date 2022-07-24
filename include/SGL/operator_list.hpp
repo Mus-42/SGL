@@ -197,12 +197,12 @@ namespace SGL {
             if constexpr(!std::is_same_v<T_t, void>) {
                 [this]<typename T>(details::sgl_type_identity<T>) {//lambda needs for correct work on MSVC with constexpr (idk why)
                     //TODO add static_cast result to T?
-                    if constexpr(requires(T v) { +v; }) { add_unary_operator(operator_type::op_unary_plus , static_cast<decltype(+std::declval<T>())(*)(T)>([](T v){ return +v; })); }
-                    if constexpr(requires(T v) { -v; }) { add_unary_operator(operator_type::op_unary_minus, static_cast<decltype(-std::declval<T>())(*)(T)>([](T v){ return -v; })); }
-                    if constexpr(requires(T v) { ~v; }) { add_unary_operator(operator_type::op_bit_not    , static_cast<decltype(~std::declval<T>())(*)(T)>([](T v){ return ~v; })); }
-                    if constexpr(requires(T v) { !v; }) { add_unary_operator(operator_type::op_not        , static_cast<decltype(!std::declval<T>())(*)(T)>([](T v){ return !v; })); }
-                    if constexpr(requires(T v) { *v; }) { add_unary_operator(operator_type::op_deref      , static_cast<decltype(*std::declval<T>())(*)(T)>([](T v){ return *v; })); }
-                    if constexpr(requires(T v) { &v; }) { add_unary_operator(operator_type::op_adress_of  , static_cast<decltype(&std::declval<T>())(*)(T)>([](T v){ return &v; })); }
+                    if constexpr(requires(T v) { +v; }) { this->add_unary_operator(operator_type::op_unary_plus , static_cast<decltype(+std::declval<T>())(*)(T)>([](T v){ return +v; })); }
+                    if constexpr(requires(T v) { -v; }) { this->add_unary_operator(operator_type::op_unary_minus, static_cast<decltype(-std::declval<T>())(*)(T)>([](T v){ return -v; })); }
+                    if constexpr(requires(T v) { ~v; }) { this->add_unary_operator(operator_type::op_bit_not    , static_cast<decltype(~std::declval<T>())(*)(T)>([](T v){ return ~v; })); }
+                    if constexpr(requires(T v) { !v; }) { this->add_unary_operator(operator_type::op_not        , static_cast<decltype(!std::declval<T>())(*)(T)>([](T v){ return !v; })); }
+                    if constexpr(requires(T v) { *v; }) { this->add_unary_operator(operator_type::op_deref      , static_cast<decltype(*std::declval<T>())(*)(T)>([](T v){ return *v; })); }
+                    if constexpr(requires(T v) { &v; }) { this->add_unary_operator(operator_type::op_adress_of  , static_cast<decltype(&std::declval<T>())(*)(T)>([](T v){ return &v; })); }
                 }(details::sgl_type_identity<std::add_lvalue_reference_t<std::add_const_t<T_t>>>{});
             };
         }
@@ -211,24 +211,24 @@ namespace SGL {
         constexpr void add_default_binary_operators_between_types() requires details::req_base_type<A_t> && details::req_base_type<B_t> {
             if constexpr(!std::is_same_v<A_t, void> && !std::is_same_v<B_t, void>) {
                 [this]<typename A, typename B>(details::sgl_type_identity<A>, details::sgl_type_identity<B>) {//lambda needs for correct work on MSVC with constexpr (idk why)
-                    if constexpr(requires(A a, B b) { a +  b; }) { add_binary_operator(operator_type::op_sum        , static_cast<decltype(std::declval<A>() +  std::declval<B>())(*)(A, B)>([](A a, B b){ return a +  b; })); }
-                    if constexpr(requires(A a, B b) { a -  b; }) { add_binary_operator(operator_type::op_sub        , static_cast<decltype(std::declval<A>() -  std::declval<B>())(*)(A, B)>([](A a, B b){ return a -  b; })); }
-                    if constexpr(requires(A a, B b) { a *  b; }) { add_binary_operator(operator_type::op_mul        , static_cast<decltype(std::declval<A>() *  std::declval<B>())(*)(A, B)>([](A a, B b){ return a *  b; })); }
-                    if constexpr(requires(A a, B b) { a /  b; }) { add_binary_operator(operator_type::op_div        , static_cast<decltype(std::declval<A>() /  std::declval<B>())(*)(A, B)>([](A a, B b){ return a /  b; })); }
-                    if constexpr(requires(A a, B b) { a %  b; }) { add_binary_operator(operator_type::op_mod        , static_cast<decltype(std::declval<A>() %  std::declval<B>())(*)(A, B)>([](A a, B b){ return a %  b; })); }
-                    if constexpr(requires(A a, B b) { a |  b; }) { add_binary_operator(operator_type::op_bit_or     , static_cast<decltype(std::declval<A>() |  std::declval<B>())(*)(A, B)>([](A a, B b){ return a |  b; })); }
-                    if constexpr(requires(A a, B b) { a &  b; }) { add_binary_operator(operator_type::op_bit_and    , static_cast<decltype(std::declval<A>() &  std::declval<B>())(*)(A, B)>([](A a, B b){ return a &  b; })); }
-                    if constexpr(requires(A a, B b) { a ^  b; }) { add_binary_operator(operator_type::op_bit_xor    , static_cast<decltype(std::declval<A>() ^  std::declval<B>())(*)(A, B)>([](A a, B b){ return a ^  b; })); }
-                    if constexpr(requires(A a, B b) { a << b; }) { add_binary_operator(operator_type::op_bit_lsh    , static_cast<decltype(std::declval<A>() << std::declval<B>())(*)(A, B)>([](A a, B b){ return a << b; })); }
-                    if constexpr(requires(A a, B b) { a >> b; }) { add_binary_operator(operator_type::op_bit_rsh    , static_cast<decltype(std::declval<A>() >> std::declval<B>())(*)(A, B)>([](A a, B b){ return a >> b; })); }
-                    if constexpr(requires(A a, B b) { a == b; }) { add_binary_operator(operator_type::op_equal      , static_cast<decltype(std::declval<A>() == std::declval<B>())(*)(A, B)>([](A a, B b){ return a == b; })); }
-                    if constexpr(requires(A a, B b) { a != b; }) { add_binary_operator(operator_type::op_not_equal  , static_cast<decltype(std::declval<A>() != std::declval<B>())(*)(A, B)>([](A a, B b){ return a != b; })); }
-                    if constexpr(requires(A a, B b) { a <  b; }) { add_binary_operator(operator_type::op_less       , static_cast<decltype(std::declval<A>() <  std::declval<B>())(*)(A, B)>([](A a, B b){ return a <  b; })); }
-                    if constexpr(requires(A a, B b) { a >  b; }) { add_binary_operator(operator_type::op_greater    , static_cast<decltype(std::declval<A>() >  std::declval<B>())(*)(A, B)>([](A a, B b){ return a >  b; })); }
-                    if constexpr(requires(A a, B b) { a >= b; }) { add_binary_operator(operator_type::op_not_less   , static_cast<decltype(std::declval<A>() >= std::declval<B>())(*)(A, B)>([](A a, B b){ return a >= b; })); }
-                    if constexpr(requires(A a, B b) { a <= b; }) { add_binary_operator(operator_type::op_not_greater, static_cast<decltype(std::declval<A>() <= std::declval<B>())(*)(A, B)>([](A a, B b){ return a <= b; })); }
-                    if constexpr(requires(A a, B b) { a || b; }) { add_binary_operator(operator_type::op_or         , static_cast<decltype(std::declval<A>() || std::declval<B>())(*)(A, B)>([](A a, B b){ return a || b; })); }
-                    if constexpr(requires(A a, B b) { a && b; }) { add_binary_operator(operator_type::op_and        , static_cast<decltype(std::declval<A>() && std::declval<B>())(*)(A, B)>([](A a, B b){ return a && b; })); }
+                    if constexpr(requires(A a, B b) { a +  b; }) { this->add_binary_operator(operator_type::op_sum        , static_cast<decltype(std::declval<A>() +  std::declval<B>())(*)(A, B)>([](A a, B b){ return a +  b; })); }
+                    if constexpr(requires(A a, B b) { a -  b; }) { this->add_binary_operator(operator_type::op_sub        , static_cast<decltype(std::declval<A>() -  std::declval<B>())(*)(A, B)>([](A a, B b){ return a -  b; })); }
+                    if constexpr(requires(A a, B b) { a *  b; }) { this->add_binary_operator(operator_type::op_mul        , static_cast<decltype(std::declval<A>() *  std::declval<B>())(*)(A, B)>([](A a, B b){ return a *  b; })); }
+                    if constexpr(requires(A a, B b) { a /  b; }) { this->add_binary_operator(operator_type::op_div        , static_cast<decltype(std::declval<A>() /  std::declval<B>())(*)(A, B)>([](A a, B b){ return a /  b; })); }
+                    if constexpr(requires(A a, B b) { a %  b; }) { this->add_binary_operator(operator_type::op_mod        , static_cast<decltype(std::declval<A>() %  std::declval<B>())(*)(A, B)>([](A a, B b){ return a %  b; })); }
+                    if constexpr(requires(A a, B b) { a |  b; }) { this->add_binary_operator(operator_type::op_bit_or     , static_cast<decltype(std::declval<A>() |  std::declval<B>())(*)(A, B)>([](A a, B b){ return a |  b; })); }
+                    if constexpr(requires(A a, B b) { a &  b; }) { this->add_binary_operator(operator_type::op_bit_and    , static_cast<decltype(std::declval<A>() &  std::declval<B>())(*)(A, B)>([](A a, B b){ return a &  b; })); }
+                    if constexpr(requires(A a, B b) { a ^  b; }) { this->add_binary_operator(operator_type::op_bit_xor    , static_cast<decltype(std::declval<A>() ^  std::declval<B>())(*)(A, B)>([](A a, B b){ return a ^  b; })); }
+                    if constexpr(requires(A a, B b) { a << b; }) { this->add_binary_operator(operator_type::op_bit_lsh    , static_cast<decltype(std::declval<A>() << std::declval<B>())(*)(A, B)>([](A a, B b){ return a << b; })); }
+                    if constexpr(requires(A a, B b) { a >> b; }) { this->add_binary_operator(operator_type::op_bit_rsh    , static_cast<decltype(std::declval<A>() >> std::declval<B>())(*)(A, B)>([](A a, B b){ return a >> b; })); }
+                    if constexpr(requires(A a, B b) { a == b; }) { this->add_binary_operator(operator_type::op_equal      , static_cast<decltype(std::declval<A>() == std::declval<B>())(*)(A, B)>([](A a, B b){ return a == b; })); }
+                    if constexpr(requires(A a, B b) { a != b; }) { this->add_binary_operator(operator_type::op_not_equal  , static_cast<decltype(std::declval<A>() != std::declval<B>())(*)(A, B)>([](A a, B b){ return a != b; })); }
+                    if constexpr(requires(A a, B b) { a <  b; }) { this->add_binary_operator(operator_type::op_less       , static_cast<decltype(std::declval<A>() <  std::declval<B>())(*)(A, B)>([](A a, B b){ return a <  b; })); }
+                    if constexpr(requires(A a, B b) { a >  b; }) { this->add_binary_operator(operator_type::op_greater    , static_cast<decltype(std::declval<A>() >  std::declval<B>())(*)(A, B)>([](A a, B b){ return a >  b; })); }
+                    if constexpr(requires(A a, B b) { a >= b; }) { this->add_binary_operator(operator_type::op_not_less   , static_cast<decltype(std::declval<A>() >= std::declval<B>())(*)(A, B)>([](A a, B b){ return a >= b; })); }
+                    if constexpr(requires(A a, B b) { a <= b; }) { this->add_binary_operator(operator_type::op_not_greater, static_cast<decltype(std::declval<A>() <= std::declval<B>())(*)(A, B)>([](A a, B b){ return a <= b; })); }
+                    if constexpr(requires(A a, B b) { a || b; }) { this->add_binary_operator(operator_type::op_or         , static_cast<decltype(std::declval<A>() || std::declval<B>())(*)(A, B)>([](A a, B b){ return a || b; })); }
+                    if constexpr(requires(A a, B b) { a && b; }) { this->add_binary_operator(operator_type::op_and        , static_cast<decltype(std::declval<A>() && std::declval<B>())(*)(A, B)>([](A a, B b){ return a && b; })); }
                 }(details::sgl_type_identity<std::add_lvalue_reference_t<std::add_const_t<A_t>>>{}, details::sgl_type_identity<std::add_lvalue_reference_t<std::add_const_t<B_t>>>{});
             }
         }

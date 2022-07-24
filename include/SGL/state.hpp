@@ -153,7 +153,7 @@ namespace SGL {
         template<typename To, typename... From>
         void add_constructors_impl(const std::string& type_name) {
             auto l = [&type_name, this]<typename... Args>(details::sgl_type_identity<Args...>){
-                add_constructor_impl<To, Args...>(type_name);
+                this->add_constructor_impl<To, Args...>(type_name);
             };
             (l(From{}), ...);
         }

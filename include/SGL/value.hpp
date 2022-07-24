@@ -71,6 +71,7 @@ namespace SGL {
         template<typename T>
         struct [[deprecated]] value_creator<T&&> : value_creator<T&> {};
 
+        /*
         template<typename T>
         struct array_creator : public value_creator_base<arr<T>> {
             [[nodiscard]] array_creator(const std::vector<T>& v) {}
@@ -79,7 +80,7 @@ namespace SGL {
             [[nodiscard]] array_creator(T (&v)[N]) {}
 
             //TODO add impl
-        };
+        };*/
 
         //TODO add other value creators
     }//namespace details

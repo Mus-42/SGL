@@ -125,7 +125,7 @@ namespace SGL {
                         if(std::isinf(v)) return "inf";
                         return "[floating-point value]";
                     }
-                } if constexpr(requires(const T& v) {
+                } else if constexpr(requires(const T& v) {
                     { std::to_string(v) } -> std::convertible_to<std::string>;
                 }) {
                     return std::to_string(v);//cast char as integer type
