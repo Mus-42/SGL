@@ -4,7 +4,6 @@
 #include <string_view>
 #include "config.hpp"
 namespace SGL {
-#if defined(SGL_OPTION_ENABLE_TYPE_NAME) && SGL_OPTION_ENABLE_TYPE_NAME
     namespace details {     
         template<typename T>
         constexpr std::string_view type_name_helper() {
@@ -22,23 +21,20 @@ namespace SGL {
             return "T [uncompatible compiler]";
 #endif//comiler switch
         }
-        constexpr auto void_sv = type_name_helper<void>();
-        constexpr bool is_compatible_compiler = void_sv.find("void") < void_sv.size();
-        constexpr size_t beg_offset = void_sv.find("void");
-        constexpr size_t beg_offset_2 = void_sv.find("void", beg_offset+4);
-        constexpr auto find_substr = void_sv.substr(beg_offset + 4, beg_offset_2-4-beg_offset);
+        constexpr auto find_res_sv = type_name_helper<int>();
+        constexpr auto find_sv = std::string_view{"int"};
+        constexpr size_t beg_offset = find_res_sv.find(find_sv);
+        constexpr bool is_compatible_compiler = beg_offset < find_res_sv.size();
+        constexpr size_t beg_offset_2 = find_res_sv.find(find_sv, beg_offset+find_sv.size());
+        constexpr auto find_substr = find_res_sv.substr(beg_offset + find_sv.size(), beg_offset_2-find_sv.size()-beg_offset);
     }//namespace details
-#endif//SGL_OPTION_ENABLE_TYPE_NAME
     template<typename T>
     constexpr std::string_view get_type_name() {//Not same in all C++ implementations
-#if defined(SGL_OPTION_ENABLE_TYPE_NAME) && SGL_OPTION_ENABLE_TYPE_NAME
         if constexpr(details::is_compatible_compiler) {
             auto raw = details::type_name_helper<T>();
             return raw.substr(details::beg_offset, raw.find(details::find_substr) - details::beg_offset);
-        } else return details::type_name_helper<T>();
-#else
-        return "T [type name option disabled. check config.hpp for details]";
-#endif//SGL_OPTION_ENABLE_TYPE_NAME
+        } 
+        else return details::type_name_helper<T>();
     } 
 }//namespace SGL
 #endif//SGL_TYPE_NAME_HPP_INCLUDE_

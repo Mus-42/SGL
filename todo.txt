@@ -1,9 +1,11 @@
 Features:
 auto kywd
-check 32-bit systems support
+operators for pointers and other non-ref types? 
+type for type (result of typeof)?
+type aliases
 
 Lib:
-operators for pointers and other non-ref types? 
+check 32-bit systems support
 cmake install
 what value get<arr<T>*> shold return? pointer to array_impl?
 implement type functions for array

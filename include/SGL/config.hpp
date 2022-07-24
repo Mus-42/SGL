@@ -4,14 +4,8 @@
 
 //check types casts correctness in SGL 
 #define SGL_OPTION_TYPE_CHECKS              1
-#define SGL_OPTION_ENABLE_TYPE_NAME         1
-#define SGL_OPTION_STORE_TYPE_NAME          1
 #define SGL_OPTION_ENABLE_ASSERT            1
 
-
-#if (!defined(SGL_OPTION_ENABLE_TYPE_NAME) || !SGL_OPTION_ENABLE_TYPE_NAME) && SGL_OPTION_STORE_TYPE_NAME 
-#error "SGL_OPTION_STORE_TYPE_NAME requires enabled SGL_OPTION_ENABLE_TYPE_NAME"
-#endif
 //TODO set options from CMake?
 
 //assertion macro

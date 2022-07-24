@@ -36,19 +36,19 @@ namespace SGL {
 
         register_type<std::nullptr_t>("__nullptr_t");
 
-        //TODO type for type (result of typeof)?
         add_variable("true", true);
         add_variable("false", false);
         add_variable("nan", std::numeric_limits<double>::quiet_NaN());
         add_variable("inf", std::numeric_limits<double>::infinity());
         add_variable("nullptr", nullptr);
 
+        /*
         for(size_t i = 0; i < operators_count; i++) {
             size_t unary_count = m_operator_list.m_unary_operators[i].size();
             size_t binary_count = 0;
             for(auto& [l, v] : m_operator_list.m_binary_operators[i]) binary_count += v.size();
             std::cout << "loaded " << unary_count << " unary & " << binary_count << " binary operators `" << operator_str[i] << "`\n";
-        }
+        }*/
 
         //builtin functions:
         add_function("addressof", {{{static_cast<value(*)(const std::vector<value>&)>([](const std::vector<value>& v)->value{

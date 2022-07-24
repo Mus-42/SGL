@@ -176,9 +176,7 @@ namespace SGL {
     public:
         template<typename T>
         [[nodiscard]] explicit base_type(details::sgl_type_identity<T>) : m_impl(new details::type_impl<T>), m_type(typeid(T)) {
-#if defined(SGL_OPTION_STORE_TYPE_NAME) && SGL_OPTION_STORE_TYPE_NAME
             m_type_name = get_type_name<T>();
-#endif//SGL_OPTION_STORE_TYPE_NAME
         }
         ~base_type() = default;
 
@@ -224,9 +222,7 @@ namespace SGL {
         
         const std::unique_ptr<details::type_impl_base> m_impl;
         const std::type_info& m_type;//used in state and in check_type
-#if defined(SGL_OPTION_STORE_TYPE_NAME) && SGL_OPTION_STORE_TYPE_NAME
         std::string_view m_type_name;
-#endif//SGL_OPTION_STORE_TYPE_NAME
 
         //std::unordered_map<std::string, std::pair<const type*, size_t>> m_members;//name, type, offset of member
 /*
