@@ -46,6 +46,7 @@ namespace SGL {
         //string
         using sgl_string_t = std::basic_string<sgl_char_t>;
 
+        static_assert(!std::is_same_v<sgl_char_t, sgl_int8_t> && !std::is_same_v<sgl_char_t, sgl_uint8_t>, "can't overload to_string for chars");
         //TODO add unicode strings?
     }
 
@@ -125,6 +126,29 @@ namespace SGL {
                         if(std::isinf(v)) return "inf";
                         return "[floating-point value]";
                     }
+                } else if constexpr(std::is_same_v<builtin_types::sgl_char_t, T>) {
+                    if(static_cast<unsigned char>(v) >= 128) [[unlikely]] return "[non-ascii char]";
+                    switch (v) {
+                    case '\\': return R"('\\')"; 
+                    case '\'': return R"('\'')";
+                    case '"' : return R"('"')";
+                    case '\0': return R"('\0')";
+                    case '\b': return R"('\b')";
+                    case '\f': return R"('\f')";
+                    case '\n': return R"('\n')";
+                    case '\r': return R"('\r')"; 
+                    case '\t': return R"('\t')";
+                    default: break;
+                    }
+                    if(std::isprint(static_cast<unsigned char>(v))) [[likely]] {
+                        char buf[4] = "'.'";
+                        buf[1] = v;
+                        return buf;
+                    }
+                    return "[non-print char]";
+                } else if constexpr(std::is_same_v<builtin_types::sgl_string_t, T>) {
+                    //TODO cast string to escape (same as char)
+                    return v;
                 } else if constexpr(requires(const T& v) {
                     { std::to_string(v) } -> std::convertible_to<std::string>;
                 }) {

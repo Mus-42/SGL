@@ -2,7 +2,7 @@ Features:
 auto kywd
 operators for pointers and other non-ref types? 
 type for type (result of typeof)?
-type aliases
+type aliases 
 
 Lib:
 check 32-bit systems support

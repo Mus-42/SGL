@@ -341,7 +341,50 @@ namespace SGL {
             ret = scan_number(base_str, {str_cur, size_t(str_end-str_cur)}, &str_cur);
         } break;
 
-        //TODO scan value (string, char, number) literals here
+        case '\'': case '"': {
+            char literal_end = *str_cur++;
+            std::string res_str;//TODO replace with builtin_types::sgl_string_t?
+            while(str_cur < str_end && *str_cur != literal_end) {
+                if(*str_cur == '\\') [[unlikely]] {
+                    str_cur++;
+                    if(str_cur == str_end) [[unlikely]] 
+                        tokenize_error(base_str, str_cur-base_str.data(), "invalid escape sequence");
+                    switch (*str_cur) {
+                    case '\\': res_str+='\\'; break;
+                    case '\'': res_str+='\''; break;
+                    case '"':  res_str+='"';  break;
+
+                    case '0':  res_str+='\0'; break;//TODO other octal|hex chars?
+
+                    case 'b':  res_str+='\b'; break;
+                    case 'f':  res_str+='\f'; break;
+                    case 'n':  res_str+='\n'; break;
+                    case 'r':  res_str+='\r'; break;
+                    case 't':  res_str+='\t'; break;
+
+                    case 'u'://TODO unicode char
+                    default: tokenize_error(base_str, str_cur-base_str.data(), "invalid escape sequence"); break;
+                    }
+                    str_cur++;
+                }
+                else [[likely]] {
+                    if(static_cast<unsigned char>(*str_cur) >= 128) [[unlikely]] 
+                        tokenize_error(base_str, str_cur-base_str.data(), "invalid non-ascii character");
+                    res_str += *str_cur;
+                    str_cur++;
+                }
+            }
+            if(str_cur == str_end) [[unlikely]] 
+                tokenize_error(base_str, str_cur-base_str.data(), "string literal: unexpected eof");
+            if(literal_end == '\'') {//char
+                if(res_str.size() != 1) [[unlikely]] 
+                    tokenize_error(base_str, str_cur-base_str.data(), "invalid character literal size");
+                ret = value(val<char>(res_str[0]));
+            } else {//string
+                ret = value(val<std::string>(std::move(res_str)));
+            }
+            str_cur++;
+        } break;
 
         default:
             if(std::isalnum(static_cast<unsigned char>(*str_cur)) || *str_cur == '_') [[likely]] {
@@ -359,8 +402,9 @@ namespace SGL {
                         if(*str_cur == ')') break;
                         func_args.emplace_back(details::eval_expr_rec_impl(m_state, base_str, {str_cur, size_t(str_end-(str_cur))}, {&str_cur, static_cast<uint8_t>(operator_precedence_step), true, false, false}));
                         if(*str_cur == ')') break;
-                        if(*str_cur != ',') [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "invalid character");
-                    }
+                        if(*str_cur != ',') [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), std::string("invalid character `") + *str_cur + '`');
+                        str_cur++;
+                    }   
                     if(auto f = m_state.m_functions.find(id_str); f != m_state.m_functions.end()) 
                         ret = f->second.call(func_args);
                     else if(auto f2 = m_state.m_constructors.find(id_str); f2 != m_state.m_constructors.end()) [[likely]] 
@@ -376,7 +420,7 @@ namespace SGL {
                 } 
                 else [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "invalid variable name `" + id_str + '`');
 
-            } else [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "invalid character");
+            } else [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), std::string("invalid character `") + *str_cur + '`');
             break;
         }
 
@@ -459,7 +503,7 @@ namespace SGL {
             default:
                 if(std::isalnum(static_cast<unsigned char>(*str_cur)) || *str_cur == '_')
                     tokenize_error(base_str, str_cur-base_str.data(), "custom keywords not allowed");
-                else tokenize_error(base_str, str_cur-base_str.data(), "invalid character");
+                else tokenize_error(base_str, str_cur-base_str.data(), std::string("invalid character `") + *str_cur + '`');
                 break;
             }
         }
