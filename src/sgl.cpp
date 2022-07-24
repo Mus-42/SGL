@@ -34,7 +34,14 @@ namespace SGL {
         register_type<sgl_char_t>("char");
         register_type<sgl_string_t>("string");
 
+        register_type<std::nullptr_t>("__nullptr_t");
+
         //TODO type for type (result of typeof)?
+        add_variable("true", true);
+        add_variable("false", false);
+        add_variable("nan", std::numeric_limits<double>::quiet_NaN());
+        add_variable("inf", std::numeric_limits<double>::infinity());
+        add_variable("nullptr", nullptr);
 
         //builtin functions:
         add_function("addressof", {{{static_cast<value(*)(const std::vector<value>&)>([](const std::vector<value>& v)->value{
@@ -351,12 +358,17 @@ namespace SGL {
                         ret = f->second.call(func_args);
                     else if(auto f = m_state.m_constructors.find(id_str); f != m_state.m_constructors.end()) [[likely]] 
                         ret = f->second.call(func_args);//TODO add constructors for types such as `const arr<const int**const>`
-                    else [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "invalid function_name");
+                    else [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "invalid function name `" + id_str + '`');
                     str_cur++;//skip ')'
                     break;
                 }
-                //TODO add variables
-                tokenize_error(base_str, str_cur-base_str.data(), "variables not implemented now");
+
+                if(auto f = m_state.m_variables.find(id_str); f != m_state.m_variables.end()) [[likely]] {
+                    ret = f->second;
+                    //TODO member fields & functions here
+                } 
+                else [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "invalid variable name `" + id_str + '`');
+
             } else [[unlikely]] tokenize_error(base_str, str_cur-base_str.data(), "invalid character");
             break;
         }

@@ -76,6 +76,13 @@ namespace SGL {
 
         value call_unary_operator(operator_type op, value& arg) const {
             //TODO fix it
+            if(op == operator_type::op_deref && arg.is_pointer()) {
+                value ret;
+                ret.m_data = arg.m_data;
+                ret.need_free_data = false;
+                ret.m_type = arg.m_type->m_type;
+                return ret;
+            }
             size_t op_idex = static_cast<size_t>(op);
             using it = typename std::remove_cvref_t<decltype(m_unary_operators[op_idex])>::const_iterator;
             it res;

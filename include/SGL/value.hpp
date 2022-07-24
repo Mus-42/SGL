@@ -35,40 +35,40 @@ namespace SGL {
         struct value_creator : public value_creator_base<T> {
             template<typename... Args>
             [[nodiscard]] value_creator(Args... args) {
-                this->m_data = new T(args...);//`this->` required by GCC (idk why)
+                this->m_const_data = new T(args...);//`this->` required by GCC (idk why)
                 this->need_free_data = true;
             }
             template<typename... Args>
             [[nodiscard]] explicit value_creator(std::shared_ptr<type> type, Args... args) : value_creator_base<T>(type) {
-                this->m_data = new T(args...);
+                this->m_const_data = new T(args...);
+                this->need_free_data = true;
+            }
+        };
+
+        template<typename T>
+        struct value_creator<T*> : public value_creator_base<T*> {
+            [[nodiscard]] value_creator(T*const ptr) {
+                this->m_const_data = static_cast<const void*>(ptr);
                 this->need_free_data = true;
             }
         };
         template<typename T>
-        struct const_value_creator : public value_creator_base<const T> {
-            template<typename... Args>
-            [[nodiscard]] const_value_creator(Args... args) {
-                this->m_const_data = new const T(args...);//TODO fix for pointer
-                this->need_free_data = true;
-            }
-            template<typename... Args>
-            [[nodiscard]] explicit const_value_creator(std::shared_ptr<type> type, Args... args) : value_creator_base<const T>(type) {
-                this->m_const_data = new const T(args...);
+        struct value_creator<T*const> : public value_creator_base<T*const> {
+            [[nodiscard]] value_creator(T*const ptr) {
+                this->m_const_data = static_cast<const void*>(ptr);
                 this->need_free_data = true;
             }
         };
+
         template<typename T>
-        struct reference_creator : public value_creator_base<T&> {
-            [[nodiscard]] reference_creator(T& v) {
-                this->m_data = &v;
+        struct value_creator<T&> : public value_creator_base<T&> {
+            [[nodiscard]] value_creator(T& ptr) {
+                this->m_const_data = static_cast<const void*>(&ptr);
+                this->need_free_data = true;
             }
         };
-        template<typename T>
-        struct const_reference_creator : public value_creator_base<const T&> {
-            [[nodiscard]] const_reference_creator(const T& v) {
-                this->m_const_data = &v;
-            }
-        };
+
+
         template<typename T>
         struct array_creator : public value_creator_base<arr<T>> {
             [[nodiscard]] array_creator(const std::vector<T>& v) {}
@@ -84,9 +84,9 @@ namespace SGL {
     //TODO value construct: value(const_val(12)); 
     //make using for it
     template<typename T> using val = details::value_creator<T>;
-    template<typename T> using const_val = details::const_value_creator<T>;
-    template<typename T> using ref = details::reference_creator<T>;
-    template<typename T> using const_ref = details::const_reference_creator<T>;
+    template<typename T> using const_val = val<const T>;
+    template<typename T> using ref = val<T&>;
+    template<typename T> using const_ref = val<const T&>;
     //array 
     //const_array
     //move_val
@@ -256,7 +256,7 @@ namespace SGL {
         }
 
         void free_data() {
-            if(m_type && m_data) {
+            if(m_type && m_data && need_free_data) {
                 m_type->free_ptr_of_t(m_data);
             }
         }

@@ -3,13 +3,11 @@ auto kywd
 check 32-bit systems support
 
 Lib:
-state global vars
+operators for pointers and other non-ref types? 
 cmake install
 what value get<arr<T>*> shold return? pointer to array_impl?
-implement value_type functions for array
+implement type functions for array
 replace "//protected:" with macro in config.hpp?
-rename type to base_type, value_type to type?
-replece `const value_type&` in value_type functions with `shared_ptr<value_type>`?
 
 fix multiple clones of same type (get value_type ptr from state?)
 

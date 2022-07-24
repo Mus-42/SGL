@@ -25,7 +25,7 @@ namespace SGL {
 
         //base type 
 
-        template<typename T, std::enable_if_t<details::is_base_type<T>, bool> = true>
+        template<details::req_base_type T>
         std::shared_ptr<base_type> register_type(const std::string& type_name) {
             if(!details::is_correct_identifier(type_name)) throw std::invalid_argument("incorrect type name: " + type_name);
             m_operator_list.add_default_operators_for_type<T>();
@@ -37,9 +37,6 @@ namespace SGL {
             if(f != m_types.end()) throw std::runtime_error("type with same name already exists in this state");
             m_types[type_name] = type_ptr;
             return type_ptr;
-        }
-        std::shared_ptr<base_type> find_type(const std::string& type_name) const {
-            return m_types.at(type_name);
         }
 
         void add_function(const std::string& name, const function& f) {
@@ -57,21 +54,13 @@ namespace SGL {
             m_functions[name].add_overload(f);
         }
 
-        [[nodiscard]] std::shared_ptr<base_type> get_base_type(const std::string& name) const {
-            return m_types.at(name);
-        }
-        template<typename T, std::enable_if_t<details::is_base_type<T>, bool> = true>
-        [[nodiscard]] std::shared_ptr<base_type> get_base_type() const {
-            return m_types_val.at(std::type_index(typeid(T)));
-        }
-        
         template<typename T>
         [[nodiscard]] std::shared_ptr<type> get_type() const {
             //TODO add type if it not exist?
             return type::construct_type<T>(m_types_val.at(std::type_index(typeid(details::make_base_type_t<T>))));
         }
 
-        function& get_function(const std::string& name) {
+        [[nodiscard]] function& get_function(const std::string& name) {
             return m_functions.at(name);
         }
         [[nodiscard]] const function& get_function(const std::string& name) const {
@@ -85,20 +74,44 @@ namespace SGL {
         }
         evaluator get_evaluator() const && = delete;//not alloved for temp state (ref invalid afrer object destruction)
 
-        
-    //protected:
+        template<typename T>
+        void add_variable(const std::string& name, T v) {
+            if(!details::is_correct_identifier(name)) throw std::invalid_argument("incorrect function name: " + name);
+            add_variable_impl(details::sgl_type_identity<T>{}, name, v);
+        }
+
+        [[nodiscard]] value& get_variable(const std::string& name) {
+            return m_variables.at(name);
+        }
+        [[nodiscard]] const value& get_variable(const std::string& name) const {
+            return m_variables.at(name);
+        }
+        //TODO add remove variable?
+    protected:
         friend class base_type;
         friend class type;
         friend class value;
         friend class evaluator;
+        friend value details::eval_expr_rec_impl(const state& m_state, std::string_view base_str, std::string_view str, details::eval_impl_args args);
 
         std::unordered_map<std::string, std::shared_ptr<base_type>> m_types;
         std::unordered_map<std::type_index, std::shared_ptr<base_type>> m_types_val;
 
         std::unordered_map<std::string, function> m_functions;
         std::unordered_map<std::string, function> m_constructors;//and operators (syntax same: T(args))//TODO move to functions? (same syntax)
+        
+        std::unordered_map<std::string, value> m_variables;
+
         operator_list m_operator_list;
 
+        template<typename T>
+        void add_variable_impl(details::sgl_type_identity<T>, const std::string& name, T v) {
+            m_variables[name] = value(val<T>(v));
+        }
+        template<typename T>
+        void add_variable_impl(details::sgl_type_identity<T&>, const std::string& name, T& v) {
+            m_variables[name] = value(ref<T>(v));
+        }
 /*
         //TODO implement 
         template<typename... Types> 
