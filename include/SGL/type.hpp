@@ -251,7 +251,12 @@ namespace SGL {
         }
     };
     inline std::strong_ordering operator<=>(const base_type& a, const base_type& b) {
-        return std::type_index(a.m_type) <=> std::type_index(b.m_type);
+        auto at = std::type_index(a.m_type);
+        auto bt = std::type_index(b.m_type);
+        //clang 13 not support <=> operator for type_index
+        if(at < bt) return std::strong_ordering::less;
+        if(at > bt) return std::strong_ordering::greater;
+        return std::strong_ordering::equal;
     }
    
     class type {
@@ -395,7 +400,6 @@ namespace SGL {
                 ret.m_traits.is_array     = false;
                 ret.m_traits.is_void      = false;
                 ret.m_traits.is_final_v   = false;
-                ret.m_traits.is_temp_v    = false;
 
                 *this = std::move(ret);
             }
@@ -432,8 +436,7 @@ namespace SGL {
                 is_reference(std::is_reference_v<T>),
                 is_array(details::is_sgl_array_v<T>),
                 is_void(std::is_same_v<T, void>),
-                is_final_v(false), //set it manually
-                is_temp_v(false) //set it manually
+                is_final_v(false) //set it manually
                 {}
             
             bool is_const     : 1;
@@ -442,7 +445,6 @@ namespace SGL {
             bool is_array     : 1;//array size stored in array_impl
             bool is_void      : 1;//unitililized value also void
             bool is_final_v   : 1;//type = (?const) base_type (?(*|&|&&))
-            bool is_temp_v    : 1;//for language-temporary values. for example: a = 1 + 2; 3 - temp_v
         
             constexpr bool operator==(const m_traits_t& other) const {
                 return is_const     == other.is_const
@@ -450,7 +452,7 @@ namespace SGL {
                     && is_reference == other.is_reference
                     && is_array     == other.is_array
                     && is_void      == other.is_void
-                    && is_final_v   == other.is_final_v;//TODO add is_temp_v to compare?
+                    && is_final_v   == other.is_final_v;
             }
             constexpr bool operator!=(const m_traits_t& other) const { return !(*this == other); }
             constexpr std::strong_ordering operator<=>(const m_traits_t& other) const = default;

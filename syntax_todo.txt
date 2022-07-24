@@ -52,6 +52,10 @@ member access:   a.b a->b
 
 builtin functions:
 addressof, sizeof, typeof
+to_string() - use value.to_string()
+__print() - print to stdout and return passed arg
+__type_name() - type name string (use get_type_name)
+
 abs
 mod, rem
 max, min, clamp

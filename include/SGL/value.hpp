@@ -68,6 +68,8 @@ namespace SGL {
             }
         };
 
+        template<typename T>
+        struct [[deprecated]] value_creator<T&&> : value_creator<T&> {};
 
         template<typename T>
         struct array_creator : public value_creator_base<arr<T>> {
@@ -78,6 +80,7 @@ namespace SGL {
 
             //TODO add impl
         };
+
         //TODO add other value creators
     }//namespace details
 
@@ -154,17 +157,13 @@ namespace SGL {
 
         template<typename T>//create value without value_creator_...
         explicit value(details::sgl_type_identity<T>, typename details::sgl_type_identity<T>::type val) : m_type(type::construct_type<T>()) {
-            if constexpr(std::is_reference_v<T>) {
-                if constexpr(std::is_const_v<T>) m_const_data = &val;
-                else m_data = &val;
-            } else if constexpr(std::is_pointer_v<T>) {
-                if constexpr(std::is_const_v<T>) m_const_data = val;
-                else m_data = val;
-            } 
-            //else if constexpr(std::is_pointer_v<T>) {
-            //    if constexpr(std::is_const_v<T>) m_const_data = val;
-            //    else m_data = val;
-            //}
+            if constexpr(std::is_reference_v<T>) m_const_data = &val;
+            else if constexpr(std::is_pointer_v<T>) m_const_data = val;
+            else {//non ref|ptr -> by value
+                //TODO array
+                m_const_data = new T(val);
+                need_free_data = true;
+            }
         }
 
         
@@ -214,8 +213,8 @@ namespace SGL {
             return static_cast<T*>(m_data);
         }
         template<typename T> decltype(auto) get(details::sgl_type_identity<T* const>) const { return get(details::sgl_type_identity<T*>{}); }
-        template<typename T> decltype(auto) get(details::sgl_type_identity<T* volatile>) const { return get(details::sgl_type_identity<T*>{}); }
-        template<typename T> decltype(auto) get(details::sgl_type_identity<T* const volatile>) const { return get(details::sgl_type_identity<T*>{}); }
+        template<typename T> [[deprecated]] decltype(auto) get(details::sgl_type_identity<T* volatile>) const { return get(details::sgl_type_identity<T*>{}); }
+        template<typename T> [[deprecated]] decltype(auto) get(details::sgl_type_identity<T* const volatile>) const { return get(details::sgl_type_identity<T*>{}); }
         //reference
         template<typename T>
         T& get(details::sgl_type_identity<T&>) {//ref on value -> non const
@@ -238,7 +237,8 @@ namespace SGL {
         template<typename T>
         void check_type(details::sgl_type_identity<T>) const {
             //TODO add type_name to exception info?
-            if(!m_type->is_convertable_to<T>()) [[unlikely]] throw details::invalid_value_cast("value not convertable to T");
+            if(!m_type->is_convertable_to<T>()) [[unlikely]] 
+                throw details::invalid_value_cast("value of type T=`" + m_type->type_to_str() + "` not convertable to U=`" + std::string(get_type_name<T>())  + '`');
         }
 
 
@@ -266,7 +266,8 @@ namespace SGL {
         };
         std::shared_ptr<type> m_type;
         //TODO remove need_free_data? this checked in type::free_ptr_of_t()
-        bool need_free_data = false;//example: references or pointers shod not freed. arrays or values must be freed
+        bool need_free_data : 1 = false;//example: references or pointers shod not freed. arrays or values must be freed
+        //bool is_temp_v : 1 = false;
     };
 }//namespace SGL
 

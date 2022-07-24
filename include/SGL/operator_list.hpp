@@ -162,14 +162,14 @@ namespace SGL {
         //TODO replace function pointer with std::function?
         template<typename Ret, typename Arg>
         void add_unary_operator(operator_type op, Ret(*f)(Arg)) {
-            m_unary_operators[static_cast<size_t>(op)][*type::construct_type<Arg>()] = {static_cast<void*>(f), static_cast<value(*)(void*, value&)>([](void* f, value& arg1)->value{
-                return value(val<Ret>(static_cast<Ret(*)(Arg)>(f)(arg1.get<Arg>())));
+            m_unary_operators[static_cast<size_t>(op)][*type::construct_type<Arg>()] = {reinterpret_cast<void*>(f), static_cast<value(*)(void*, value&)>([](void* f, value& arg1)->value{
+                return value(val<Ret>(reinterpret_cast<Ret(*)(Arg)>(f)(arg1.get<Arg>())));
             })};
         }
         template<typename Ret, typename Arg1, typename Arg2>
         void add_binary_operator(operator_type op, Ret(*f)(Arg1, Arg2)) {
-            m_binary_operators[static_cast<size_t>(op)][*type::construct_type<Arg1>()][*type::construct_type<Arg2>()] = {static_cast<void*>(f), static_cast<value(*)(void*, value&, value&)>([](void* f, value& arg1, value& arg2)->value{
-                return value(val<Ret>(static_cast<Ret(*)(Arg1, Arg2)>(f)(arg1.get<Arg1>(), arg2.get<Arg2>())));
+            m_binary_operators[static_cast<size_t>(op)][*type::construct_type<Arg1>()][*type::construct_type<Arg2>()] = {reinterpret_cast<void*>(f), static_cast<value(*)(void*, value&, value&)>([](void* f, value& arg1, value& arg2)->value{
+                return value(val<Ret>(reinterpret_cast<Ret(*)(Arg1, Arg2)>(f)(arg1.get<Arg1>(), arg2.get<Arg2>())));
             })};
         }
 
@@ -187,13 +187,14 @@ namespace SGL {
 #if defined(SGL_COMPILER_CLANG) || defined(SGL_COMPILER_GCC)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wbool-operation"
+#pragma GCC diagnostic ignored "-Wnull-conversion"
 #endif//CLANG | GCC
 
         template<typename T>
         static constexpr bool q = requires(T v) { ~v; };
-        template<typename T>
-        constexpr void add_default_unary_operators_for_type() requires details::req_base_type<T> {
-            if constexpr(!std::is_same_v<T, void>) {
+        template<typename T_t>
+        constexpr void add_default_unary_operators_for_type() requires details::req_base_type<T_t> {
+            if constexpr(!std::is_same_v<T_t, void>) {
                 [this]<typename T>(details::sgl_type_identity<T>) {//lambda needs for correct work on MSVC with constexpr (idk why)
                     //TODO add static_cast result to T?
                     if constexpr(requires(T v) { +v; }) { add_unary_operator(operator_type::op_unary_plus , static_cast<decltype(+std::declval<T>())(*)(T)>([](T v){ return +v; })); }
@@ -202,13 +203,13 @@ namespace SGL {
                     if constexpr(requires(T v) { !v; }) { add_unary_operator(operator_type::op_not        , static_cast<decltype(!std::declval<T>())(*)(T)>([](T v){ return !v; })); }
                     if constexpr(requires(T v) { *v; }) { add_unary_operator(operator_type::op_deref      , static_cast<decltype(*std::declval<T>())(*)(T)>([](T v){ return *v; })); }
                     if constexpr(requires(T v) { &v; }) { add_unary_operator(operator_type::op_adress_of  , static_cast<decltype(&std::declval<T>())(*)(T)>([](T v){ return &v; })); }
-                }(details::sgl_type_identity<std::add_lvalue_reference_t<std::add_const_t<T>>>{});
+                }(details::sgl_type_identity<std::add_lvalue_reference_t<std::add_const_t<T_t>>>{});
             };
         }
 
-        template<typename A, typename B = A>
-        constexpr void add_default_binary_operators_between_types() requires details::req_base_type<A> && details::req_base_type<B> {
-            if constexpr(!std::is_same_v<A, void> && !std::is_same_v<B, void>) {
+        template<typename A_t, typename B_t = A_t>
+        constexpr void add_default_binary_operators_between_types() requires details::req_base_type<A_t> && details::req_base_type<B_t> {
+            if constexpr(!std::is_same_v<A_t, void> && !std::is_same_v<B_t, void>) {
                 [this]<typename A, typename B>(details::sgl_type_identity<A>, details::sgl_type_identity<B>) {//lambda needs for correct work on MSVC with constexpr (idk why)
                     if constexpr(requires(A a, B b) { a +  b; }) { add_binary_operator(operator_type::op_sum        , static_cast<decltype(std::declval<A>() +  std::declval<B>())(*)(A, B)>([](A a, B b){ return a +  b; })); }
                     if constexpr(requires(A a, B b) { a -  b; }) { add_binary_operator(operator_type::op_sub        , static_cast<decltype(std::declval<A>() -  std::declval<B>())(*)(A, B)>([](A a, B b){ return a -  b; })); }
@@ -228,7 +229,7 @@ namespace SGL {
                     if constexpr(requires(A a, B b) { a <= b; }) { add_binary_operator(operator_type::op_not_greater, static_cast<decltype(std::declval<A>() <= std::declval<B>())(*)(A, B)>([](A a, B b){ return a <= b; })); }
                     if constexpr(requires(A a, B b) { a || b; }) { add_binary_operator(operator_type::op_or         , static_cast<decltype(std::declval<A>() || std::declval<B>())(*)(A, B)>([](A a, B b){ return a || b; })); }
                     if constexpr(requires(A a, B b) { a && b; }) { add_binary_operator(operator_type::op_and        , static_cast<decltype(std::declval<A>() && std::declval<B>())(*)(A, B)>([](A a, B b){ return a && b; })); }
-                }(details::sgl_type_identity<std::add_lvalue_reference_t<std::add_const_t<A>>>{}, details::sgl_type_identity<std::add_lvalue_reference_t<std::add_const_t<B>>>{});
+                }(details::sgl_type_identity<std::add_lvalue_reference_t<std::add_const_t<A_t>>>{}, details::sgl_type_identity<std::add_lvalue_reference_t<std::add_const_t<B_t>>>{});
             }
         }
 

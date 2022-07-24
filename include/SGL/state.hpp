@@ -77,7 +77,7 @@ namespace SGL {
         template<typename T>
         void add_variable(const std::string& name, T v) {
             if(!details::is_correct_identifier(name)) throw std::invalid_argument("incorrect function name: " + name);
-            add_variable_impl(details::sgl_type_identity<T>{}, name, v);
+            m_variables[name] = value(details::sgl_type_identity<T>{}, v);
         }
 
         [[nodiscard]] value& get_variable(const std::string& name) {
@@ -103,15 +103,6 @@ namespace SGL {
         std::unordered_map<std::string, value> m_variables;
 
         operator_list m_operator_list;
-
-        template<typename T>
-        void add_variable_impl(details::sgl_type_identity<T>, const std::string& name, T v) {
-            m_variables[name] = value(val<T>(v));
-        }
-        template<typename T>
-        void add_variable_impl(details::sgl_type_identity<T&>, const std::string& name, T& v) {
-            m_variables[name] = value(ref<T>(v));
-        }
 /*
         //TODO implement 
         template<typename... Types> 
